@@ -1,63 +1,8 @@
-name: CI
-
-on:
-  push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main ]
-
-jobs:
-  build-and-test:
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - os: ubuntu-latest
-            compiler: g++-13
-            cc: gcc-13
-            cxx: g++-13
-          - os: ubuntu-latest
-            compiler: clang-17
-            cc: clang-17
-            cxx: clang++-17
-          - os: windows-latest
-            compiler: msvc
-
-    runs-on: ${{ matrix.os }}
-    name: ${{ matrix.os }} / ${{ matrix.compiler }}
-
-    steps:
-      - uses: actions/checkout@v4
-
-      # ── Linux: install compiler if needed ──
-      - name: Install compiler (Linux)
+# ── Test ──
+      - name: Test (Linux)
         if: runner.os == 'Linux'
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y ${{ matrix.cc }} ${{ matrix.cxx || '' }} cmake ninja-build
+        run: ctest --test-dir build --output-on-failure
 
-      # ── Configure ──
-      - name: Configure (Linux)
-        if: runner.os == 'Linux'
-        run: >
-          cmake -B build -G Ninja
-          -DCMAKE_CXX_COMPILER=${{ matrix.cxx }}
-          -DCMAKE_BUILD_TYPE=Release
-          -DCTDP_BUILD_TESTS=ON
-          -DCTDP_BUILD_EXAMPLES=ON
-
-      - name: Configure (Windows)
+      - name: Test (Windows)
         if: runner.os == 'Windows'
-        run: >
-          cmake -B build
-          -DCMAKE_BUILD_TYPE=Release
-          -DCTDP_BUILD_TESTS=ON
-          -DCTDP_BUILD_EXAMPLES=ON
-
-      # ── Build ──
-      - name: Build
-        run: cmake --build build --config Release
-
-      # ── Test ──
-      - name: Test
         run: ctest --test-dir build --config Release --output-on-failure
