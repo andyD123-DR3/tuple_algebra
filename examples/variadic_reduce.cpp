@@ -203,7 +203,12 @@ int main(int argc, char* argv[]) {
     double mp_ns = time_ns([&]() {
         auto r = compute_multi_pass(data);
         mp_result = r;
+#if defined(_MSC_VER)
+        volatile auto sink = &mp_result;  // prevent DCE
+        (void)sink;
+#else
         asm volatile("" : : "g"(&mp_result) : "memory");  // prevent DCE
+#endif
     });
 
     // -- Single-pass variadic --
@@ -212,7 +217,12 @@ int main(int argc, char* argv[]) {
     double sp_ns = time_ns([&]() {
         auto r = seven_lane_stats.reduce(data);
         sp_result = r;
+#if defined(_MSC_VER)
+        volatile auto sink = &sp_result;  // prevent DCE
+        (void)sink;
+#else
         asm volatile("" : : "g"(&sp_result) : "memory");  // prevent DCE
+#endif
     });
 
     // -- Results --
