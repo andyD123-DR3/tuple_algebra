@@ -6,3 +6,12 @@
       - name: Test (Windows)
         if: runner.os == 'Windows'
         run: ctest --test-dir build --config Release --output-on-failure
+        # ── Test ──
+      - name: Test (Linux)
+        if: runner.os == 'Linux'
+        run: ctest --test-dir build --output-on-failure
+
+      - name: Test (Windows)
+        if: runner.os == 'Windows'
+        run: ctest --test-dir build --config Release --output-on-failure
+        
