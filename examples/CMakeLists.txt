@@ -26,14 +26,22 @@ add_executable(per_element_demo per_element_demo.cpp)
 target_link_libraries(per_element_demo PRIVATE ctdp_all)
 
 # Enable optimisations for benchmarks regardless of global build type
-if(NOT CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
+if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
     target_compile_options(fix_cacheline PRIVATE -O3 -march=native
         -fconstexpr-ops-limit=300000000)
     target_compile_options(spmv_benchmark PRIVATE -O3 -march=native)
     target_compile_options(variadic_reduce PRIVATE -O3 -march=native)
     target_compile_options(matrix_chain_demo PRIVATE -O3 -march=native)
     target_compile_options(per_element_demo PRIVATE -O3 -march=native)
-else()
+elseif(CMAKE_CXX_COMPILER_ID STREQUAL "Clang" OR
+       CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
+    target_compile_options(fix_cacheline PRIVATE -O3 -march=native
+        -fconstexpr-steps=300000000)
+    target_compile_options(spmv_benchmark PRIVATE -O3 -march=native)
+    target_compile_options(variadic_reduce PRIVATE -O3 -march=native)
+    target_compile_options(matrix_chain_demo PRIVATE -O3 -march=native)
+    target_compile_options(per_element_demo PRIVATE -O3 -march=native)
+elseif(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
     target_compile_options(fix_cacheline PRIVATE /O2 /constexpr:steps300000000)
     target_compile_options(spmv_benchmark PRIVATE /O2)
     target_compile_options(variadic_reduce PRIVATE /O2)
