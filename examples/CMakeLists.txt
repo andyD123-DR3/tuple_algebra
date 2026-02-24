@@ -48,3 +48,17 @@ elseif(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
     target_compile_options(matrix_chain_demo PRIVATE /O2)
     target_compile_options(per_element_demo PRIVATE /O2)
 endif()
+
+# ── GEMM Tile Optimisation ───────────────────────────────────────────────────
+# Demonstrates ML cost model calibration: preprocess → train → search.
+add_executable(gemm_tile_optimisation gemm_tile_optimisation.cpp)
+target_link_libraries(gemm_tile_optimisation PRIVATE ctdp_all)
+
+if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+    target_compile_options(gemm_tile_optimisation PRIVATE -O3 -march=native)
+elseif(CMAKE_CXX_COMPILER_ID STREQUAL "Clang" OR
+       CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
+    target_compile_options(gemm_tile_optimisation PRIVATE -O3 -march=native)
+elseif(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
+    target_compile_options(gemm_tile_optimisation PRIVATE /O2)
+endif()
