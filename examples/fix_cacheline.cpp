@@ -390,13 +390,20 @@ static inline double seconds_since(std::chrono::steady_clock::time_point t0) {
     return std::chrono::duration<double>(std::chrono::steady_clock::now() - t0).count();
 }
 
-static auto aligned_blob_64(size_t bytes) {
+static auto aligned_blob_64(std::size_t bytes) {
+#ifdef _MSC_VER
+    auto p = std::unique_ptr<std::byte, decltype(&_aligned_free)>(
+        static_cast<std::byte*>(_aligned_malloc(bytes, 64)),
+        &_aligned_free);
+#else
     auto p = std::unique_ptr<std::byte, decltype(&std::free)>(
         static_cast<std::byte*>(std::aligned_alloc(64, bytes)),
         &std::free);
+#endif
     if (!p) std::abort();
     return p;
 }
+
 
 // Bitmask of which cache lines contain at least one hot field.
 template <size_t Nf>
