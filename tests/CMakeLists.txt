@@ -85,10 +85,7 @@ ctdp_add_test(test_graph_coloring graph/test_graph_coloring.cc)
 # Instantiation tier: strategy_map, dispatch_table, plan_executor
 ctdp_add_test(test_instantiation test_instantiation.cc)
 
-add_executable(test_performance_models test_performance_models.cpp)
-target_link_libraries(test_performance_models PRIVATE ctdp)
-target_compile_options(test_performance_models PRIVATE -Wall -Wextra -O2)
-add_test(NAME performance_models COMMAND test_performance_models)
+ctdp_add_test(test_performance_models test_performance_models.cpp)
 
 # ── Aggregate target ─────────────────────────────────────────────────────────
 add_custom_target(check
