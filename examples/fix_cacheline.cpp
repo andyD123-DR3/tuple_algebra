@@ -47,6 +47,25 @@
 #include <vector>
 #include <algorithm>
 
+// ── MSVC portability for GCC/Clang built-ins ────────────────────────────
+#ifdef _MSC_VER
+#include <intrin.h>
+static inline int portable_popcount(uint32_t x) {
+    return (int)__popcnt(x);
+}
+static inline int portable_ctz(uint32_t x) {
+    unsigned long idx;
+    _BitScanForward(&idx, x);
+    return (int)idx;
+}
+#else
+static inline int portable_popcount(uint32_t x) {
+    return __builtin_popcount(x);
+}
+static inline int portable_ctz(uint32_t x) {
+    return __builtin_ctz(x);
+}
+#endif
 // ═══════════════════════════════════════════════════════════════════════════
 // Field descriptors
 // ═══════════════════════════════════════════════════════════════════════════
@@ -416,7 +435,8 @@ uint32_t hot_line_mask(const std::array<Field, Nf>& f, const Plan<Nf>& p) {
 
 template <size_t Nf>
 int count_hot_lines(const std::array<Field, Nf>& f, const Plan<Nf>& p) {
-    return __builtin_popcount(hot_line_mask(f, p));
+return portable_popcount(hot_line_mask(f, p));
+   // return __builtin_popcount(hot_line_mask(f, p));
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
