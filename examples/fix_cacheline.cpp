@@ -497,7 +497,7 @@ double bench_plan(const char* name,
                 // fields you actually access — a single load anywhere
                 // in a cache line pays for the entire line.
                 for (uint32_t m = hmask; m; m &= (m - 1)) {
-                    int li = __builtin_ctz(m & (~m + 1u));
+                    int li = portable_ctz(m);// __builtin_ctz(m & (~m + 1u));
                     const std::byte* line = rec + (size_t)li * CACHELINE;
                     for (int j = 0; j < CACHELINE; ++j)
                         sink += (uint8_t)line[j];
