@@ -12,6 +12,10 @@
 // The key insight: format selection can be 2-5× more impactful than
 // micro-optimization within a single format.
 
+#ifdef _MSC_VER
+#define __restrict__ __restrict
+#endif
+
 #include "spmv/spmv_graph.h"
 
 #include <algorithm>
