@@ -399,7 +399,7 @@ private:
     template <typename Fn>
     constexpr void dim_dispatch(std::size_t d, Fn&& fn) const {
         [&]<std::size_t... Is>(std::index_sequence<Is...>) {
-            ((Is == d ? (fn(std::get<Is>(descs_)), true) : false), ...);
+            ((void)(Is == d ? (fn(std::get<Is>(descs_)), true) : false), ...);
         }(std::make_index_sequence<rank>{});
     }
 

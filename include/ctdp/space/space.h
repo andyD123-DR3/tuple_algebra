@@ -289,6 +289,12 @@ auto to_vector(const Space& space) {
     return result;
 }
 
+template <typename PointType>
+struct search_result {
+    PointType     best{};
+    double        best_cost = std::numeric_limits<double>::infinity();
+    std::size_t   evaluated = 0;
+};
 // ═══════════════════════════════════════════════════════════════════════
 // exhaustive_search — generic over any enumerable space
 //
@@ -299,23 +305,22 @@ auto to_vector(const Space& space) {
 
 template <typename Space, typename CostFn>
     requires has_enumerate<Space>
-constexpr auto exhaustive_search(const Space& space, CostFn&& cost_fn)
-    -> typename Space::point_type
+constexpr auto exhaustive_search_with_cost(const Space& space, CostFn&& cost_fn)
+-> search_result<typename Space::point_type>
 {
-    typename Space::point_type best{};
-    double best_cost = std::numeric_limits<double>::infinity();
-    bool found = false;
+    search_result<typename Space::point_type> result;
 
     space.enumerate([&](const typename Space::point_type& p) {
         if constexpr (constrained_space<Space>) {
             if (!space.is_valid(p)) return;
         }
+        ++result.evaluated;
         double c = cost_fn(p);
-        if (!found || c < best_cost) {
-            best = p; best_cost = c; found = true;
+        if (result.evaluated == 1u || c < result.best_cost) {
+            result.best = p; result.best_cost = c;
         }
-    });
-    return best;
+        });
+    return result;
 }
 
 template <typename Space, typename CostFn>
