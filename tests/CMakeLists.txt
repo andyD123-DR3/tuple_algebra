@@ -87,6 +87,9 @@ ctdp_add_test(test_instantiation test_instantiation.cc)
 
 ctdp_add_test(test_performance_models test_performance_models.cpp)
 
+# ── Space layer v0.7.2 tests (descriptor_space, valid_view, tiers) ───────
+ctdp_add_test(test_space_v072 test_space_v072.cpp)
+
 # ── Aggregate target ─────────────────────────────────────────────────────────
 add_custom_target(check
     COMMAND ${CMAKE_CTEST_COMMAND} --output-on-failure
@@ -108,5 +111,6 @@ add_custom_target(check
             test_heterogeneous_space
             test_constrained_search
             test_constraints
+            test_space_v072
     COMMENT "Running all CTDP tests"
 )
