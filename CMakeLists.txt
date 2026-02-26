@@ -99,6 +99,14 @@ target_include_directories(ctdp_domain INTERFACE
 )
 target_link_libraries(ctdp_domain INTERFACE ctdp_engine ctdp_graph ctdp_solver)
 
+# Space: descriptor-based search spaces (v0.7.2)
+add_library(ctdp_space INTERFACE)
+target_include_directories(ctdp_space INTERFACE
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+    $<INSTALL_INTERFACE:include>
+)
+target_link_libraries(ctdp_space INTERFACE ctdp_solver)
+
 # Convenience target: all libraries
 add_library(ctdp_all INTERFACE)
 target_link_libraries(ctdp_all INTERFACE ctdp_core ctdp_solver ctdp_algebra ctdp_graph ctdp_engine ctdp_domain)
