@@ -323,26 +323,6 @@ constexpr auto exhaustive_search_with_cost(const Space& space, CostFn&& cost_fn)
     return result;
 }
 
-template <typename Space, typename CostFn>
-    requires has_enumerate<Space>
-constexpr auto exhaustive_search_with_cost(const Space& space, CostFn&& cost_fn)
-    -> std::pair<typename Space::point_type, double>
-{
-    typename Space::point_type best{};
-    double best_cost = std::numeric_limits<double>::infinity();
-    bool found = false;
-
-    space.enumerate([&](const typename Space::point_type& p) {
-        if constexpr (constrained_space<Space>) {
-            if (!space.is_valid(p)) return;
-        }
-        double c = cost_fn(p);
-        if (!found || c < best_cost) {
-            best = p; best_cost = c; found = true;
-        }
-    });
-    return {best, best_cost};
-}
 
 // ═══════════════════════════════════════════════════════════════════════
 // section_space — genuine rank reduction on tuple-based points
