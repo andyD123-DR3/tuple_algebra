@@ -109,7 +109,7 @@ target_link_libraries(ctdp_space INTERFACE ctdp_solver)
 
 # Convenience target: all libraries
 add_library(ctdp_all INTERFACE)
-target_link_libraries(ctdp_all INTERFACE ctdp_core ctdp_solver ctdp_algebra ctdp_graph ctdp_engine ctdp_domain)
+target_link_libraries(ctdp_all INTERFACE ctdp_core ctdp_solver ctdp_algebra ctdp_graph ctdp_engine ctdp_domain ctdp_space)
 
 # ── Subdirectories ───────────────────────────────────────────────────────────
 if(CTDP_BUILD_TESTS)
@@ -125,7 +125,7 @@ endif()
 include(GNUInstallDirs)
 install(DIRECTORY include/ctdp/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/ctdp)
 install(DIRECTORY include/ct_dp/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/ct_dp)
-install(TARGETS ctdp_core ctdp_solver ctdp_algebra ctdp_graph ctdp_engine ctdp_domain ctdp_all
+install(TARGETS ctdp_core ctdp_solver ctdp_algebra ctdp_graph ctdp_engine ctdp_domain ctdp_space ctdp_all
     EXPORT ctdpTargets)
 install(EXPORT ctdpTargets
     NAMESPACE ctdp::
