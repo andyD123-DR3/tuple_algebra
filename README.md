@@ -1,6 +1,6 @@
 # CT-DP: Compile-Time Dynamic Programming Framework
 
-**Version 0.4.0** — C++20 header-only framework for compile-time optimization.
+**Version 0.7.2** — C++20 header-only framework for compile-time optimization.
 
 ## Quick Start
 
