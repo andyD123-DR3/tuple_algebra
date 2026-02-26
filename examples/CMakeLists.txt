@@ -62,3 +62,50 @@ elseif(CMAKE_CXX_COMPILER_ID STREQUAL "Clang" OR
 elseif(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
     target_compile_options(gemm_tile_optimisation PRIVATE /O2)
 endif()
+
+# ══════════════════════════════════════════════════════════════════════════════
+# v0.7.2: Standalone + Framework examples
+# ══════════════════════════════════════════════════════════════════════════════
+
+# ── Standalone examples (no framework headers — pure C++20) ──────────────────
+# These demonstrate the CT-DP pattern (constexpr search → NTTP dispatch)
+# without importing framework types. They need AVX2+FMA for SIMD benchmarks.
+
+add_executable(loop_nest_opt standalone/loop_nest_opt.cpp)
+add_executable(dep_break_opt standalone/dep_break_opt.cpp)
+add_executable(cache_size_opt standalone/cache_size_opt.cpp)
+
+# ── Framework example (uses ctdp_space) ──────────────────────────────────────
+# Policy search over cost model weights, wrapping a subset-DP inner solver.
+add_executable(cache_line_layout framework/cache_line_layout.cpp)
+target_link_libraries(cache_line_layout PRIVATE ctdp_space)
+
+# ── Compiler options for v0.7.2 examples ─────────────────────────────────────
+if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+    target_compile_options(loop_nest_opt PRIVATE -O2 -mavx2 -mfma
+        -Wno-conversion -Wno-sign-conversion)
+    target_compile_options(dep_break_opt PRIVATE -O2 -mavx2 -mfma
+        -Wno-conversion -Wno-sign-conversion)
+    target_compile_options(cache_size_opt PRIVATE -O2
+        -Wno-conversion -Wno-sign-conversion)
+    target_compile_options(cache_line_layout PRIVATE -O2
+        -fconstexpr-ops-limit=500000000
+        -Wno-conversion -Wno-sign-conversion)
+elseif(CMAKE_CXX_COMPILER_ID STREQUAL "Clang" OR
+       CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
+    target_compile_options(loop_nest_opt PRIVATE -O2 -mavx2 -mfma
+        -Wno-conversion -Wno-sign-conversion)
+    target_compile_options(dep_break_opt PRIVATE -O2 -mavx2 -mfma
+        -Wno-conversion -Wno-sign-conversion)
+    target_compile_options(cache_size_opt PRIVATE -O2
+        -Wno-conversion -Wno-sign-conversion)
+    target_compile_options(cache_line_layout PRIVATE -O2
+        -fconstexpr-steps=500000000
+        -Wno-conversion -Wno-sign-conversion)
+elseif(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
+    target_compile_options(loop_nest_opt PRIVATE /O2 /arch:AVX2)
+    target_compile_options(dep_break_opt PRIVATE /O2 /arch:AVX2)
+    target_compile_options(cache_size_opt PRIVATE /O2)
+    target_compile_options(cache_line_layout PRIVATE /O2
+        /constexpr:steps500000000)
+endif()
