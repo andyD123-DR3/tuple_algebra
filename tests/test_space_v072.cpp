@@ -26,8 +26,8 @@ enum class Size  : int { SMALL, LARGE };
 
 constexpr auto make_test_space() {
     return descriptor_space("test",
-        make_enum_vals("color", Color::RED, Color::GREEN, Color::BLUE),
-        make_enum_vals("size", Size::SMALL, Size::LARGE),
+        make_enum_vals("color", {Color::RED, Color::GREEN, Color::BLUE}),
+        make_enum_vals("size", {Size::SMALL, Size::LARGE}),
         bool_flag("turbo")
     );
 }
