@@ -172,7 +172,7 @@ TEST(SpaceV072, TierCompositionSearch) {
     auto cost = [](auto const& pt) -> double {
         double c = 0.0;
         if (std::get<0>(pt) == Color::BLUE) c -= 100.0;
-        else if (std::get<0>(pt) == Color::GREEN) c -= 50.0;
+        else if (std::get<0>(pt) == Color::GREEN) c -= 50.0;  // Cost: prefer BLUE > GREEN > RED, LARGE, turbo.
         if (std::get<1>(pt) == Size::LARGE) c -= 10.0;
         if (std::get<2>(pt)) c -= 1.0;
         return c;
