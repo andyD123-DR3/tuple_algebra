@@ -135,7 +135,7 @@ static constexpr auto r_alt   = solve_cache_opt<8>(alternating_pattern);
 static constexpr auto r_seq   = solve_cache_opt<8>(sequential_pattern);
 static constexpr auto r_phase = solve_cache_opt<8>(phase_shift_pattern);
 
-static_assert(r_alt.best_size == 2);    // only needs 2 hot functions
+static_assert(r_alt.best_size == 3);    // 2 hot + 1 buffer absorbs cold evictions
 static_assert(r_seq.best_size == 6);    // needs all 6
 static_assert(r_phase.best_size == 3);  // 3 covers each phase
 

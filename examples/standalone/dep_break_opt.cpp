@@ -78,7 +78,9 @@ constexpr double evaluate_cost(dep_config const& pt, dep_instance const& inst) {
         case dep_strategy::NONE:               cost = 0.0; break;
         case dep_strategy::LOOP_UNROLLING:     cost = -1000.0 - pt.unroll_factor * 100.0; break;
         case dep_strategy::LOOP_FISSION:       cost = -1500.0; break;
-        case dep_strategy::SCALAR_EXPANSION:   cost = -2000.0 - pt.num_accumulators * 200.0; break;
+        case dep_strategy::SCALAR_EXPANSION:   cost = -2000.0 - pt.num_accumulators * 200.0;
+                                                       if (inst.dep_distance > 1) cost += 2000.0;
+                                                       break;
         case dep_strategy::REDUCTION_TREE:     cost = -3000.0 - pt.num_accumulators * 200.0; break;
         case dep_strategy::LOOP_INTERCHANGE:   cost = -1800.0; break;
         case dep_strategy::SOFTWARE_PIPELINING:cost = -2500.0 - pt.unroll_factor * 150.0; break;

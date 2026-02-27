@@ -212,10 +212,10 @@ namespace ctdp::space {
 
 constexpr auto make_policy_space() {
     return descriptor_space("policy",
-        make_int_set("hot_line_w",  std::array{1000, 5000, 10000, 25000, 50000}),
-        make_int_set("mix_penalty", std::array{1000, 5000, 10000, 50000, 100000, 500000}),
-        make_int_set("waste_w",     std::array{1, 5, 10}),
-        make_int_set("conflict_w",  std::array{100, 500, 2000})
+        make_int_set("hot_line_w", { 1000, 5000, 10000, 25000, 50000 }),
+        make_int_set("mix_penalty", { 1000, 5000, 10000, 50000, 100000, 500000 }),
+        make_int_set("waste_w", { 1, 5, 10 }),
+        make_int_set("conflict_w", { 100, 500, 2000 })
     );
     // 5 × 6 × 3 × 3 = 270 policies
 }
