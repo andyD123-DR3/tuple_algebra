@@ -22,6 +22,22 @@
 #include <immintrin.h>
 
 // ============================================================================
+// Portability: MSVC doesn't provide std::aligned_alloc
+// ============================================================================
+#ifdef _MSC_VER
+#include <malloc.h>
+static void* portable_aligned_alloc(std::size_t align, std::size_t size) {
+    return _aligned_malloc(size, align);
+}
+static void portable_aligned_free(void* ptr) { _aligned_free(ptr); }
+#else
+static void* portable_aligned_alloc(std::size_t align, std::size_t size) {
+    return std::aligned_alloc(align, size);
+}
+static void portable_aligned_free(void* ptr) { std::free(ptr); }
+#endif
+
+// ============================================================================
 // 1. Dimensions — all enumerated
 // ============================================================================
 
@@ -318,10 +334,10 @@ int main() {
     constexpr std::size_t N = 512;
 
     // Aligned allocation
-    float* A = static_cast<float*>(std::aligned_alloc(32, N*N*sizeof(float)));
-    float* B = static_cast<float*>(std::aligned_alloc(32, N*N*sizeof(float)));
-    float* C = static_cast<float*>(std::aligned_alloc(32, N*N*sizeof(float)));
-    float* C_ref = static_cast<float*>(std::aligned_alloc(32, N*N*sizeof(float)));
+    float* A = static_cast<float*>(portable_aligned_alloc(32, N*N*sizeof(float)));
+    float* B = static_cast<float*>(portable_aligned_alloc(32, N*N*sizeof(float)));
+    float* C = static_cast<float*>(portable_aligned_alloc(32, N*N*sizeof(float)));
+    float* C_ref = static_cast<float*>(portable_aligned_alloc(32, N*N*sizeof(float)));
 
     // Non-uniform inputs (catches transposition bugs)
     for (std::size_t i = 0; i < N*N; ++i) {
@@ -375,6 +391,6 @@ int main() {
     std::cout << "\n  Speedup: " << std::fixed << std::setprecision(1)
               << t_ref / t_opt << "x\n";
 
-    std::free(A); std::free(B); std::free(C); std::free(C_ref);
+    portable_aligned_free(A); portable_aligned_free(B); portable_aligned_free(C); portable_aligned_free(C_ref);
     return (max_err < 1e-2) ? 0 : 1;
 }
