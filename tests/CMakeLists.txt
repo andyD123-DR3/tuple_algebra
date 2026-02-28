@@ -82,6 +82,12 @@ ctdp_add_test(test_graph_hardening_v2 graph/test_graph_hardening_v2.cc)
 # Graph coloring: Welsh-Powell algorithm and coloring_to_groups bridge
 ctdp_add_test(test_graph_coloring graph/test_graph_coloring.cc)
 
+# Weighted view: edge_property_map, weighted_view, symmetric weights
+ctdp_add_test(test_weighted_view graph/test_weighted_view.cpp)
+
+# Bipartite matching: bipartite_graph, Hopcroft-Karp
+ctdp_add_test(test_bipartite_matching graph/test_bipartite_matching.cpp)
+
 # Instantiation tier: strategy_map, dispatch_table, plan_executor
 ctdp_add_test(test_instantiation test_instantiation.cc)
 
@@ -100,6 +106,8 @@ add_custom_target(check
             test_symmetric_graph
             test_graph_hardening_v2
             test_graph_coloring
+            test_weighted_view
+            test_bipartite_matching
             test_instantiation
             test_solver_concepts test_per_element_space
             test_interval_split_space test_other_spaces
