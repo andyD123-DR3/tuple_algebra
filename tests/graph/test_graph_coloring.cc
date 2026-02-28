@@ -143,7 +143,7 @@ constexpr auto make_cycle5() {
 
 TEST(GraphColoring, EmptyGraph) {
     constexpr auto g = make_empty_sym();
-    constexpr auto cr = graph_coloring<4>(g);
+    constexpr auto cr = graph_coloring(g);
     static_assert(cr.color_count == 0);
     static_assert(cr.verified);
     EXPECT_EQ(cr.color_count, 0u);
@@ -155,7 +155,7 @@ TEST(GraphColoring, EmptyGraph) {
 
 TEST(GraphColoring, SingleNode) {
     constexpr auto g = make_isolated_node();
-    constexpr auto cr = graph_coloring<4>(g);
+    constexpr auto cr = graph_coloring(g);
     static_assert(cr.color_count == 1);
     static_assert(cr.color_of[0] == 0);
     static_assert(cr.verified);
@@ -167,7 +167,7 @@ TEST(GraphColoring, SingleNode) {
 
 TEST(GraphColoring, SingleEdge) {
     constexpr auto g = make_single_edge();
-    constexpr auto cr = graph_coloring<4>(g);
+    constexpr auto cr = graph_coloring(g);
     static_assert(cr.color_count == 2);
     static_assert(cr.color_of[0] != cr.color_of[1]);
     static_assert(cr.verified);
@@ -179,7 +179,7 @@ TEST(GraphColoring, SingleEdge) {
 
 TEST(GraphColoring, Triangle) {
     constexpr auto g = make_triangle();
-    constexpr auto cr = graph_coloring<4>(g);
+    constexpr auto cr = graph_coloring(g);
     static_assert(cr.color_count == 3);
     static_assert(cr.verified);
 
@@ -195,7 +195,7 @@ TEST(GraphColoring, Triangle) {
 
 TEST(GraphColoring, Path4) {
     constexpr auto g = make_path4();
-    constexpr auto cr = graph_coloring<4>(g);
+    constexpr auto cr = graph_coloring(g);
     static_assert(cr.color_count == 2);
     static_assert(cr.verified);
 
@@ -211,7 +211,7 @@ TEST(GraphColoring, Path4) {
 
 TEST(GraphColoring, CompleteK4) {
     constexpr auto g = make_k4();
-    constexpr auto cr = graph_coloring<4>(g);
+    constexpr auto cr = graph_coloring(g);
     static_assert(cr.color_count == 4);
     static_assert(cr.verified);
 
@@ -229,7 +229,7 @@ TEST(GraphColoring, CompleteK4) {
 
 TEST(GraphColoring, Star5) {
     constexpr auto g = make_star5();
-    constexpr auto cr = graph_coloring<8>(g);
+    constexpr auto cr = graph_coloring(g);
     static_assert(cr.color_count == 2);
     static_assert(cr.verified);
 
@@ -246,7 +246,7 @@ TEST(GraphColoring, Star5) {
 
 TEST(GraphColoring, Bipartite) {
     constexpr auto g = make_bipartite();
-    constexpr auto cr = graph_coloring<8>(g);
+    constexpr auto cr = graph_coloring(g);
     static_assert(cr.color_count == 2);
     static_assert(cr.verified);
 
@@ -263,7 +263,7 @@ TEST(GraphColoring, Bipartite) {
 
 TEST(GraphColoring, OddCycle5) {
     constexpr auto g = make_cycle5();
-    constexpr auto cr = graph_coloring<8>(g);
+    constexpr auto cr = graph_coloring(g);
     static_assert(cr.color_count == 3);
     static_assert(cr.verified);
 }
@@ -274,7 +274,7 @@ TEST(GraphColoring, OddCycle5) {
 
 TEST(GraphColoring, PetersenGraph) {
     constexpr auto g = make_petersen();
-    constexpr auto cr = graph_coloring<10>(g);
+    constexpr auto cr = graph_coloring(g);
 
     // Petersen is 3-chromatic. Greedy Welsh-Powell should achieve
     // at most 4 (max_degree + 1 = 4).
@@ -293,7 +293,7 @@ TEST(GraphColoring, PetersenGraph) {
 
 TEST(GraphColoring, QualityMetric) {
     constexpr auto g = make_k4();
-    constexpr auto cr = graph_coloring<4>(g);
+    constexpr auto cr = graph_coloring(g);
 
     // K4: max degree = 3, so greedy bound = 4.
     static_assert(cr.max_degree_plus_one == 4);
@@ -315,7 +315,7 @@ TEST(GraphColoring, DisconnectedGraph) {
         return b.finalise();
     }();
 
-    constexpr auto cr = graph_coloring<4>(g);
+    constexpr auto cr = graph_coloring(g);
     static_assert(cr.color_count == 2);
     static_assert(cr.verified);
 
@@ -330,7 +330,7 @@ TEST(GraphColoring, DisconnectedGraph) {
 
 TEST(ColoringToGroups, TriangleBridge) {
     constexpr auto g = make_triangle();
-    constexpr auto cr = graph_coloring<4>(g);
+    constexpr auto cr = graph_coloring(g);
     constexpr auto fg = coloring_to_groups(cr);
 
     static_assert(fg.group_count == 3);
@@ -345,7 +345,7 @@ TEST(ColoringToGroups, TriangleBridge) {
 
 TEST(ColoringToGroups, BipartiteBridge) {
     constexpr auto g = make_bipartite();
-    constexpr auto cr = graph_coloring<8>(g);
+    constexpr auto cr = graph_coloring(g);
     constexpr auto fg = coloring_to_groups(cr);
 
     static_assert(fg.group_count == 2);
@@ -359,7 +359,7 @@ TEST(ColoringToGroups, BipartiteBridge) {
 
 TEST(ColoringToGroups, EmptyBridge) {
     constexpr auto g = make_empty_sym();
-    constexpr auto cr = graph_coloring<4>(g);
+    constexpr auto cr = graph_coloring(g);
     constexpr auto fg = coloring_to_groups(cr);
 
     static_assert(fg.group_count == 0);
@@ -371,7 +371,7 @@ TEST(ColoringToGroups, EmptyBridge) {
 
 constexpr auto coloring_pipeline_test() {
     auto g = make_path4();
-    auto cr = graph_coloring<4>(g);
+    auto cr = graph_coloring(g);
     auto fg = coloring_to_groups(cr);
     return fg;
 }
@@ -404,7 +404,7 @@ TEST(GraphColoring, WelshPowellOrdering) {
     // Star graph: center (node 0) has degree 4, leaves have degree 1.
     // Welsh-Powell should process center first → gets colour 0.
     constexpr auto g = make_star5();
-    constexpr auto cr = graph_coloring<8>(g);
+    constexpr auto cr = graph_coloring(g);
 
     // Center should get colour 0 (processed first, no neighbours coloured yet).
     EXPECT_EQ(cr.color_of[0], 0u);
@@ -429,7 +429,7 @@ TEST(GraphColoring, BandedRowConflict) {
         return b.finalise();
     }();
 
-    constexpr auto cr = graph_coloring<N>(g);
+    constexpr auto cr = graph_coloring(g);
     static_assert(cr.color_count == 2);
     static_assert(cr.verified);
 

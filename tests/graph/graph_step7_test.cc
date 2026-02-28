@@ -609,13 +609,13 @@ static_assert(a_tri6.conflict_graph.undirected_edge_count() == 9);
 static_assert(a_diag4.conflict_graph.undirected_edge_count() == 0);
 
 // Compile-time: coloring the tridiag conflict graph
-constexpr auto color_tri6 = graph_coloring<8>(a_tri6.conflict_graph);
+constexpr auto color_tri6 = graph_coloring(a_tri6.conflict_graph);
 static_assert(color_tri6.verified);
 static_assert(color_tri6.color_count >= 2);  // bandwidth-1 → chromatic ≥ 2
 static_assert(color_tri6.color_count <= 4);  // greedy bound
 
 // Compile-time: diagonal → 1 colour (no conflicts)
-constexpr auto color_diag4 = graph_coloring<8>(a_diag4.conflict_graph);
+constexpr auto color_diag4 = graph_coloring(a_diag4.conflict_graph);
 static_assert(color_diag4.verified);
 static_assert(color_diag4.color_count == 1);
 
@@ -635,7 +635,7 @@ TEST_F(FullPipelineTest, ConflictGraphMatchesRowGraph) {
 
 TEST_F(FullPipelineTest, ColoringTridiagonal) {
     auto a = analyze_spmv<8, 32>(pat_tri6);
-    auto cr = graph_coloring<8>(a.conflict_graph);
+    auto cr = graph_coloring(a.conflict_graph);
     EXPECT_TRUE(cr.verified);
     // Tridiag bandwidth 1: chromatic number is 3 (distance-2 reachability
     // means rows 0,2,4 can share a colour but rows within distance 2 cannot).
@@ -654,7 +654,7 @@ TEST_F(FullPipelineTest, ColoringTridiagonal) {
 
 TEST_F(FullPipelineTest, ColoringDiagonalAllParallel) {
     auto a = analyze_spmv<8, 16>(pat_diag4);
-    auto cr = graph_coloring<8>(a.conflict_graph);
+    auto cr = graph_coloring(a.conflict_graph);
     EXPECT_TRUE(cr.verified);
     // Diagonal: no conflicts → 1 colour → all rows parallel.
     EXPECT_EQ(cr.color_count, 1u);
@@ -665,7 +665,7 @@ TEST_F(FullPipelineTest, ColoringDiagonalAllParallel) {
 
 TEST_F(FullPipelineTest, ColoringToGroupsPipeline) {
     auto a = analyze_spmv<8, 32>(pat_tri6);
-    auto cr = graph_coloring<8>(a.conflict_graph);
+    auto cr = graph_coloring(a.conflict_graph);
     auto fg = coloring_to_groups(cr);
 
     EXPECT_TRUE(fg.is_valid_dag);
@@ -686,7 +686,7 @@ TEST_F(FullPipelineTest, ColoringToGroupsPipeline) {
 
 TEST_F(FullPipelineTest, FivePointColoringPipeline) {
     auto a = analyze_spmv<16, 128>(pat_5pt);
-    auto cr = graph_coloring<16>(a.conflict_graph);
+    auto cr = graph_coloring(a.conflict_graph);
     EXPECT_TRUE(cr.verified);
     // 5-point stencil on 3×3: non-trivial colouring.
     EXPECT_GE(cr.color_count, 2u);
