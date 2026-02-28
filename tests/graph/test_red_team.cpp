@@ -28,27 +28,27 @@ using namespace ctdp::graph;
 // =========================================================================
 
 static_assert([]() {
-    graph_builder<4, 4> b;
+    graph_builder<cap_from<4, 4>> b;
     auto g = b.finalise();
     return g.node_count() == 0 && g.edge_count() == 0 && g.empty();
 }());
 
 static_assert([]() {
-    graph_builder<4, 4> b;
+    graph_builder<cap_from<4, 4>> b;
     auto g = b.finalise();
     auto topo = topological_sort(g);
     return topo.is_dag && topo.order.size() == 0;
 }());
 
 static_assert([]() {
-    graph_builder<4, 4> b;
+    graph_builder<cap_from<4, 4>> b;
     auto g = b.finalise();
     auto cc = connected_components(g);
     return cc.component_count == 0;
 }());
 
 static_assert([]() {
-    graph_builder<4, 4> b;
+    graph_builder<cap_from<4, 4>> b;
     auto g = b.finalise();
     auto sc = scc(g);
     return sc.component_count == 0;
@@ -59,14 +59,14 @@ static_assert([]() {
 // =========================================================================
 
 static_assert([]() {
-    graph_builder<4, 4> b;
+    graph_builder<cap_from<4, 4>> b;
     (void)b.add_node();
     auto g = b.finalise();
     return g.node_count() == 1 && g.edge_count() == 0;
 }());
 
 static_assert([]() {
-    graph_builder<4, 4> b;
+    graph_builder<cap_from<4, 4>> b;
     (void)b.add_node();
     auto g = b.finalise();
     auto topo = topological_sort(g);
@@ -74,7 +74,7 @@ static_assert([]() {
 }());
 
 static_assert([]() {
-    graph_builder<4, 4> b;
+    graph_builder<cap_from<4, 4>> b;
     (void)b.add_node();
     auto g = b.finalise();
     auto cc = connected_components(g);
@@ -82,7 +82,7 @@ static_assert([]() {
 }());
 
 static_assert([]() {
-    graph_builder<4, 4> b;
+    graph_builder<cap_from<4, 4>> b;
     (void)b.add_node();
     auto g = b.finalise();
     auto sp = dijkstra(g, node_id{0}, [](node_id, node_id) -> double { return 1.0; });
@@ -95,7 +95,7 @@ static_assert([]() {
 
 static_assert([]() {
     // 4 nodes, 6 edges = complete DAG: 0->1, 0->2, 0->3, 1->2, 1->3, 2->3
-    graph_builder<4, 6> b;
+    graph_builder<cap_from<4, 6>> b;
     auto n0 = b.add_node(); auto n1 = b.add_node();
     auto n2 = b.add_node(); auto n3 = b.add_node();
     b.add_edge(n0, n1); b.add_edge(n0, n2); b.add_edge(n0, n3);
@@ -107,7 +107,7 @@ static_assert([]() {
 }());
 
 static_assert([]() {
-    graph_builder<4, 6> b;
+    graph_builder<cap_from<4, 6>> b;
     auto n0 = b.add_node(); auto n1 = b.add_node();
     auto n2 = b.add_node(); auto n3 = b.add_node();
     b.add_edge(n0, n1); b.add_edge(n0, n2); b.add_edge(n0, n3);
@@ -123,7 +123,7 @@ static_assert([]() {
 
 void test_self_edge_rejection() {
     // Runtime builder should filter self-edges
-    runtime_graph_builder<4, 8> b;
+    runtime_graph_builder<cap_from<4, 8>> b;
     auto n0 = b.add_node(); auto n1 = b.add_node();
     b.add_edge(n0, n0);  // self-edge
     b.add_edge(n0, n1);
@@ -138,7 +138,7 @@ void test_self_edge_rejection() {
 // =========================================================================
 
 void test_duplicate_dedup() {
-    runtime_graph_builder<4, 32> b;
+    runtime_graph_builder<cap_from<4, 32>> b;
     auto n0 = b.add_node(); auto n1 = b.add_node();
     for (int i = 0; i < 10; ++i) {
         b.add_edge(n0, n1);
@@ -154,7 +154,7 @@ void test_duplicate_dedup() {
 // =========================================================================
 
 static_assert([]() {
-    graph_builder<8, 64> b;
+    graph_builder<cap_from<8, 64>> b;
     for (int i = 0; i < 8; ++i) (void)b.add_node();
     for (int i = 0; i < 8; ++i)
         for (int j = i + 1; j < 8; ++j)
@@ -184,7 +184,7 @@ static_assert([]() {
 // =========================================================================
 
 static_assert([]() {
-    graph_builder<16, 16> b;
+    graph_builder<cap_from<16, 16>> b;
     for (int i = 0; i < 16; ++i) (void)b.add_node();
     for (int i = 0; i < 15; ++i)
         b.add_edge(node_id{static_cast<uint16_t>(i)},
@@ -205,7 +205,7 @@ static_assert([]() {
 // =========================================================================
 
 static_assert([]() {
-    graph_builder<8, 8> b;
+    graph_builder<cap_from<8, 8>> b;
     for (int i = 0; i < 8; ++i) (void)b.add_node();
     // No edges
     auto g = b.finalise();
@@ -231,7 +231,7 @@ static_assert([]() {
 // =========================================================================
 
 static_assert([]() {
-    graph_builder<8, 8> b;
+    graph_builder<cap_from<8, 8>> b;
     for (int i = 0; i < 8; ++i) (void)b.add_node();
     for (int i = 0; i < 8; ++i)
         b.add_edge(node_id{static_cast<uint16_t>(i)},
@@ -250,7 +250,7 @@ static_assert([]() {
 // =========================================================================
 
 static_assert([]() {
-    graph_builder<4, 4> b;
+    graph_builder<cap_from<4, 4>> b;
     auto n0 = b.add_node(); auto n1 = b.add_node();
     auto n2 = b.add_node();
     b.add_edge(n0, n1); b.add_edge(n1, n2);
@@ -268,7 +268,7 @@ static_assert([]() {
 
 static_assert([]() {
     // Diamond: 0->1(10), 0->2(1), 2->1(1) — shortest 0->1 is via 0->2->1 = 2
-    graph_builder<4, 4> b;
+    graph_builder<cap_from<4, 4>> b;
     auto n0 = b.add_node(); auto n1 = b.add_node(); auto n2 = b.add_node();
     b.add_edge(n0, n1); b.add_edge(n0, n2); b.add_edge(n2, n1);
     auto g = b.finalise();
@@ -287,7 +287,7 @@ static_assert([]() {
 // =========================================================================
 
 static_assert([]() {
-    symmetric_graph_builder<4, 8> b;
+    symmetric_graph_builder<cap_from<4, 8>> b;
     for (int i = 0; i < 4; ++i) (void)b.add_node();
     for (int i = 0; i < 4; ++i)
         for (int j = i + 1; j < 4; ++j)
@@ -306,7 +306,7 @@ static_assert([]() {
 
 static_assert([]() {
     // Two triangles connected by a single bridge edge
-    symmetric_graph_builder<8, 16> b;
+    symmetric_graph_builder<cap_from<8, 16>> b;
     auto a = b.add_node(); auto bb = b.add_node(); auto c = b.add_node();
     auto d = b.add_node(); auto e = b.add_node(); auto f = b.add_node();
     // Triangle 1
@@ -326,7 +326,7 @@ static_assert([]() {
 // =========================================================================
 
 static_assert([]() {
-    symmetric_graph_builder<8, 16> b;
+    symmetric_graph_builder<cap_from<8, 16>> b;
     for (int i = 0; i < 5; ++i) (void)b.add_node();
     for (int i = 0; i < 5; ++i)
         for (int j = i + 1; j < 5; ++j)
@@ -342,7 +342,7 @@ static_assert([]() {
 // =========================================================================
 
 static_assert([]() {
-    symmetric_graph_builder<8, 16> b;
+    symmetric_graph_builder<cap_from<8, 16>> b;
     for (int i = 0; i < 6; ++i) (void)b.add_node();
     // K_{3,3}: {0,1,2} <-> {3,4,5}
     for (int i = 0; i < 3; ++i)
@@ -393,7 +393,7 @@ void test_builder_errors() {
     // Exceeding MaxV
     bool caught_max_v = false;
     try {
-        runtime_graph_builder<2, 4> b;
+        runtime_graph_builder<cap_from<2, 4>> b;
         (void)b.add_node(); (void)b.add_node();
         (void)b.add_node();  // should throw
     } catch (std::length_error const&) {
@@ -404,7 +404,7 @@ void test_builder_errors() {
     // Edge to nonexistent source
     bool caught_src = false;
     try {
-        runtime_graph_builder<4, 4> b;
+        runtime_graph_builder<cap_from<4, 4>> b;
         (void)b.add_node();
         b.add_edge(node_id{5}, node_id{0});  // node 5 doesn't exist
     } catch (std::out_of_range const&) {
@@ -415,7 +415,7 @@ void test_builder_errors() {
     // Edge to nonexistent target
     bool caught_tgt = false;
     try {
-        runtime_graph_builder<4, 4> b;
+        runtime_graph_builder<cap_from<4, 4>> b;
         (void)b.add_node();
         b.add_edge(node_id{0}, node_id{5});
     } catch (std::out_of_range const&) {
@@ -426,7 +426,7 @@ void test_builder_errors() {
     // Edge on empty graph
     bool caught_empty = false;
     try {
-        runtime_graph_builder<4, 4> b;
+        runtime_graph_builder<cap_from<4, 4>> b;
         b.add_edge(node_id{0}, node_id{1});
     } catch (std::logic_error const&) {
         caught_empty = true;
@@ -441,9 +441,9 @@ void test_builder_errors() {
 // =========================================================================
 
 static_assert([]() {
-    using G8 = constexpr_graph<8, 16>;
-    using G32 = constexpr_graph<32, 64>;
-    using RG8 = runtime_graph<8, 16>;
+    using G8 = constexpr_graph<cap_from<8, 16>>;
+    using G32 = constexpr_graph<cap_from<32, 64>>;
+    using RG8 = runtime_graph<cap_from<8, 16>>;
 
     // Same MaxV => same result types
     bool same_cc = sizeof(components_result<8>) == sizeof(components_result<8>);
@@ -462,7 +462,7 @@ static_assert([]() {
 // =========================================================================
 
 static_assert([]() {
-    using G = constexpr_graph<8, 16>;
+    using G = constexpr_graph<cap_from<8, 16>>;
     constexpr auto nil = node_nil_v<G>;
     // nil is 0xFFFF = 65535, MaxV is 8 — no collision possible
     return nil > 8;
@@ -473,7 +473,7 @@ static_assert([]() {
 // =========================================================================
 
 static_assert([]() {
-    graph_builder<16, 16> b;
+    graph_builder<cap_from<16, 16>> b;
     for (int i = 0; i < 16; ++i) (void)b.add_node();
     // Hub = node 0, spokes = 1..15
     for (int i = 1; i < 16; ++i)

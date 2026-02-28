@@ -1,0 +1,721 @@
+// graph/graph_io.h — I/O layer: constexpr parsing, runtime read/write, DOT export
+// Part of the compile-time DP library (C++20)
+//
+// DESIGN RATIONALE:
+// Graph literals should be expressible as string constants, enabling:
+//   constexpr auto g = io::parse_directed<cap::small>("nodes 3\nedge 0 1\nedge 1 2\n");
+//
+// The constexpr parser works character-by-character (no <charconv> in constexpr).
+// The same text format is used for runtime read/write, giving round-trip fidelity.
+//
+// DOT export enables Graphviz visualisation for debugging and documentation.
+//
+// TEXT FORMAT:
+//   # comment
+//   nodes N              (must appear before any edge lines)
+//   edge SRC DST         (directed edge)
+//   edge SRC DST WEIGHT  (weighted edge — only in parse_weighted variants)
+//   symmetric            (flag: parse as undirected — only in parse_symmetric)
+//
+// Lines starting with # are comments.  Blank lines are ignored.
+// Node IDs are zero-based unsigned integers.  Weights are decimal numbers
+// (integer or integer.fraction, optional leading minus).
+
+#ifndef CTDP_GRAPH_IO_H
+#define CTDP_GRAPH_IO_H
+
+#include "constexpr_graph.h"
+#include "edge_property_map.h"
+#include "graph_builder.h"
+#include "graph_capacity.h"
+#include "graph_concepts.h"
+#include "graph_equal.h"
+#include "graph_traits.h"
+#include "symmetric_graph.h"
+
+#include <concepts>
+#include <cstddef>
+#include <cstdint>
+#include <iostream>
+#include <stdexcept>
+#include <string>
+#include <string_view>
+#include <utility>
+
+namespace ctdp::graph::io {
+
+// =============================================================================
+// Internal: constexpr parsing helpers
+// =============================================================================
+
+namespace detail {
+
+/// Skip whitespace (space, tab) but NOT newlines.
+constexpr std::size_t skip_hspace(std::string_view sv, std::size_t pos) noexcept {
+    while (pos < sv.size() && (sv[pos] == ' ' || sv[pos] == '\t'))
+        ++pos;
+    return pos;
+}
+
+/// Skip to end of line (past '\n' or to end of string).
+constexpr std::size_t skip_to_eol(std::string_view sv, std::size_t pos) noexcept {
+    while (pos < sv.size() && sv[pos] != '\n')
+        ++pos;
+    if (pos < sv.size()) ++pos;  // skip the '\n'
+    return pos;
+}
+
+/// Returns true if pos is at end-of-line or end-of-string.
+constexpr bool at_eol(std::string_view sv, std::size_t pos) noexcept {
+    return pos >= sv.size() || sv[pos] == '\n' || sv[pos] == '\r' || sv[pos] == '#';
+}
+
+/// Parse unsigned integer.  Returns {value, new_pos}.
+/// Throws if no digits found.
+constexpr std::pair<std::size_t, std::size_t>
+parse_uint(std::string_view sv, std::size_t pos) {
+    if (pos >= sv.size() || sv[pos] < '0' || sv[pos] > '9') {
+        throw std::runtime_error("parse_uint: expected digit");
+    }
+    std::size_t val = 0;
+    while (pos < sv.size() && sv[pos] >= '0' && sv[pos] <= '9') {
+        val = val * 10 + static_cast<std::size_t>(sv[pos] - '0');
+        ++pos;
+    }
+    return {val, pos};
+}
+
+/// Parse a double: optional '-', digits, optional '.digits'.
+/// Returns {value, new_pos}.  Throws if no digits found.
+constexpr std::pair<double, std::size_t>
+parse_double(std::string_view sv, std::size_t pos) {
+    if (pos >= sv.size()) {
+        throw std::runtime_error("parse_double: unexpected end");
+    }
+
+    double sign = 1.0;
+    if (sv[pos] == '-') {
+        sign = -1.0;
+        ++pos;
+    }
+
+    if (pos >= sv.size() || sv[pos] < '0' || sv[pos] > '9') {
+        throw std::runtime_error("parse_double: expected digit");
+    }
+
+    double integer_part = 0.0;
+    while (pos < sv.size() && sv[pos] >= '0' && sv[pos] <= '9') {
+        integer_part = integer_part * 10.0 + static_cast<double>(sv[pos] - '0');
+        ++pos;
+    }
+
+    double frac_part = 0.0;
+    if (pos < sv.size() && sv[pos] == '.') {
+        ++pos;
+        double place = 0.1;
+        while (pos < sv.size() && sv[pos] >= '0' && sv[pos] <= '9') {
+            frac_part += static_cast<double>(sv[pos] - '0') * place;
+            place *= 0.1;
+            ++pos;
+        }
+    }
+
+    return {sign * (integer_part + frac_part), pos};
+}
+
+/// Test whether sv at pos starts with the given prefix.
+constexpr bool starts_with(std::string_view sv, std::size_t pos,
+                           std::string_view prefix) noexcept {
+    if (pos + prefix.size() > sv.size()) return false;
+    for (std::size_t i = 0; i < prefix.size(); ++i) {
+        if (sv[pos + i] != prefix[i]) return false;
+    }
+    return true;
+}
+
+} // namespace detail
+
+// =============================================================================
+// Constexpr parsing: directed graph
+// =============================================================================
+
+/// Parse a directed graph from a text description (constexpr-safe).
+///
+/// The text must contain a `nodes N` line before any `edge` lines.
+/// Lines starting with `#` are comments.  Blank lines are ignored.
+///
+/// Example:
+/// ```cpp
+/// constexpr auto g = io::parse_directed<cap::small>(
+///     "nodes 3\n"
+///     "edge 0 1\n"
+///     "edge 1 2\n"
+/// );
+/// static_assert(g.node_count() == 3);
+/// static_assert(g.edge_count() == 2);
+/// ```
+template<capacity_policy Cap = cap::medium>
+[[nodiscard]] constexpr auto parse_directed(std::string_view text)
+    -> constexpr_graph<Cap>
+{
+    graph_builder<Cap> b;
+    bool have_nodes = false;
+    std::size_t node_count = 0;
+    std::size_t pos = 0;
+
+    while (pos < text.size()) {
+        pos = detail::skip_hspace(text, pos);
+
+        // Skip \r (Windows line endings).
+        if (pos < text.size() && text[pos] == '\r') {
+            ++pos;
+            continue;
+        }
+
+        // Blank line or comment.
+        if (detail::at_eol(text, pos)) {
+            pos = detail::skip_to_eol(text, pos);
+            continue;
+        }
+
+        // "nodes N"
+        if (detail::starts_with(text, pos, "nodes")) {
+            if (have_nodes) {
+                throw std::runtime_error("parse_directed: duplicate 'nodes' line");
+            }
+            pos += 5;
+            pos = detail::skip_hspace(text, pos);
+            auto [n, next] = detail::parse_uint(text, pos);
+            pos = next;
+            if (n > Cap::max_v) {
+                throw std::runtime_error("parse_directed: node count exceeds capacity");
+            }
+            node_count = n;
+            for (std::size_t i = 0; i < n; ++i) {
+                (void)b.add_node();
+            }
+            have_nodes = true;
+            pos = detail::skip_to_eol(text, pos);
+            continue;
+        }
+
+        // "edge SRC DST [WEIGHT]"
+        if (detail::starts_with(text, pos, "edge")) {
+            if (!have_nodes) {
+                throw std::runtime_error("parse_directed: 'edge' before 'nodes'");
+            }
+            pos += 4;
+            pos = detail::skip_hspace(text, pos);
+            auto [src, p1] = detail::parse_uint(text, pos);
+            pos = detail::skip_hspace(text, p1);
+            auto [dst, p2] = detail::parse_uint(text, pos);
+            pos = p2;
+
+            if (src >= node_count || dst >= node_count) {
+                throw std::runtime_error("parse_directed: node id out of range");
+            }
+            b.add_edge(node_id{static_cast<std::uint16_t>(src)},
+                        node_id{static_cast<std::uint16_t>(dst)});
+
+            pos = detail::skip_to_eol(text, pos);
+            continue;
+        }
+
+        // "symmetric" flag — ignore in directed parse.
+        if (detail::starts_with(text, pos, "symmetric")) {
+            pos = detail::skip_to_eol(text, pos);
+            continue;
+        }
+
+        // Unknown line — error.
+        throw std::runtime_error("parse_directed: unrecognised line");
+    }
+
+    if (!have_nodes) {
+        throw std::runtime_error("parse_directed: missing 'nodes' line");
+    }
+
+    return b.finalise();
+}
+
+// =============================================================================
+// Constexpr parsing: symmetric (undirected) graph
+// =============================================================================
+
+/// Parse a symmetric (undirected) graph from text.
+///
+/// Same format as parse_directed.  Each `edge SRC DST` adds edges in
+/// both directions.
+template<capacity_policy Cap = cap::medium>
+[[nodiscard]] constexpr auto parse_symmetric(std::string_view text)
+    -> symmetric_graph<Cap>
+{
+    symmetric_graph_builder<Cap> b;
+    bool have_nodes = false;
+    std::size_t node_count = 0;
+    std::size_t pos = 0;
+
+    while (pos < text.size()) {
+        pos = detail::skip_hspace(text, pos);
+
+        if (pos < text.size() && text[pos] == '\r') {
+            ++pos;
+            continue;
+        }
+
+        if (detail::at_eol(text, pos)) {
+            pos = detail::skip_to_eol(text, pos);
+            continue;
+        }
+
+        if (detail::starts_with(text, pos, "nodes")) {
+            if (have_nodes) {
+                throw std::runtime_error("parse_symmetric: duplicate 'nodes' line");
+            }
+            pos += 5;
+            pos = detail::skip_hspace(text, pos);
+            auto [n, next] = detail::parse_uint(text, pos);
+            pos = next;
+            if (n > Cap::max_v) {
+                throw std::runtime_error("parse_symmetric: node count exceeds capacity");
+            }
+            node_count = n;
+            for (std::size_t i = 0; i < n; ++i) {
+                (void)b.add_node();
+            }
+            have_nodes = true;
+            pos = detail::skip_to_eol(text, pos);
+            continue;
+        }
+
+        if (detail::starts_with(text, pos, "edge")) {
+            if (!have_nodes) {
+                throw std::runtime_error("parse_symmetric: 'edge' before 'nodes'");
+            }
+            pos += 4;
+            pos = detail::skip_hspace(text, pos);
+            auto [src, p1] = detail::parse_uint(text, pos);
+            pos = detail::skip_hspace(text, p1);
+            auto [dst, p2] = detail::parse_uint(text, pos);
+            pos = p2;
+
+            if (src >= node_count || dst >= node_count) {
+                throw std::runtime_error("parse_symmetric: node id out of range");
+            }
+            b.add_edge(node_id{static_cast<std::uint16_t>(src)},
+                        node_id{static_cast<std::uint16_t>(dst)});
+
+            pos = detail::skip_to_eol(text, pos);
+            continue;
+        }
+
+        // "symmetric" flag — acknowledged but no action needed.
+        if (detail::starts_with(text, pos, "symmetric")) {
+            pos = detail::skip_to_eol(text, pos);
+            continue;
+        }
+
+        throw std::runtime_error("parse_symmetric: unrecognised line");
+    }
+
+    if (!have_nodes) {
+        throw std::runtime_error("parse_symmetric: missing 'nodes' line");
+    }
+
+    return b.finalise();
+}
+
+// =============================================================================
+// Constexpr parsing: weighted directed graph
+// =============================================================================
+
+/// Parse a weighted directed graph.
+///
+/// Each `edge SRC DST WEIGHT` line has an optional third numeric field.
+/// Edges without a weight get 0.0.
+///
+/// Returns a pair of {graph, edge_property_map<double, MaxE>}.
+template<capacity_policy Cap = cap::medium>
+[[nodiscard]] constexpr auto parse_weighted_directed(std::string_view text)
+    -> std::pair<constexpr_graph<Cap>,
+                 edge_property_map<double, Cap::max_e>>
+{
+    // First pass: count edges so we can size the property map.
+    // Actually, build the graph first, then assign weights in order.
+    graph_builder<Cap> b;
+    bool have_nodes = false;
+    std::size_t node_count = 0;
+    std::size_t pos = 0;
+
+    // Temporary edge storage: src, dst, weight triples.
+    // We need to record them because builder canonicalises edge order.
+    struct edge_record {
+        std::uint16_t src{};
+        std::uint16_t dst{};
+        double weight{};
+    };
+    // Use a fixed array — we know max edges.
+    std::array<edge_record, Cap::max_e> edges{};
+    std::size_t edge_count = 0;
+
+    while (pos < text.size()) {
+        pos = detail::skip_hspace(text, pos);
+
+        if (pos < text.size() && text[pos] == '\r') {
+            ++pos;
+            continue;
+        }
+
+        if (detail::at_eol(text, pos)) {
+            pos = detail::skip_to_eol(text, pos);
+            continue;
+        }
+
+        if (detail::starts_with(text, pos, "nodes")) {
+            if (have_nodes) {
+                throw std::runtime_error("parse_weighted_directed: duplicate 'nodes' line");
+            }
+            pos += 5;
+            pos = detail::skip_hspace(text, pos);
+            auto [n, next] = detail::parse_uint(text, pos);
+            pos = next;
+            if (n > Cap::max_v) {
+                throw std::runtime_error("parse_weighted_directed: node count exceeds capacity");
+            }
+            node_count = n;
+            for (std::size_t i = 0; i < n; ++i) {
+                (void)b.add_node();
+            }
+            have_nodes = true;
+            pos = detail::skip_to_eol(text, pos);
+            continue;
+        }
+
+        if (detail::starts_with(text, pos, "edge")) {
+            if (!have_nodes) {
+                throw std::runtime_error("parse_weighted_directed: 'edge' before 'nodes'");
+            }
+            pos += 4;
+            pos = detail::skip_hspace(text, pos);
+            auto [src, p1] = detail::parse_uint(text, pos);
+            pos = detail::skip_hspace(text, p1);
+            auto [dst, p2] = detail::parse_uint(text, pos);
+            pos = p2;
+
+            if (src >= node_count || dst >= node_count) {
+                throw std::runtime_error("parse_weighted_directed: node id out of range");
+            }
+
+            double w = 0.0;
+            auto after_dst = detail::skip_hspace(text, pos);
+            if (!detail::at_eol(text, after_dst)) {
+                auto [wval, p3] = detail::parse_double(text, after_dst);
+                w = wval;
+                pos = p3;
+            }
+
+            b.add_edge(node_id{static_cast<std::uint16_t>(src)},
+                        node_id{static_cast<std::uint16_t>(dst)});
+
+            edges[edge_count] = edge_record{static_cast<std::uint16_t>(src),
+                                             static_cast<std::uint16_t>(dst), w};
+            ++edge_count;
+
+            pos = detail::skip_to_eol(text, pos);
+            continue;
+        }
+
+        if (detail::starts_with(text, pos, "symmetric")) {
+            pos = detail::skip_to_eol(text, pos);
+            continue;
+        }
+
+        throw std::runtime_error("parse_weighted_directed: unrecognised line");
+    }
+
+    if (!have_nodes) {
+        throw std::runtime_error("parse_weighted_directed: missing 'nodes' line");
+    }
+
+    auto g = b.finalise();
+
+    // Build weight map.  The graph's edge order is canonicalised (sorted by
+    // (src, dst)), so we need to match edges by (src, dst) pair.
+    edge_property_map<double, Cap::max_e> weights(g.edge_count(), 0.0);
+
+    // For each edge in the graph's CSR order, find its weight.
+    // The graph iterates edges in canonical order: node 0's neighbors sorted,
+    // then node 1's, etc.
+    std::size_t eidx = 0;
+    for (std::size_t u = 0; u < g.node_count(); ++u) {
+        auto nbrs = g.out_neighbors(node_id{static_cast<std::uint16_t>(u)});
+        for (auto it = nbrs.begin(); it != nbrs.end(); ++it) {
+            auto v = *it;
+            // Find matching edge record.
+            for (std::size_t k = 0; k < edge_count; ++k) {
+                if (edges[k].src == static_cast<std::uint16_t>(u) &&
+                    edges[k].dst == static_cast<std::uint16_t>(to_index(v))) {
+                    weights[eidx] = edges[k].weight;
+                    break;
+                }
+            }
+            ++eidx;
+        }
+    }
+
+    return {g, weights};
+}
+
+// =============================================================================
+// Runtime I/O: stream-based writing
+// =============================================================================
+
+/// Write a graph in the text format (matches parse format for round-trip).
+///
+/// Output for directed graphs:
+///   nodes N
+///   edge 0 1
+///   edge 0 2
+///   ...
+///
+/// Output for symmetric graphs adds a `symmetric` flag line.
+template<typename G>
+void write(std::ostream& os, G const& g) {
+    os << "nodes " << g.node_count() << '\n';
+
+    if constexpr (is_symmetric_graph_v<G>) {
+        os << "symmetric\n";
+    }
+
+    for (std::size_t u = 0; u < g.node_count(); ++u) {
+        auto nbrs = g.out_neighbors(node_id{static_cast<std::uint16_t>(u)});
+        for (auto it = nbrs.begin(); it != nbrs.end(); ++it) {
+            auto v = *it;
+            // For symmetric graphs, only emit each undirected edge once (u <= v).
+            if constexpr (is_symmetric_graph_v<G>) {
+                if (u > to_index(v)) continue;
+            }
+            os << "edge " << u << ' ' << to_index(v) << '\n';
+        }
+    }
+}
+
+/// Write a weighted graph.  WeightFn(graph, edge_index) -> numeric weight.
+template<typename G, typename WeightFn>
+    requires std::invocable<WeightFn, G const&, std::size_t>
+void write(std::ostream& os, G const& g, WeightFn weight_fn) {
+    os << "nodes " << g.node_count() << '\n';
+
+    if constexpr (is_symmetric_graph_v<G>) {
+        os << "symmetric\n";
+    }
+
+    std::size_t eidx = 0;
+    for (std::size_t u = 0; u < g.node_count(); ++u) {
+        auto nbrs = g.out_neighbors(node_id{static_cast<std::uint16_t>(u)});
+        for (auto it = nbrs.begin(); it != nbrs.end(); ++it) {
+            auto v = *it;
+            if constexpr (is_symmetric_graph_v<G>) {
+                if (u > to_index(v)) {
+                    ++eidx;
+                    continue;
+                }
+            }
+            os << "edge " << u << ' ' << to_index(v)
+               << ' ' << weight_fn(g, eidx) << '\n';
+            ++eidx;
+        }
+    }
+}
+
+// =============================================================================
+// Runtime I/O: stream-based reading
+// =============================================================================
+
+/// Read a directed graph from a stream.  Same format as parse_directed.
+template<capacity_policy Cap = cap::medium>
+[[nodiscard]] auto read_directed(std::istream& is)
+    -> constexpr_graph<Cap>
+{
+    graph_builder<Cap> b;
+    bool have_nodes = false;
+    std::size_t node_count = 0;
+    std::string line;
+
+    while (std::getline(is, line)) {
+        std::string_view sv(line);
+        std::size_t pos = detail::skip_hspace(sv, 0);
+
+        if (detail::at_eol(sv, pos)) continue;
+
+        if (detail::starts_with(sv, pos, "nodes")) {
+            pos += 5;
+            pos = detail::skip_hspace(sv, pos);
+            auto [n, next] = detail::parse_uint(sv, pos);
+            node_count = n;
+            for (std::size_t i = 0; i < n; ++i) {
+                (void)b.add_node();
+            }
+            have_nodes = true;
+            continue;
+        }
+
+        if (detail::starts_with(sv, pos, "edge")) {
+            if (!have_nodes) {
+                throw std::runtime_error("read_directed: 'edge' before 'nodes'");
+            }
+            pos += 4;
+            pos = detail::skip_hspace(sv, pos);
+            auto [src, p1] = detail::parse_uint(sv, pos);
+            pos = detail::skip_hspace(sv, p1);
+            auto [dst, p2] = detail::parse_uint(sv, pos);
+
+            if (src >= node_count || dst >= node_count) {
+                throw std::runtime_error("read_directed: node id out of range");
+            }
+            b.add_edge(node_id{static_cast<std::uint16_t>(src)},
+                        node_id{static_cast<std::uint16_t>(dst)});
+            continue;
+        }
+    }
+
+    if (!have_nodes) {
+        throw std::runtime_error("read_directed: missing 'nodes' line");
+    }
+
+    return b.finalise();
+}
+
+/// Read a symmetric (undirected) graph from a stream.
+template<capacity_policy Cap = cap::medium>
+[[nodiscard]] auto read_symmetric(std::istream& is)
+    -> symmetric_graph<Cap>
+{
+    symmetric_graph_builder<Cap> b;
+    bool have_nodes = false;
+    std::size_t node_count = 0;
+    std::string line;
+
+    while (std::getline(is, line)) {
+        std::string_view sv(line);
+        std::size_t pos = detail::skip_hspace(sv, 0);
+
+        if (detail::at_eol(sv, pos)) continue;
+
+        if (detail::starts_with(sv, pos, "nodes")) {
+            pos += 5;
+            pos = detail::skip_hspace(sv, pos);
+            auto [n, next] = detail::parse_uint(sv, pos);
+            node_count = n;
+            for (std::size_t i = 0; i < n; ++i) {
+                (void)b.add_node();
+            }
+            have_nodes = true;
+            continue;
+        }
+
+        if (detail::starts_with(sv, pos, "edge")) {
+            if (!have_nodes) {
+                throw std::runtime_error("read_symmetric: 'edge' before 'nodes'");
+            }
+            pos += 4;
+            pos = detail::skip_hspace(sv, pos);
+            auto [src, p1] = detail::parse_uint(sv, pos);
+            pos = detail::skip_hspace(sv, p1);
+            auto [dst, p2] = detail::parse_uint(sv, pos);
+
+            if (src >= node_count || dst >= node_count) {
+                throw std::runtime_error("read_symmetric: node id out of range");
+            }
+            b.add_edge(node_id{static_cast<std::uint16_t>(src)},
+                        node_id{static_cast<std::uint16_t>(dst)});
+            continue;
+        }
+    }
+
+    if (!have_nodes) {
+        throw std::runtime_error("read_symmetric: missing 'nodes' line");
+    }
+
+    return b.finalise();
+}
+
+// =============================================================================
+// DOT export
+// =============================================================================
+
+/// Write a graph in Graphviz DOT format.
+///
+/// Uses `digraph` for directed graphs, `graph` for symmetric.
+///
+/// Example output:
+/// ```dot
+/// digraph G {
+///   0 -> 1;
+///   0 -> 2;
+/// }
+/// ```
+template<typename G>
+void write_dot(std::ostream& os, G const& g,
+               std::string_view graph_name = "G")
+{
+    constexpr bool sym = is_symmetric_graph_v<G>;
+    constexpr const char* edge_op = sym ? " -- " : " -> ";
+    os << (sym ? "graph " : "digraph ") << graph_name << " {\n";
+
+    for (std::size_t u = 0; u < g.node_count(); ++u) {
+        auto nbrs = g.out_neighbors(node_id{static_cast<std::uint16_t>(u)});
+        if (nbrs.begin() == nbrs.end()) {
+            // Isolated node — emit standalone so it appears in the DOT output.
+            os << "  " << u << ";\n";
+            continue;
+        }
+        for (auto it = nbrs.begin(); it != nbrs.end(); ++it) {
+            auto v = *it;
+            if constexpr (sym) {
+                if (u > to_index(v)) continue;
+            }
+            os << "  " << u << edge_op << to_index(v) << ";\n";
+        }
+    }
+
+    os << "}\n";
+}
+
+/// Write a weighted graph in DOT format with edge labels.
+template<typename G, typename WeightFn>
+    requires std::invocable<WeightFn, G const&, std::size_t>
+void write_dot(std::ostream& os, G const& g, WeightFn weight_fn,
+               std::string_view graph_name = "G")
+{
+    constexpr bool sym = is_symmetric_graph_v<G>;
+    constexpr const char* edge_op = sym ? " -- " : " -> ";
+    os << (sym ? "graph " : "digraph ") << graph_name << " {\n";
+
+    std::size_t eidx = 0;
+    for (std::size_t u = 0; u < g.node_count(); ++u) {
+        auto nbrs = g.out_neighbors(node_id{static_cast<std::uint16_t>(u)});
+        if (nbrs.begin() == nbrs.end()) {
+            os << "  " << u << ";\n";
+            continue;
+        }
+        for (auto it = nbrs.begin(); it != nbrs.end(); ++it) {
+            auto v = *it;
+            if constexpr (sym) {
+                if (u > to_index(v)) {
+                    ++eidx;
+                    continue;
+                }
+            }
+            os << "  " << u << edge_op << to_index(v)
+               << " [label=\"" << weight_fn(g, eidx) << "\"];\n";
+            ++eidx;
+        }
+    }
+
+    os << "}\n";
+}
+
+} // namespace ctdp::graph::io
+
+#endif // CTDP_GRAPH_IO_H

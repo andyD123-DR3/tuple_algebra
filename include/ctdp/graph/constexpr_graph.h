@@ -7,7 +7,7 @@
 // deterministic iteration.
 //
 // MaxDegree is NOT a graph template parameter. The graph stores arbitrary-degree
-// nodes within the MaxE edge budget. Bounded adjacency extraction is an
+// nodes within the Cap::max_e edge budget. Bounded adjacency extraction is an
 // algorithm-level choice via out_neighbors_bounded<K>().
 //
 // KEY INVARIANT: constexpr_graph is immutable after construction. Transforms
@@ -23,6 +23,7 @@
 #ifndef CTDP_GRAPH_CONSTEXPR_GRAPH_H
 #define CTDP_GRAPH_CONSTEXPR_GRAPH_H
 
+#include "capacity_types.h"
 #include "graph_concepts.h"
 #include <ctdp/core/constexpr_vector.h>
 
@@ -34,14 +35,14 @@
 namespace ctdp::graph {
 
 // Forward declaration for friend access.
-template<std::size_t, std::size_t>
+template<typename>
 class graph_builder;
 
 /// Fixed-capacity, immutable, CSR-format directed graph.
 ///
 /// Template parameters:
-/// - MaxV: Maximum number of vertices (capacity, not actual count)
-/// - MaxE: Maximum number of directed edges (capacity, not actual count)
+/// - Cap::max_v: Maximum number of vertices (capacity, not actual count)
+/// - Cap::max_e: Maximum number of directed edges (capacity, not actual count)
 ///
 /// The graph is constructed via graph_builder::finalise() which produces
 /// canonicalised adjacency (sorted by (u, v), deduplicated, no self-edges).
@@ -49,7 +50,7 @@ class graph_builder;
 /// Example:
 /// ```cpp
 /// constexpr auto g = []() {
-///     graph_builder<8, 16> b;
+///     graph_builder<cap_from<8, 16>> b;
 ///     auto n0 = b.add_node();
 ///     auto n1 = b.add_node();
 ///     auto n2 = b.add_node();
@@ -61,15 +62,15 @@ class graph_builder;
 /// static_assert(g.node_count() == 3);
 /// static_assert(g.edge_count() == 3);
 /// ```
-template<std::size_t MaxV, std::size_t MaxE>
+template<typename Cap = cap::medium>
 class constexpr_graph {
-    static_assert(MaxV <= 65535,
-        "constexpr_graph: MaxV exceeds uint16_t range (65535)");
+    static_assert(Cap::max_v <= 65535,
+        "constexpr_graph: Cap::max_v exceeds uint16_t range (65535)");
 public:
     using size_type = std::uint16_t;
 
-    static constexpr std::size_t max_vertices = MaxV;
-    static constexpr std::size_t max_edges = MaxE;
+    static constexpr std::size_t max_vertices = Cap::max_v;
+    static constexpr std::size_t max_edges = Cap::max_e;
 
     constexpr constexpr_graph() = default;
 
@@ -87,14 +88,14 @@ public:
         return E_;
     }
 
-    /// Maximum number of vertices this graph can hold (template parameter MaxV).
+    /// Maximum number of vertices this graph can hold (template parameter Cap::max_v).
     [[nodiscard]] constexpr std::size_t node_capacity() const noexcept {
-        return MaxV;
+        return Cap::max_v;
     }
 
-    /// Maximum number of directed edges this graph can hold (template parameter MaxE).
+    /// Maximum number of directed edges this graph can hold (template parameter Cap::max_e).
     [[nodiscard]] constexpr std::size_t edge_capacity() const noexcept {
-        return MaxE;
+        return Cap::max_e;
     }
 
     /// True if the graph has no vertices.
@@ -269,23 +270,23 @@ private:
     // CSR format: offsets_[v] .. offsets_[v+1] gives the range of
     // neighbors for node v in the neighbors_ array.
     // offsets_ has V_+1 valid entries; offsets_[V_] == E_.
-    std::array<size_type, MaxV + 1> offsets_{};
-    std::array<node_id, MaxE> neighbors_{};
+    std::array<size_type, Cap::max_v + 1> offsets_{};
+    std::array<node_id, Cap::max_e> neighbors_{};
 
     // graph_builder needs private access to populate CSR arrays.
-    template<std::size_t, std::size_t>
+    template<typename>
     friend class graph_builder;
 
     // graph_equal needs access to compare internal arrays.
-    template<std::size_t MV, std::size_t ME>
+    template<typename C>
     friend constexpr bool graph_equal(
-        constexpr_graph<MV, ME> const& a,
-        constexpr_graph<MV, ME> const& b) noexcept;
+        constexpr_graph<C> const& a,
+        constexpr_graph<C> const& b) noexcept;
 };
 
 // Verify concept satisfaction.
-static_assert(graph_queryable<constexpr_graph<8, 16>>);
-static_assert(sized_graph<constexpr_graph<8, 16>>);
+static_assert(graph_queryable<constexpr_graph<cap_from<8, 16>>>);
+static_assert(sized_graph<constexpr_graph<cap_from<8, 16>>>);
 
 } // namespace ctdp::graph
 

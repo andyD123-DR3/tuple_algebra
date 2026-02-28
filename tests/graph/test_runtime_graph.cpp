@@ -22,7 +22,7 @@ using namespace ctdp::graph;
 // Trait checks (compile-time)
 // =========================================================================
 
-using RG = runtime_graph<8, 16>;
+using RG = runtime_graph<cap_from<8, 16>>;
 using RG_Traits = graph_traits<RG>;
 
 static_assert(!RG_Traits::is_constexpr_storage);
@@ -39,7 +39,7 @@ static_assert(sized_graph<RG>);
 // =========================================================================
 
 auto make_rt_diamond() {
-    runtime_graph_builder<8, 16> b;
+    runtime_graph_builder<cap_from<8, 16>> b;
     auto n0 = b.add_node(); auto n1 = b.add_node();
     auto n2 = b.add_node(); auto n3 = b.add_node();
     b.add_edge(n0, n1); b.add_edge(n0, n2);
@@ -48,7 +48,7 @@ auto make_rt_diamond() {
 }
 
 auto make_rt_chain4() {
-    runtime_graph_builder<8, 16> b;
+    runtime_graph_builder<cap_from<8, 16>> b;
     auto n0 = b.add_node(); auto n1 = b.add_node();
     auto n2 = b.add_node(); auto n3 = b.add_node();
     b.add_edge(n0, n1); b.add_edge(n1, n2); b.add_edge(n2, n3);
@@ -56,14 +56,14 @@ auto make_rt_chain4() {
 }
 
 auto make_rt_cycle3() {
-    runtime_graph_builder<8, 16> b;
+    runtime_graph_builder<cap_from<8, 16>> b;
     auto n0 = b.add_node(); auto n1 = b.add_node(); auto n2 = b.add_node();
     b.add_edge(n0, n1); b.add_edge(n1, n2); b.add_edge(n2, n0);
     return b.finalise();
 }
 
 auto make_rt_disconnected() {
-    runtime_graph_builder<8, 16> b;
+    runtime_graph_builder<cap_from<8, 16>> b;
     auto n0 = b.add_node(); auto n1 = b.add_node();
     auto n2 = b.add_node(); auto n3 = b.add_node();
     b.add_edge(n0, n1); b.add_edge(n2, n3);
@@ -71,7 +71,7 @@ auto make_rt_disconnected() {
 }
 
 auto make_rt_dirty() {
-    runtime_graph_builder<8, 32> b;
+    runtime_graph_builder<cap_from<8, 32>> b;
     auto n0 = b.add_node(); auto n1 = b.add_node(); auto n2 = b.add_node();
     b.add_edge(n0, n1); b.add_edge(n0, n1); b.add_edge(n0, n1);  // dupes
     b.add_edge(n0, n0); b.add_edge(n1, n1);  // self-edges
@@ -81,12 +81,12 @@ auto make_rt_dirty() {
 }
 
 auto make_rt_empty() {
-    runtime_graph_builder<8, 16> b;
+    runtime_graph_builder<cap_from<8, 16>> b;
     return b.finalise();
 }
 
 auto make_rt_singleton() {
-    runtime_graph_builder<8, 16> b;
+    runtime_graph_builder<cap_from<8, 16>> b;
     (void)b.add_node();
     return b.finalise();
 }
@@ -280,7 +280,7 @@ void test_dijkstra() {
 void test_stoer_wagner() {
     // Triangle with unit weights: min cut = 2
     {
-        symmetric_runtime_graph_builder<4, 8> b;
+        symmetric_runtime_graph_builder<cap_from<4, 8>> b;
         auto n0 = b.add_node(); auto n1 = b.add_node(); auto n2 = b.add_node();
         b.add_edge(n0, n1); b.add_edge(n1, n2); b.add_edge(n0, n2);
         auto g = b.finalise();
@@ -295,7 +295,7 @@ void test_stoer_wagner() {
 
     // Bar graph: 0-1(3), 1-2(1), 2-3(3), min cut = 1
     {
-        symmetric_runtime_graph_builder<4, 8> b;
+        symmetric_runtime_graph_builder<cap_from<4, 8>> b;
         auto n0 = b.add_node(); auto n1 = b.add_node();
         auto n2 = b.add_node(); auto n3 = b.add_node();
         b.add_edge(n0, n1); b.add_edge(n1, n2); b.add_edge(n2, n3);
@@ -336,7 +336,7 @@ void test_constexpr_runtime_parity() {
     // Build the same diamond graph both ways.
     // constexpr:
     constexpr auto cg = []() {
-        graph_builder<8, 16> b;
+        graph_builder<cap_from<8, 16>> b;
         auto n0 = b.add_node(); auto n1 = b.add_node();
         auto n2 = b.add_node(); auto n3 = b.add_node();
         b.add_edge(n0, n1); b.add_edge(n0, n2);

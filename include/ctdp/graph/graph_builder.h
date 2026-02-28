@@ -18,6 +18,7 @@
 #define CTDP_GRAPH_BUILDER_H
 
 #include "capacity_guard.h"
+#include "capacity_types.h"
 #include "constexpr_graph.h"
 #include <ctdp/core/constexpr_sort.h>
 #include <ctdp/core/constexpr_vector.h>
@@ -33,7 +34,7 @@ namespace ctdp::graph {
 /// Usage:
 /// ```cpp
 /// constexpr auto g = []() {
-///     graph_builder<4, 8> b;
+///     graph_builder<cap_from<4, 8>> b;
 ///     auto a = b.add_node();
 ///     auto c = b.add_node();
 ///     b.add_edge(a, c);
@@ -42,13 +43,13 @@ namespace ctdp::graph {
 /// ```
 ///
 /// Template parameters:
-/// - MaxV: Maximum vertex capacity
-/// - MaxE: Maximum edge capacity (before dedup; final graph may have fewer)
-template<std::size_t MaxV, std::size_t MaxE>
+/// - Cap::max_v: Maximum vertex capacity
+/// - Cap::max_e: Maximum edge capacity (before dedup; final graph may have fewer)
+template<typename Cap = cap::medium>
 class graph_builder {
-    static_assert(MaxV <= 65535,
-        "graph_builder: MaxV exceeds uint16_t range (65535)");
-    static_assert(MaxV > 0, "graph_builder: MaxV must be positive");
+    static_assert(Cap::max_v <= 65535,
+        "graph_builder: Cap::max_v exceeds uint16_t range (65535)");
+    static_assert(Cap::max_v > 0, "graph_builder: Cap::max_v must be positive");
 public:
     /// Edge as a pair of raw uint16_t values (source, target).
     struct edge_pair {
@@ -71,11 +72,11 @@ public:
     /// Add a new node. Returns its node_id.
     /// Nodes are numbered sequentially from 0.
     ///
-    /// Precondition: V_ < MaxV (capacity not exhausted).
+    /// Precondition: V_ < Cap::max_v (capacity not exhausted).
     /// Precondition: V_ < 65536 (uint16_t range for node_id).
     [[nodiscard]] constexpr node_id add_node() {
-        require_capacity(V_, MaxV - 1,
-            "graph_builder::add_node: node count would exceed MaxV");
+        require_capacity(V_, Cap::max_v - 1,
+            "graph_builder::add_node: node count would exceed Cap::max_v");
         require_capacity(V_, std::size_t{65535},
             "graph_builder::add_node: node count would exceed uint16_t range");
         auto const id = static_cast<std::uint16_t>(V_);
@@ -98,11 +99,11 @@ public:
 
     /// Add multiple nodes at once. Returns the first node_id.
     ///
-    /// Precondition: V_ + count <= MaxV.
+    /// Precondition: V_ + count <= Cap::max_v.
     /// Precondition: V_ + count <= 65536.
     [[nodiscard]] constexpr node_id add_nodes(std::size_t count) {
-        require_capacity(V_ + count - 1, MaxV - 1,
-            "graph_builder::add_nodes: would exceed MaxV");
+        require_capacity(V_ + count - 1, Cap::max_v - 1,
+            "graph_builder::add_nodes: would exceed Cap::max_v");
         require_capacity(V_ + count, std::size_t{65536},
             "graph_builder::add_nodes: would exceed uint16_t range");
         auto const first = static_cast<std::uint16_t>(V_);
@@ -136,9 +137,9 @@ public:
     /// 3. Remove duplicate (src, dst) pairs
     /// 4. Build CSR offsets and neighbor array
     ///
-    /// Returns: constexpr_graph<MaxV, MaxE> with actual V_ and E_ set.
-    [[nodiscard]] constexpr constexpr_graph<MaxV, MaxE> finalise() const {
-        constexpr_graph<MaxV, MaxE> g;
+    /// Returns: constexpr_graph<Cap> with actual V_ and E_ set.
+    [[nodiscard]] constexpr constexpr_graph<Cap> finalise() const {
+        constexpr_graph<Cap> g;
         g.V_ = V_;
 
         if (edges_.empty()) {
@@ -158,7 +159,7 @@ public:
             });
 
         // Step 2+3: Filter out self-edges and duplicates into a clean list.
-        ctdp::constexpr_vector<edge_pair, MaxE> clean;
+        ctdp::constexpr_vector<edge_pair, Cap::max_e> clean;
         for (std::size_t i = 0; i < sorted.size(); ++i) {
             auto const& e = sorted[i];
 
@@ -192,7 +193,7 @@ public:
 
         // Prefix sum to get offsets.
         for (std::size_t i = 1; i <= V_; ++i) {
-            g.offsets_[i] = static_cast<typename constexpr_graph<MaxV, MaxE>::size_type>(
+            g.offsets_[i] = static_cast<typename constexpr_graph<Cap>::size_type>(
                 static_cast<std::size_t>(g.offsets_[i]) +
                 static_cast<std::size_t>(g.offsets_[i - 1]));
         }
@@ -207,7 +208,7 @@ public:
 
 private:
     std::size_t V_ = 0;
-    ctdp::constexpr_vector<edge_pair, MaxE> edges_{};
+    ctdp::constexpr_vector<edge_pair, Cap::max_e> edges_{};
 };
 
 } // namespace ctdp::graph

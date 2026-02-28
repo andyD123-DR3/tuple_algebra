@@ -2,29 +2,30 @@
 // Part of the compile-time DP library (C++20)
 //
 // DESIGN RATIONALE:
-// constexpr_graph<MaxV, MaxE> requires all construction inside a consteval
-// context.  runtime_graph<MaxV, MaxE> shares the same compile-time capacity
-// bounds (so result types and working arrays use the same MaxV) but is
-// constructed at runtime from dynamic data sources: files, network, user
-// input, runtime-computed topologies.
+// constexpr_graph<Cap> requires all construction inside a consteval
+// context.  runtime_graph<Cap> shares the same compile-time capacity
+// bounds (so result types and working arrays use the same Cap::max_v)
+// but is constructed at runtime from dynamic data sources: files,
+// network, user input, runtime-computed topologies.
 //
 // Internal storage uses std::vector for CSR offsets and neighbors.
 // The graph satisfies graph_queryable + sized_graph, so ALL existing
 // algorithms work unchanged.
 //
-// MaxV/MaxE are compile-time upper bounds.  Actual node/edge counts
-// are set at construction and can be smaller.  This means the same
-// algorithm instantiation handles both constexpr and runtime graphs
-// of the same capacity class.
+// Cap::max_v / Cap::max_e are compile-time upper bounds.  Actual
+// node/edge counts are set at construction and can be smaller.
+// This means the same algorithm instantiation handles both constexpr
+// and runtime graphs of the same capacity class.
 //
 // CONSTRUCTION:
-//   runtime_graph_builder<MaxV, MaxE> builds the graph incrementally,
+//   runtime_graph_builder<Cap> builds the graph incrementally,
 //   then finalise() produces an immutable runtime_graph.
 //   Canonicalisation rules match graph_builder: sort, dedup, no self-edges.
 
 #ifndef CTDP_GRAPH_RUNTIME_GRAPH_H
 #define CTDP_GRAPH_RUNTIME_GRAPH_H
 
+#include "capacity_types.h"
 #include "graph_concepts.h"
 #include "graph_traits.h"
 
@@ -37,37 +38,39 @@
 namespace ctdp::graph {
 
 // Forward declaration for friend access.
-template<std::size_t, std::size_t>
+template<typename>
 class runtime_graph_builder;
 
 // =============================================================================
-// runtime_graph<MaxV, MaxE>
+// runtime_graph<Cap>
 // =============================================================================
 
 /// Runtime-constructed, immutable, CSR-format directed graph.
 ///
-/// Template parameters:
-/// - MaxV: Compile-time upper bound on vertex count
-/// - MaxE: Compile-time upper bound on directed edge count
+/// Template parameter:
+/// - Cap: a capacity_policy providing max_v and max_e as compile-time bounds.
 ///
 /// These bounds allow algorithm result types (which use std::array<T, MaxV>)
 /// to compile.  The actual graph can be smaller.
 ///
-/// Constructed via runtime_graph_builder<MaxV, MaxE>::finalise().
+/// Constructed via runtime_graph_builder<Cap>::finalise().
 ///
 /// Example:
 /// ```cpp
-/// runtime_graph_builder<64, 256> b;
+/// runtime_graph_builder<cap::medium> b;
 /// b.add_node(); b.add_node(); b.add_node();
 /// b.add_edge(node_id{0}, node_id{1});
 /// b.add_edge(node_id{1}, node_id{2});
 /// auto g = b.finalise();
 /// auto topo = topological_sort(g);
 /// ```
-template<std::size_t MaxV, std::size_t MaxE>
+template<typename Cap = cap::medium>
 class runtime_graph {
+    static constexpr std::size_t MaxV = Cap::max_v;
+    static constexpr std::size_t MaxE = Cap::max_e;
+
     static_assert(MaxV <= 65535,
-        "runtime_graph: MaxV exceeds uint16_t range (65535)");
+        "runtime_graph: Cap::max_v exceeds uint16_t range (65535)");
 public:
     using size_type = std::uint16_t;
 
@@ -80,25 +83,11 @@ public:
     // Size queries
     // =========================================================================
 
-    [[nodiscard]] std::size_t node_count() const noexcept {
-        return V_;
-    }
-
-    [[nodiscard]] std::size_t edge_count() const noexcept {
-        return E_;
-    }
-
-    [[nodiscard]] std::size_t node_capacity() const noexcept {
-        return MaxV;
-    }
-
-    [[nodiscard]] std::size_t edge_capacity() const noexcept {
-        return MaxE;
-    }
-
-    [[nodiscard]] bool empty() const noexcept {
-        return V_ == 0;
-    }
+    [[nodiscard]] std::size_t node_count() const noexcept { return V_; }
+    [[nodiscard]] std::size_t edge_count() const noexcept { return E_; }
+    [[nodiscard]] std::size_t node_capacity() const noexcept { return MaxV; }
+    [[nodiscard]] std::size_t edge_capacity() const noexcept { return MaxE; }
+    [[nodiscard]] bool empty() const noexcept { return V_ == 0; }
 
     // =========================================================================
     // Adjacency access
@@ -151,31 +140,31 @@ private:
     std::vector<size_type> offsets_;
     std::vector<node_id> neighbors_;
 
-    template<std::size_t, std::size_t>
+    template<typename>
     friend class runtime_graph_builder;
 };
 
 // Verify concept satisfaction.
-static_assert(graph_queryable<runtime_graph<8, 16>>);
-static_assert(sized_graph<runtime_graph<8, 16>>);
+static_assert(graph_queryable<runtime_graph<cap_from<8, 16>>>);
+static_assert(sized_graph<runtime_graph<cap_from<8, 16>>>);
 
 // =============================================================================
 // graph_traits specialisation for runtime_graph
 // =============================================================================
 
-template<std::size_t MaxV, std::size_t MaxE>
-struct graph_traits<runtime_graph<MaxV, MaxE>> {
+template<typename Cap>
+struct graph_traits<runtime_graph<Cap>> {
     static constexpr bool is_constexpr_storage = false;
-    static constexpr std::size_t max_nodes = MaxV;
-    static constexpr std::size_t max_edges = MaxE;
+    static constexpr std::size_t max_nodes = Cap::max_v;
+    static constexpr std::size_t max_edges = Cap::max_e;
 
     using node_index_type = std::uint16_t;
 
     template<typename T>
-    using node_array = std::array<T, MaxV>;
+    using node_array = std::array<T, Cap::max_v>;
 
     template<typename T>
-    using edge_array = std::array<T, MaxE>;
+    using edge_array = std::array<T, Cap::max_e>;
 
     template<typename T>
     static node_array<T> make_node_array(std::size_t /*cap*/) {
@@ -202,6 +191,11 @@ struct graph_traits<runtime_graph<MaxV, MaxE>> {
     }
 };
 
+/// Const-qualified: strips const and delegates.
+template<typename Cap>
+struct graph_traits<runtime_graph<Cap> const>
+    : graph_traits<runtime_graph<Cap>> {};
+
 // =============================================================================
 // runtime_graph_builder
 // =============================================================================
@@ -214,8 +208,10 @@ struct graph_traits<runtime_graph<MaxV, MaxE>> {
 /// 3. Self-edges removed
 ///
 /// Uses std::vector internally — not constexpr.
-template<std::size_t MaxV, std::size_t MaxE>
+template<typename Cap = cap::medium>
 class runtime_graph_builder {
+    static constexpr std::size_t MaxV = Cap::max_v;
+    static constexpr std::size_t MaxE = Cap::max_e;
 public:
     struct edge_pair {
         std::uint16_t src;
@@ -258,8 +254,8 @@ public:
     [[nodiscard]] std::size_t edge_count() const noexcept { return edges_.size(); }
 
     /// Build the immutable runtime_graph.
-    [[nodiscard]] runtime_graph<MaxV, MaxE> finalise() const {
-        runtime_graph<MaxV, MaxE> g;
+    [[nodiscard]] runtime_graph<Cap> finalise() const {
+        runtime_graph<Cap> g;
         g.V_ = V_;
 
         if (edges_.empty()) {
@@ -292,7 +288,7 @@ public:
             g.offsets_[e.src + 1]++;
         }
         for (std::size_t i = 1; i <= V_; ++i) {
-            g.offsets_[i] = static_cast<typename runtime_graph<MaxV, MaxE>::size_type>(
+            g.offsets_[i] = static_cast<typename runtime_graph<Cap>::size_type>(
                 g.offsets_[i] + g.offsets_[i - 1]);
         }
 
@@ -321,7 +317,7 @@ private:
 /// For algorithms requiring symmetric_graph_queryable, use
 /// symmetric_graph_builder for constexpr graphs.  This builder is for
 /// runtime usage where the symmetry guarantee is documentation-level.
-template<std::size_t MaxV, std::size_t MaxE>
+template<typename Cap = cap::medium>
 class symmetric_runtime_graph_builder {
 public:
     [[nodiscard]] node_id add_node() { return inner_.add_node(); }
@@ -336,7 +332,7 @@ public:
     [[nodiscard]] auto finalise() const { return inner_.finalise(); }
 
 private:
-    runtime_graph_builder<MaxV, 2 * MaxE> inner_;
+    runtime_graph_builder<cap_from<Cap::max_v, 2 * Cap::max_e>> inner_;
 };
 
 } // namespace ctdp::graph

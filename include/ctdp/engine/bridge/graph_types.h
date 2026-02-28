@@ -48,21 +48,21 @@ inline constexpr std::size_t engine_max_e = 256;
 // =============================================================================
 
 /// Directed DAG for scheduling / dependency analysis.
-using engine_graph = ctdp::graph::constexpr_graph<engine_max_v, engine_max_e>;
+using engine_graph = ctdp::graph::constexpr_graph<ctdp::graph::cap_from<engine_max_v, engine_max_e>>;
 
 /// Undirected graph for conflict analysis (coloring, min-cut).
-using engine_sym_graph = ctdp::graph::symmetric_graph<engine_max_v, engine_max_e>;
+using engine_sym_graph = ctdp::graph::symmetric_graph<ctdp::graph::cap_from<engine_max_v, engine_max_e>>;
 
 /// Runtime-constructed directed graph.
-using engine_rt_graph = ctdp::graph::runtime_graph<engine_max_v, engine_max_e>;
+using engine_rt_graph = ctdp::graph::runtime_graph<ctdp::graph::cap_from<engine_max_v, engine_max_e>>;
 
 // =============================================================================
 // Graph builder aliases
 // =============================================================================
 
-using engine_graph_builder = ctdp::graph::graph_builder<engine_max_v, engine_max_e>;
-using engine_sym_builder = ctdp::graph::symmetric_graph_builder<engine_max_v, engine_max_e>;
-using engine_rt_builder = ctdp::graph::runtime_graph_builder<engine_max_v, engine_max_e>;
+using engine_graph_builder = ctdp::graph::graph_builder<ctdp::graph::cap_from<engine_max_v, engine_max_e>>;
+using engine_sym_builder = ctdp::graph::symmetric_graph_builder<ctdp::graph::cap_from<engine_max_v, engine_max_e>>;
+using engine_rt_builder = ctdp::graph::runtime_graph_builder<ctdp::graph::cap_from<engine_max_v, engine_max_e>>;
 
 // =============================================================================
 // Result type aliases

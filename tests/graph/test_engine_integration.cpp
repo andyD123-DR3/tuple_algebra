@@ -20,9 +20,9 @@ using namespace ctdp::graph;
 // Compile-time checks on engine type aliases
 // =========================================================================
 
-static_assert(std::is_same_v<engine_graph, constexpr_graph<64, 256>>);
-static_assert(std::is_same_v<engine_sym_graph, symmetric_graph<64, 256>>);
-static_assert(std::is_same_v<engine_rt_graph, runtime_graph<64, 256>>);
+static_assert(std::is_same_v<engine_graph, constexpr_graph<cap_from<64, 256>>>);
+static_assert(std::is_same_v<engine_sym_graph, symmetric_graph<cap_from<64, 256>>>);
+static_assert(std::is_same_v<engine_rt_graph, runtime_graph<cap_from<64, 256>>>);
 
 static_assert(graph_queryable<engine_graph>);
 static_assert(sized_graph<engine_graph>);

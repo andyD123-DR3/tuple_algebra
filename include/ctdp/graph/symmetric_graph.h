@@ -6,10 +6,10 @@
 // optimisation problems operate on inherently undirected structures:
 // conflict graphs (coloring), interference graphs, compatibility graphs.
 //
-// symmetric_graph<MaxV, MaxE> wraps constexpr_graph<MaxV, 2*MaxE>.
+// symmetric_graph<Cap> wraps constexpr_graph<Cap::max_v, 2*Cap::max_e>.
 // The builder enforces symmetry: add_edge(u, v) inserts BOTH directions.
-// MaxE is the number of UNDIRECTED edges (logical edges).  The internal
-// CSR stores 2*MaxE directed edges.
+// Cap::max_e is the number of UNDIRECTED edges (logical edges).  The internal
+// CSR stores 2*Cap::max_e directed edges.
 //
 // The type satisfies graph_queryable, so all existing algorithms work.
 // out_neighbors(u) returns all adjacent nodes (both directions), which
@@ -24,6 +24,7 @@
 #define CTDP_GRAPH_SYMMETRIC_GRAPH_H
 
 #include "constexpr_graph.h"
+#include "capacity_types.h"
 #include "graph_builder.h"
 #include "graph_concepts.h"
 
@@ -40,10 +41,10 @@ namespace ctdp::graph {
 /// Fixed-capacity, immutable, undirected graph.
 ///
 /// Template parameters:
-/// - MaxV: Maximum number of vertices
-/// - MaxE: Maximum number of UNDIRECTED edges (logical edges)
+/// - Cap::max_v: Maximum number of vertices
+/// - Cap::max_e: Maximum number of UNDIRECTED edges (logical edges)
 ///
-/// Internally stores 2×MaxE directed edges in a constexpr_graph.
+/// Internally stores 2×Cap::max_e directed edges in a constexpr_graph.
 /// out_neighbors(u) returns ALL adjacent nodes — there is no distinction
 /// between in-neighbours and out-neighbours.
 ///
@@ -52,7 +53,7 @@ namespace ctdp::graph {
 /// Example:
 /// ```cpp
 /// constexpr auto g = []() {
-///     symmetric_graph_builder<4, 8> b;
+///     symmetric_graph_builder<cap_from<4, 8>> b;
 ///     auto n0 = b.add_node();
 ///     auto n1 = b.add_node();
 ///     auto n2 = b.add_node();
@@ -63,16 +64,16 @@ namespace ctdp::graph {
 /// static_assert(g.node_count() == 3);
 /// static_assert(g.undirected_edge_count() == 2);
 /// ```
-template<std::size_t MaxV, std::size_t MaxE>
+template<typename Cap = cap::medium>
 class symmetric_graph {
-    static_assert(MaxV <= 65535,
-        "symmetric_graph: MaxV exceeds uint16_t range (65535)");
+    static_assert(Cap::max_v <= 65535,
+        "symmetric_graph: Cap::max_v exceeds uint16_t range (65535)");
 public:
-    static constexpr std::size_t max_vertices = MaxV;
-    static constexpr std::size_t max_undirected_edges = MaxE;
-    static constexpr std::size_t max_directed_edges = 2 * MaxE;
+    static constexpr std::size_t max_vertices = Cap::max_v;
+    static constexpr std::size_t max_undirected_edges = Cap::max_e;
+    static constexpr std::size_t max_directed_edges = 2 * Cap::max_e;
 
-    using inner_graph_type = constexpr_graph<MaxV, 2 * MaxE>;
+    using inner_graph_type = constexpr_graph<cap_from<Cap::max_v, 2 * Cap::max_e>>;
 
     constexpr symmetric_graph() = default;
 
@@ -96,12 +97,12 @@ public:
 
     /// Maximum number of vertices this graph can hold.
     [[nodiscard]] constexpr std::size_t node_capacity() const noexcept {
-        return MaxV;
+        return Cap::max_v;
     }
 
     /// Maximum number of directed edges this graph can hold (= 2 × max undirected).
     [[nodiscard]] constexpr std::size_t edge_capacity() const noexcept {
-        return 2 * MaxE;
+        return 2 * Cap::max_e;
     }
 
     [[nodiscard]] constexpr bool empty() const noexcept {
@@ -212,13 +213,13 @@ public:
 private:
     inner_graph_type inner_{};
 
-    template<std::size_t, std::size_t>
+    template<typename>
     friend class symmetric_graph_builder;
 };
 
 // Verify concept satisfaction.
-static_assert(graph_queryable<symmetric_graph<8, 16>>);
-static_assert(sized_graph<symmetric_graph<8, 16>>);
+static_assert(graph_queryable<symmetric_graph<cap_from<8, 16>>>);
+static_assert(sized_graph<symmetric_graph<cap_from<8, 16>>>);
 
 // =============================================================================
 // symmetric_graph_builder: auto-symmetrising construction
@@ -230,18 +231,18 @@ static_assert(sized_graph<symmetric_graph<8, 16>>);
 /// graph_builder.  Self-edges are silently ignored (consistent with
 /// graph_builder::finalise() dedup).
 ///
-/// MaxE is the number of UNDIRECTED edges.  Internally the builder
-/// allocates capacity for 2×MaxE directed edges.
+/// Cap::max_e is the number of UNDIRECTED edges.  Internally the builder
+/// allocates capacity for 2×Cap::max_e directed edges.
 ///
 /// Example:
 /// ```cpp
-/// symmetric_graph_builder<4, 8> b;
+/// symmetric_graph_builder<cap_from<4, 8>> b;
 /// auto a = b.add_node();
 /// auto c = b.add_node();
 /// b.add_edge(a, c);          // adds a→c and c→a
-/// auto g = b.finalise();     // symmetric_graph<4, 8>
+/// auto g = b.finalise();     // symmetric_graph<cap_from<4, 8>>
 /// ```
-template<std::size_t MaxV, std::size_t MaxE>
+template<typename Cap = cap::medium>
 class symmetric_graph_builder {
 public:
     [[nodiscard]] constexpr node_id add_node() {
@@ -273,14 +274,14 @@ public:
     }
 
     /// Build the immutable symmetric_graph.
-    [[nodiscard]] constexpr symmetric_graph<MaxV, MaxE> finalise() const {
-        symmetric_graph<MaxV, MaxE> g;
+    [[nodiscard]] constexpr symmetric_graph<Cap> finalise() const {
+        symmetric_graph<Cap> g;
         g.inner_ = inner_.finalise();
         return g;
     }
 
 private:
-    graph_builder<MaxV, 2 * MaxE> inner_{};
+    graph_builder<cap_from<Cap::max_v, 2 * Cap::max_e>> inner_{};
 };
 
 // =============================================================================
@@ -302,8 +303,8 @@ concept symmetric_graph_queryable =
         { g.undirected_edge_count() } -> std::convertible_to<std::size_t>;
     };
 
-static_assert(symmetric_graph_queryable<symmetric_graph<8, 16>>);
-static_assert(!symmetric_graph_queryable<constexpr_graph<8, 16>>);
+static_assert(symmetric_graph_queryable<symmetric_graph<cap_from<8, 16>>>);
+static_assert(!symmetric_graph_queryable<constexpr_graph<cap_from<8, 16>>>);
 
 } // namespace ctdp::graph
 
