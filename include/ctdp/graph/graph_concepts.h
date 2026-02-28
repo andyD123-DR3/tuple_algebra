@@ -47,6 +47,42 @@ struct node_id {
 /// Sentinel value for invalid/unassigned node references.
 inline constexpr node_id invalid_node{std::uint16_t{0xFFFF}};
 
+/// Opaque edge identifier (CSR position in the targets array).
+///
+/// Valid only for the specific graph instance that produced it.
+/// Edge IDs are NOT stable across graph construction or transformation.
+/// Persisting edge IDs beyond the lifetime of the graph instance is
+/// undefined behaviour.  Use topology_token to detect stale IDs.
+struct edge_id {
+    std::size_t value{};
+
+    friend constexpr bool operator==(edge_id, edge_id) = default;
+    friend constexpr auto operator<=>(edge_id, edge_id) = default;
+};
+
+/// Convert edge_id to index for array access.
+[[nodiscard]] constexpr std::size_t to_index(edge_id e) noexcept {
+    return e.value;
+}
+
+/// Sentinel value for invalid/unassigned edge references.
+inline constexpr edge_id invalid_edge{~std::size_t{0}};
+
+/// Topology token — lightweight fingerprint of graph structure.
+///
+/// Deterministically derived from the CSR content (node count, edge count,
+/// and a hash of the adjacency).  Two graphs with identical topology
+/// produce identical tokens.  A graph rebuild, coarsening, or any
+/// structural transform produces a different token.
+///
+/// Used by edge_property_map and weighted_view to detect stale or
+/// mismatched edge annotations at constexpr evaluation time.
+struct topology_token {
+    std::uint64_t value{};
+
+    friend constexpr bool operator==(topology_token, topology_token) = default;
+};
+
 // =============================================================================
 // Graph Concept
 // =============================================================================
@@ -70,13 +106,23 @@ concept graph_queryable =
         { g.out_neighbors(u) };
     };
 
-/// A sized_graph additionally provides edge_count().
+/// A sized_graph additionally provides edge_count() and capacity queries.
 /// constexpr_graph satisfies this; implicit_graph typically does not.
+///
+/// Capacity queries (node_capacity, edge_capacity) report the maximum
+/// number of nodes/edges the graph's fixed-size storage can hold.
+/// For constexpr graphs these are the MaxV/MaxE template parameters.
+/// For runtime graphs these are the capacity set at construction.
+///
+/// Algorithms use capacity queries to size working arrays via
+/// graph_traits<G>::make_node_array/make_edge_array.
 template<typename G>
 concept sized_graph =
     graph_queryable<G> &&
     requires(G const& g) {
         { g.edge_count() } -> std::convertible_to<std::size_t>;
+        { g.node_capacity() } -> std::convertible_to<std::size_t>;
+        { g.edge_capacity() } -> std::convertible_to<std::size_t>;
     };
 
 } // namespace ctdp::graph

@@ -29,6 +29,7 @@
 #include <array>
 #include <cstddef>
 #include <cstdint>
+#include <utility>
 
 namespace ctdp::graph {
 
@@ -84,6 +85,16 @@ public:
     /// Number of directed edges in the graph.
     [[nodiscard]] constexpr std::size_t edge_count() const noexcept {
         return E_;
+    }
+
+    /// Maximum number of vertices this graph can hold (template parameter MaxV).
+    [[nodiscard]] constexpr std::size_t node_capacity() const noexcept {
+        return MaxV;
+    }
+
+    /// Maximum number of directed edges this graph can hold (template parameter MaxE).
+    [[nodiscard]] constexpr std::size_t edge_capacity() const noexcept {
+        return MaxE;
     }
 
     /// True if the graph has no vertices.
@@ -160,6 +171,68 @@ public:
             result.push_back(neighbors_[i]);
         }
         return result;
+    }
+
+    // =========================================================================
+    // Edge position access (for external edge property maps)
+    // =========================================================================
+
+    /// CSR offset where node u's outgoing edges begin.
+    ///
+    /// The edges from node u occupy CSR positions
+    /// [edge_begin_offset(u), edge_begin_offset(u) + out_degree(u)).
+    /// Edge IDs are valid only for THIS graph instance — they are NOT
+    /// stable across graph construction or transformation.
+    ///
+    /// Precondition: to_index(u) < node_count()
+    [[nodiscard]] constexpr std::size_t
+    edge_begin_offset(node_id u) const noexcept {
+        return static_cast<std::size_t>(
+            offsets_[static_cast<std::size_t>(u.value)]);
+    }
+
+    /// Edge ID range for node u: [begin, end) as a pair of edge_id.
+    ///
+    /// This is the "one true primitive" for edge identity — all weighted
+    /// iteration can be built from edge_range + edge target lookup.
+    [[nodiscard]] constexpr std::pair<edge_id, edge_id>
+    edge_range(node_id u) const noexcept {
+        auto const idx = static_cast<std::size_t>(u.value);
+        return {edge_id{static_cast<std::size_t>(offsets_[idx])},
+                edge_id{static_cast<std::size_t>(offsets_[idx + 1])}};
+    }
+
+    /// Target node of a specific edge (by CSR position).
+    [[nodiscard]] constexpr node_id
+    edge_target(edge_id e) const noexcept {
+        return neighbors_[e.value];
+    }
+
+    // =========================================================================
+    // Topology token — fingerprint for graph↔map binding
+    // =========================================================================
+
+    /// Deterministic fingerprint of this graph's topology.
+    ///
+    /// Derived from (V, E, CSR adjacency) via FNV-1a.  Two graphs with
+    /// identical topology produce identical tokens.  Any structural
+    /// transform (coarsen, rebuild, filter) produces a different token.
+    [[nodiscard]] constexpr topology_token token() const noexcept {
+        // FNV-1a 64-bit
+        std::uint64_t h = 14695981039346656037ULL;
+        auto mix = [&](std::uint64_t byte) constexpr {
+            h ^= byte;
+            h *= 1099511628211ULL;
+        };
+        mix(V_);
+        mix(E_);
+        for (std::size_t i = 0; i <= V_; ++i) {
+            mix(static_cast<std::uint64_t>(offsets_[i]));
+        }
+        for (std::size_t i = 0; i < E_; ++i) {
+            mix(static_cast<std::uint64_t>(neighbors_[i].value));
+        }
+        return topology_token{h};
     }
 
     // =========================================================================

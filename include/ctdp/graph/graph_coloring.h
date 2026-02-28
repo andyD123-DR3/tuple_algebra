@@ -3,9 +3,8 @@
 //
 // ALGORITHM: Greedy Welsh-Powell (largest-degree-first ordering).
 //
-// Complexity: O(V·log(V) + V·E/V) = O(V·log(V) + E) for the sort +
-//             greedy assignment.  Each node checks its neighbours'
-//             colours → total work proportional to sum of degrees = 2E.
+// Complexity: O(V*log(V) + V*E/V) = O(V*log(V) + E) for the sort +
+//             greedy assignment.
 //
 // GUARANTEES:
 // - Uses at most max_degree + 1 colours (greedy upper bound)
@@ -15,17 +14,17 @@
 // DESIGN RATIONALE:
 // Graph coloring is inherently an undirected problem.  We require
 // symmetric_graph_queryable to make this constraint machine-checkable.
-// Attempting to colour a directed graph is a concept mismatch caught
-// at compile time.
 //
-// The ordering function is a template parameter so users can substitute
-// DSatur, LDO, or custom heuristics without touching the colouring loop.
+// TRAITS RETROFIT (Phase 7):
+// MaxV derived from graph_traits<G>::max_nodes.  node_index_t<G> used
+// for colour assignments, node ordering, and result arrays.
 
 #ifndef CTDP_GRAPH_COLORING_H
 #define CTDP_GRAPH_COLORING_H
 
 #include "capacity_guard.h"
 #include "graph_concepts.h"
+#include "graph_traits.h"
 #include "symmetric_graph.h"
 #include <ctdp/core/constexpr_sort.h>
 
@@ -43,7 +42,7 @@ namespace ctdp::graph {
 ///
 /// - color_of[n]: colour id assigned to node n (0-based)
 /// - color_count: number of colours used (upper bound on chromatic number)
-/// - max_degree_plus_one: the greedy upper bound (Δ+1)
+/// - max_degree_plus_one: the greedy upper bound (Delta+1)
 /// - verified: true if verify_coloring() has confirmed correctness
 template<std::size_t MaxV>
 struct coloring_result {
@@ -53,6 +52,13 @@ struct coloring_result {
     std::size_t max_degree_plus_one = 0;
     bool verified = false;
 };
+
+/// Factory: construct a default coloring_result sized for graph g.
+template<typename G>
+    requires (symmetric_graph_queryable<G> && sized_graph<G>)
+[[nodiscard]] constexpr auto make_coloring_result(G const& /*g*/) {
+    return coloring_result<graph_traits<G>::max_nodes>{};
+}
 
 // =========================================================================
 // Post-condition: verify colouring is legal
@@ -87,27 +93,28 @@ verify_coloring(G const& g, coloring_result<MaxV>& result) {
 /// Welsh-Powell ordering: nodes sorted by descending degree.
 /// Ties broken by ascending node_id for determinism.
 struct welsh_powell_order {
-    template<std::size_t MaxV, symmetric_graph_queryable G>
+    template<typename G>
+        requires (symmetric_graph_queryable<G> && sized_graph<G>)
     constexpr void operator()(
         G const& g,
-        std::array<std::uint16_t, MaxV>& order,
+        std::array<node_index_t<G>, graph_traits<G>::max_nodes>& order,
         std::size_t V) const
     {
+        using index_t = node_index_t<G>;
+
         // Populate order array.
         for (std::size_t i = 0; i < V; ++i) {
-            order[i] = static_cast<std::uint16_t>(i);
+            order[i] = static_cast<index_t>(i);
         }
 
         // Sort by descending degree, then ascending node_id.
-        // Use a simple O(n²) sort since V is typically small in
-        // constexpr context and we can't allocate.
         for (std::size_t i = 0; i < V; ++i) {
             for (std::size_t j = i + 1; j < V; ++j) {
                 auto di = g.degree(node_id{order[i]});
                 auto dj = g.degree(node_id{order[j]});
-                bool swap = (dj > di) ||
+                bool do_swap = (dj > di) ||
                             (dj == di && order[j] < order[i]);
-                if (swap) {
+                if (do_swap) {
                     auto tmp = order[i];
                     order[i] = order[j];
                     order[j] = tmp;
@@ -123,10 +130,8 @@ struct welsh_powell_order {
 
 /// Greedy graph coloring with configurable node ordering.
 ///
-/// Template parameters:
-/// - MaxV: maximum vertex capacity
-/// - G: graph type satisfying symmetric_graph_queryable
-/// - Order: ordering functor (default: welsh_powell_order)
+/// MaxV is derived from graph_traits<G>::max_nodes.
+/// Requires symmetric_graph_queryable AND sized_graph.
 ///
 /// The algorithm:
 /// 1. Sort nodes according to Order (default: descending degree)
@@ -137,15 +142,17 @@ struct welsh_powell_order {
 /// Example:
 /// ```cpp
 /// constexpr auto sg = build_petersen_graph();
-/// constexpr auto cr = graph_coloring<10>(sg);
-/// static_assert(cr.color_count <= 4);  // Petersen is 3-chromatic
+/// constexpr auto cr = graph_coloring(sg);
+/// static_assert(cr.color_count <= 4);
 /// static_assert(cr.verified);
 /// ```
-template<std::size_t MaxV,
-         symmetric_graph_queryable G,
-         typename Order = welsh_powell_order>
-[[nodiscard]] constexpr coloring_result<MaxV>
+template<typename G, typename Order = welsh_powell_order>
+    requires (symmetric_graph_queryable<G> && sized_graph<G>)
+[[nodiscard]] constexpr auto
 graph_coloring(G const& g, Order order_fn = {}) {
+    constexpr std::size_t MaxV = graph_traits<G>::max_nodes;
+    using index_t = node_index_t<G>;
+
     guard_algorithm<MaxV>(g.node_count(), "graph_coloring: V exceeds MaxV");
     coloring_result<MaxV> result;
     auto const V = g.node_count();
@@ -159,24 +166,22 @@ graph_coloring(G const& g, Order order_fn = {}) {
     // Compute max degree for quality metric.
     std::size_t max_deg = 0;
     for (std::size_t i = 0; i < V; ++i) {
-        auto d = g.degree(node_id{static_cast<std::uint16_t>(i)});
+        auto d = g.degree(node_id{static_cast<index_t>(i)});
         if (d > max_deg) max_deg = d;
     }
     result.max_degree_plus_one = max_deg + 1;
 
     // Step 1: Compute node ordering.
-    std::array<std::uint16_t, MaxV> node_order{};
+    std::array<index_t, MaxV> node_order{};
     order_fn(g, node_order, V);
 
     // Step 2: Greedy colouring.
-    // UNCOLORED sentinel: 0xFFFF (since max colours ≤ V ≤ MaxV ≤ 65535).
-    constexpr std::uint16_t UNCOLORED = 0xFFFF;
+    constexpr index_t UNCOLORED = node_nil_v<G>;
     for (std::size_t i = 0; i < V; ++i) {
         result.color_of[i] = UNCOLORED;
     }
 
     // Temporary: which colours are used by neighbours of current node.
-    // Size max_deg+1 would suffice, but we use MaxV for constexpr safety.
     std::array<bool, MaxV> used{};
 
     std::size_t colors_used = 0;

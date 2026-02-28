@@ -10,14 +10,18 @@
 // Iterative (not recursive) because constexpr evaluation has limited
 // recursion depth and we need explicit control over stack usage.
 // Uses an explicit call stack with frames tracking DFS state.
+//
+// TRAITS RETROFIT (Phase 7):
+// MaxV derived from graph_traits<G>::max_nodes.  node_index_t<G> used
+// for discovery indices, lowlinks, and stack contents.
 
 #ifndef CTDP_GRAPH_SCC_H
 #define CTDP_GRAPH_SCC_H
 
 #include "capacity_guard.h"
 #include "graph_concepts.h"
+#include "graph_traits.h"
 #include <ctdp/core/constexpr_vector.h>
-#include <ctdp/core/ct_limits.h>
 
 #include <array>
 #include <cstddef>
@@ -39,28 +43,29 @@ struct scc_result {
     std::size_t component_count = 0;
 };
 
+/// Factory: construct a default scc_result sized for graph g.
+template<sized_graph G>
+[[nodiscard]] constexpr auto make_scc_result(G const& /*g*/) {
+    return scc_result<graph_traits<G>::max_nodes>{};
+}
+
 /// Strongly connected components via iterative Tarjan's algorithm.
 ///
-/// Template parameters:
-/// - G: graph type satisfying graph_queryable
-/// - MaxV: maximum vertex count (default: ct_limits::scc_max)
+/// MaxV is derived from graph_traits<G>::max_nodes.
+/// Requires sized_graph (capacity queries for array sizing).
 ///
 /// Example:
 /// ```cpp
-/// // DAG: each node is its own SCC
-/// constexpr auto g = make_chain();  // 0→1→2→3
+/// constexpr auto g = make_chain();  // 0->1->2->3
 /// constexpr auto result = scc(g);
-/// static_assert(result.component_count == 4);
-///
-/// // Cycle: 0→1→2→0 all in one SCC
-/// constexpr auto g2 = make_cycle();
-/// constexpr auto r2 = scc(g2);
-/// static_assert(r2.component_count == 1);
+/// static_assert(result.component_count == 4);  // DAG: each node is own SCC
 /// ```
-template<graph_queryable G,
-         std::size_t MaxV = ctdp::ct_limits::scc_max>
-[[nodiscard]] constexpr scc_result<MaxV>
+template<sized_graph G>
+[[nodiscard]] constexpr auto
 scc(G const& g) {
+    constexpr std::size_t MaxV = graph_traits<G>::max_nodes;
+    using index_t = node_index_t<G>;
+
     guard_algorithm<MaxV>(g.node_count(), "scc: V exceeds MaxV");
     scc_result<MaxV> result;
     auto const V = g.node_count();
@@ -70,34 +75,29 @@ scc(G const& g) {
     }
 
     // Tarjan's state.
-    constexpr std::uint16_t UNVISITED = 0xFFFF;
+    constexpr index_t UNVISITED = node_nil_v<G>;
 
-    std::array<std::uint16_t, MaxV> index_of{};    // discovery index
-    std::array<std::uint16_t, MaxV> lowlink{};      // lowest reachable index
-    std::array<bool, MaxV> on_stack{};               // currently on Tarjan stack
-    std::array<bool, MaxV> assigned{};               // already assigned to an SCC
+    std::array<index_t, MaxV> index_of{};    // discovery index
+    std::array<index_t, MaxV> lowlink{};      // lowest reachable index
+    std::array<bool, MaxV> on_stack{};         // currently on Tarjan stack
+    std::array<bool, MaxV> assigned{};         // already assigned to an SCC
 
     for (std::size_t i = 0; i < V; ++i) {
         index_of[i] = UNVISITED;
     }
 
     // Tarjan's stack (nodes awaiting SCC assignment).
-    ctdp::constexpr_vector<std::uint16_t, MaxV> tarjan_stack;
+    ctdp::constexpr_vector<index_t, MaxV> tarjan_stack;
 
     // DFS call stack frame.
     struct frame {
-        std::uint16_t node;
-        std::uint16_t neighbor_idx;  // which neighbor we're processing next
-        std::uint16_t neighbor_count;
+        index_t node;
+        index_t neighbor_idx;   // which neighbor we're processing next
+        index_t neighbor_count;
     };
     ctdp::constexpr_vector<frame, MaxV> call_stack;
 
-    // Neighbor cache: we need to persist neighbor lists across iterations.
-    // Store flattened neighbor data per node.
-    // For each node, we store its neighbors in a bounded array.
-    // We'll look them up via out_neighbors on demand within a single expression.
-
-    std::uint16_t next_index = 0;
+    index_t next_index = 0;
 
     // Process each unvisited node (deterministic: ascending node_id order).
     for (std::size_t start = 0; start < V; ++start) {
@@ -106,7 +106,7 @@ scc(G const& g) {
         }
 
         // Push initial frame.
-        auto const s = static_cast<std::uint16_t>(start);
+        auto const s = static_cast<index_t>(start);
         index_of[s] = next_index;
         lowlink[s] = next_index;
         next_index++;
@@ -114,11 +114,11 @@ scc(G const& g) {
         tarjan_stack.push_back(s);
 
         // Count neighbors for start node.
-        std::uint16_t start_nc = 0;
+        index_t start_nc = 0;
         {
             auto const range = g.out_neighbors(node_id{s});
             if constexpr (requires { range.size(); }) {
-                start_nc = static_cast<std::uint16_t>(range.size());
+                start_nc = static_cast<index_t>(range.size());
             } else {
                 for ([[maybe_unused]] auto _ : range) start_nc++;
             }
@@ -131,14 +131,12 @@ scc(G const& g) {
 
             if (top.neighbor_idx < top.neighbor_count) {
                 // Get the next neighbor.
-                // Fast path: if the iterator is a pointer (CSR), index in O(1).
-                // Fallback: iterate to the neighbor_idx'th element (implicit graphs).
-                std::uint16_t w = 0;
+                index_t w = 0;
                 auto const range = g.out_neighbors(node_id{top.node});
                 if constexpr (std::is_pointer_v<decltype(range.begin())>) {
                     w = range.begin()[top.neighbor_idx].value;
                 } else {
-                    std::uint16_t idx = 0;
+                    index_t idx = 0;
                     for (auto nbr : range) {
                         if (idx == top.neighbor_idx) {
                             w = nbr.value;
@@ -158,11 +156,11 @@ scc(G const& g) {
                     tarjan_stack.push_back(w);
 
                     // Count w's neighbors.
-                    std::uint16_t w_nc = 0;
+                    index_t w_nc = 0;
                     {
                         auto const w_range = g.out_neighbors(node_id{w});
                         if constexpr (requires { w_range.size(); }) {
-                            w_nc = static_cast<std::uint16_t>(w_range.size());
+                            w_nc = static_cast<index_t>(w_range.size());
                         } else {
                             for ([[maybe_unused]] auto _ : w_range) w_nc++;
                         }
@@ -181,7 +179,7 @@ scc(G const& g) {
 
                 if (lowlink[u] == index_of[u]) {
                     // u is the root of an SCC. Pop everything up to u.
-                    auto const comp_id = static_cast<std::uint16_t>(result.component_count);
+                    auto const comp_id = static_cast<index_t>(result.component_count);
                     while (true) {
                         auto const w = tarjan_stack.back();
                         tarjan_stack.pop_back();

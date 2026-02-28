@@ -29,6 +29,7 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <utility>
 
 namespace ctdp::graph {
 
@@ -93,6 +94,16 @@ public:
         return inner_.edge_count() / 2;
     }
 
+    /// Maximum number of vertices this graph can hold.
+    [[nodiscard]] constexpr std::size_t node_capacity() const noexcept {
+        return MaxV;
+    }
+
+    /// Maximum number of directed edges this graph can hold (= 2 × max undirected).
+    [[nodiscard]] constexpr std::size_t edge_capacity() const noexcept {
+        return 2 * MaxE;
+    }
+
     [[nodiscard]] constexpr bool empty() const noexcept {
         return inner_.empty();
     }
@@ -148,6 +159,37 @@ public:
 
     [[nodiscard]] constexpr bool has_node(node_id u) const noexcept {
         return inner_.has_node(u);
+    }
+
+    // =========================================================================
+    // Edge position access (for weighted_view)
+    // =========================================================================
+
+    /// CSR offset where node u's edges begin (forwarded to inner directed graph).
+    [[nodiscard]] constexpr std::size_t
+    edge_begin_offset(node_id u) const noexcept {
+        return inner_.edge_begin_offset(u);
+    }
+
+    /// Edge ID range for node u (forwarded to inner directed graph).
+    [[nodiscard]] constexpr std::pair<edge_id, edge_id>
+    edge_range(node_id u) const noexcept {
+        return inner_.edge_range(u);
+    }
+
+    /// Target node of a specific edge (forwarded to inner directed graph).
+    [[nodiscard]] constexpr node_id
+    edge_target(edge_id e) const noexcept {
+        return inner_.edge_target(e);
+    }
+
+    // =========================================================================
+    // Topology token
+    // =========================================================================
+
+    /// Topology fingerprint (forwarded to inner directed graph).
+    [[nodiscard]] constexpr topology_token token() const noexcept {
+        return inner_.token();
     }
 
     // =========================================================================

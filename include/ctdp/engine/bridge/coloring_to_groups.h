@@ -38,7 +38,7 @@ namespace ctdp::graph {
 /// Example:
 /// ```cpp
 /// constexpr auto sg = build_row_conflict_graph(pattern);
-/// constexpr auto cr = graph_coloring<MaxV>(sg);
+/// constexpr auto cr = graph_coloring(sg);
 /// constexpr auto fg = coloring_to_groups(cr);
 /// constexpr auto space = build_schedule_space_fused<MaxV, MaxE>(g, kmap, fg);
 /// ```
