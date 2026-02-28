@@ -243,7 +243,7 @@ static_assert([]() {
 // Pipeline equals hand-built chain
 static_assert([]() {
     auto pipeline = from_pipeline<8>(4);
-    graph_builder<8, 8> b;
+    graph_builder<cap_from<8, 8>> b;
     auto n0 = b.add_node();
     auto n1 = b.add_node();
     auto n2 = b.add_node();
@@ -480,7 +480,7 @@ TEST(FromPipeline, EqualsHandBuilt) {
     constexpr auto pipeline = from_pipeline<8>(3);
 
     constexpr auto manual = []() {
-        graph_builder<8, 8> b;
+        graph_builder<cap_from<8, 8>> b;
         auto a = b.add_node();
         auto c = b.add_node();
         auto e = b.add_node();

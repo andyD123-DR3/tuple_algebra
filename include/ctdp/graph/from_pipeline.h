@@ -26,7 +26,7 @@ namespace ctdp::graph {
 /// Parameters:
 /// - N: Number of pipeline stages (nodes)
 ///
-/// Returns: constexpr_graph<MaxV, MaxE> with N nodes and N-1 edges
+/// Returns: constexpr_graph<cap_from<MaxV, MaxE>> with N nodes and N-1 edges
 ///
 /// Example:
 /// ```cpp
@@ -36,9 +36,9 @@ namespace ctdp::graph {
 /// static_assert(g.edge_count() == 4);
 /// ```
 template<std::size_t MaxV, std::size_t MaxE = MaxV>
-[[nodiscard]] constexpr constexpr_graph<MaxV, MaxE>
+[[nodiscard]] constexpr constexpr_graph<cap_from<MaxV, MaxE>>
 from_pipeline(std::size_t N) {
-    graph_builder<MaxV, MaxE> b;
+    graph_builder<cap_from<MaxV, MaxE>> b;
 
     if (N == 0) {
         return b.finalise();

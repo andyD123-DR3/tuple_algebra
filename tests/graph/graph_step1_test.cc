@@ -19,20 +19,20 @@ using namespace ctdp::graph;
 
 // Empty graph: 0 nodes, 0 edges
 constexpr auto make_empty() {
-    graph_builder<8, 16> b;
+    graph_builder<cap_from<8, 16>> b;
     return b.finalise();
 }
 
 // Single node, no edges
 constexpr auto make_singleton() {
-    graph_builder<8, 16> b;
+    graph_builder<cap_from<8, 16>> b;
     [[maybe_unused]] auto n = b.add_node();
     return b.finalise();
 }
 
 // Linear chain: 0→1→2→3
 constexpr auto make_chain() {
-    graph_builder<8, 16> b;
+    graph_builder<cap_from<8, 16>> b;
     auto n0 = b.add_node();
     auto n1 = b.add_node();
     auto n2 = b.add_node();
@@ -45,7 +45,7 @@ constexpr auto make_chain() {
 
 // Triangle: 0→1, 0→2, 1→2
 constexpr auto make_triangle() {
-    graph_builder<8, 16> b;
+    graph_builder<cap_from<8, 16>> b;
     auto n0 = b.add_node();
     auto n1 = b.add_node();
     auto n2 = b.add_node();
@@ -57,7 +57,7 @@ constexpr auto make_triangle() {
 
 // Diamond: 0→1, 0→2, 1→3, 2→3
 constexpr auto make_diamond() {
-    graph_builder<8, 16> b;
+    graph_builder<cap_from<8, 16>> b;
     auto n0 = b.add_node();
     auto n1 = b.add_node();
     auto n2 = b.add_node();
@@ -71,7 +71,7 @@ constexpr auto make_diamond() {
 
 // Graph with duplicates and self-edges (tests canonicalisation)
 constexpr auto make_dirty() {
-    graph_builder<8, 32> b;
+    graph_builder<cap_from<8, 32>> b;
     auto n0 = b.add_node();
     auto n1 = b.add_node();
     auto n2 = b.add_node();
@@ -93,7 +93,7 @@ constexpr auto make_dirty() {
 
 // Disconnected: 0→1, 2→3 (two components)
 constexpr auto make_disconnected() {
-    graph_builder<8, 16> b;
+    graph_builder<cap_from<8, 16>> b;
     auto n0 = b.add_node();
     auto n1 = b.add_node();
     auto n2 = b.add_node();
@@ -105,7 +105,7 @@ constexpr auto make_disconnected() {
 
 // Star: 0→1, 0→2, 0→3, 0→4
 constexpr auto make_star() {
-    graph_builder<8, 16> b;
+    graph_builder<cap_from<8, 16>> b;
     auto n0 = b.add_node();
     auto n1 = b.add_node();
     auto n2 = b.add_node();
@@ -206,7 +206,7 @@ static_assert(!graph_equal(make_triangle(), make_chain()));
 // Two builders producing the same graph should be equal
 static_assert([]() {
     // Build triangle in different order
-    graph_builder<8, 16> b1;
+    graph_builder<cap_from<8, 16>> b1;
     auto a = b1.add_node();
     auto c = b1.add_node();
     auto e = b1.add_node();
@@ -214,7 +214,7 @@ static_assert([]() {
     b1.add_edge(a, e);
     b1.add_edge(c, e);
 
-    graph_builder<8, 16> b2;
+    graph_builder<cap_from<8, 16>> b2;
     auto x = b2.add_node();
     auto y = b2.add_node();
     auto z = b2.add_node();
@@ -228,12 +228,12 @@ static_assert([]() {
 
 // graph_equal detects different edge sets
 static_assert([]() {
-    graph_builder<8, 16> b1;
+    graph_builder<cap_from<8, 16>> b1;
     auto a = b1.add_node();
     auto c = b1.add_node();
     b1.add_edge(a, c);
 
-    graph_builder<8, 16> b2;
+    graph_builder<cap_from<8, 16>> b2;
     auto x = b2.add_node();
     auto y = b2.add_node();
     b2.add_edge(y, x);  // Reversed edge
@@ -242,19 +242,19 @@ static_assert([]() {
 }());
 
 // --- Concept verification ---
-static_assert(graph_queryable<constexpr_graph<4, 8>>);
-static_assert(graph_queryable<constexpr_graph<64, 256>>);
-static_assert(sized_graph<constexpr_graph<4, 8>>);
+static_assert(graph_queryable<constexpr_graph<cap_from<4, 8>>>);
+static_assert(graph_queryable<constexpr_graph<cap_from<64, 256>>>);
+static_assert(sized_graph<constexpr_graph<cap_from<4, 8>>>);
 
 // --- Builder: add_nodes ---
 static_assert([]() {
-    graph_builder<16, 32> b;
+    graph_builder<cap_from<16, 32>> b;
     auto first = b.add_nodes(5);
     return first == node_id{0} && b.node_count() == 5;
 }());
 
 static_assert([]() {
-    graph_builder<16, 32> b;
+    graph_builder<cap_from<16, 32>> b;
     [[maybe_unused]] auto n0 = b.add_node();  // node 0
     auto first = b.add_nodes(3);
     return first == node_id{1} && b.node_count() == 4;
@@ -369,7 +369,7 @@ TEST(ConstexprGraph, HasNode) {
 
 TEST(GraphBuilder, Canonicalisation_SelfEdgesRemoved) {
     constexpr auto g = []() {
-        graph_builder<4, 8> b;
+        graph_builder<cap_from<4, 8>> b;
         auto n0 = b.add_node();
         auto n1 = b.add_node();
         b.add_edge(n0, n0);  // self-edge
@@ -384,7 +384,7 @@ TEST(GraphBuilder, Canonicalisation_SelfEdgesRemoved) {
 
 TEST(GraphBuilder, Canonicalisation_DuplicatesRemoved) {
     constexpr auto g = []() {
-        graph_builder<4, 16> b;
+        graph_builder<cap_from<4, 16>> b;
         auto n0 = b.add_node();
         auto n1 = b.add_node();
         // Five copies of same edge
@@ -402,7 +402,7 @@ TEST(GraphBuilder, Canonicalisation_DuplicatesRemoved) {
 TEST(GraphBuilder, Canonicalisation_EdgeOrdering) {
     // Edges added in reverse order should produce same graph
     constexpr auto g = []() {
-        graph_builder<4, 8> b;
+        graph_builder<cap_from<4, 8>> b;
         auto n0 = b.add_node();
         auto n1 = b.add_node();
         auto n2 = b.add_node();
@@ -440,7 +440,7 @@ TEST(GraphBuilder, DirtyGraphCanonicalisation) {
 
 TEST(GraphBuilder, AddNodes) {
     constexpr auto g = []() {
-        graph_builder<16, 32> b;
+        graph_builder<cap_from<16, 32>> b;
         auto first = b.add_nodes(5);
         b.add_edge(first, node_id{static_cast<std::uint16_t>(first.value + 1)});
         return b.finalise();
@@ -452,7 +452,7 @@ TEST(GraphBuilder, AddNodes) {
 
 TEST(GraphBuilder, NoEdges) {
     constexpr auto g = []() {
-        graph_builder<4, 8> b;
+        graph_builder<cap_from<4, 8>> b;
         [[maybe_unused]] auto first = b.add_nodes(3);
         return b.finalise();
     }();
@@ -482,7 +482,7 @@ TEST(GraphEqual, DifferentGraphs) {
 TEST(GraphEqual, SameStructureDifferentBuild) {
     // Build same triangle two different ways
     auto g1 = []() {
-        graph_builder<8, 16> b;
+        graph_builder<cap_from<8, 16>> b;
         auto a = b.add_node();
         auto c = b.add_node();
         auto e = b.add_node();
@@ -493,7 +493,7 @@ TEST(GraphEqual, SameStructureDifferentBuild) {
     }();
 
     auto g2 = []() {
-        graph_builder<8, 16> b;
+        graph_builder<cap_from<8, 16>> b;
         auto x = b.add_node();
         auto y = b.add_node();
         auto z = b.add_node();
@@ -511,7 +511,7 @@ TEST(GraphEqual, SameStructureDifferentBuild) {
 
 TEST(GraphEqual, ReversedEdge) {
     auto g1 = []() {
-        graph_builder<4, 4> b;
+        graph_builder<cap_from<4, 4>> b;
         auto a = b.add_node();
         auto c = b.add_node();
         b.add_edge(a, c);
@@ -519,7 +519,7 @@ TEST(GraphEqual, ReversedEdge) {
     }();
 
     auto g2 = []() {
-        graph_builder<4, 4> b;
+        graph_builder<cap_from<4, 4>> b;
         auto a = b.add_node();
         auto c = b.add_node();
         b.add_edge(c, a);  // reversed
@@ -531,7 +531,7 @@ TEST(GraphEqual, ReversedEdge) {
 
 TEST(GraphEqual, SameNodesDifferentEdges) {
     auto g1 = []() {
-        graph_builder<4, 4> b;
+        graph_builder<cap_from<4, 4>> b;
         auto a = b.add_node();
         auto c = b.add_node();
         [[maybe_unused]] auto e = b.add_node();
@@ -540,7 +540,7 @@ TEST(GraphEqual, SameNodesDifferentEdges) {
     }();
 
     auto g2 = []() {
-        graph_builder<4, 4> b;
+        graph_builder<cap_from<4, 4>> b;
         auto a = b.add_node();
         [[maybe_unused]] auto mid = b.add_node();
         auto e = b.add_node();
@@ -569,7 +569,7 @@ TEST(ConstexprGraph, AdjacencyRangeIteration) {
 TEST(GraphBuilder, LargerGraph) {
     // Build a 64-node chain
     constexpr auto g = []() {
-        graph_builder<128, 256> b;
+        graph_builder<cap_from<128, 256>> b;
         node_id prev = b.add_node();
         for (int i = 1; i < 64; ++i) {
             auto cur = b.add_node();
@@ -591,7 +591,7 @@ TEST(GraphBuilder, EdgeSortingPipeline) {
     // Simulate graph_builder::finalise() edge canonicalization
     // by building edges in completely random order
     constexpr auto g = []() {
-        graph_builder<8, 32> b;
+        graph_builder<cap_from<8, 32>> b;
         auto n0 = b.add_node();
         auto n1 = b.add_node();
         auto n2 = b.add_node();

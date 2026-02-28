@@ -30,10 +30,10 @@ namespace ctdp::graph {
 /// constexpr auto g2 = make_triangle();
 /// static_assert(graph_equal(g1, g2));
 /// ```
-template<std::size_t MaxV, std::size_t MaxE>
+template<typename Cap>
 [[nodiscard]] constexpr bool
-graph_equal(constexpr_graph<MaxV, MaxE> const& a,
-            constexpr_graph<MaxV, MaxE> const& b) noexcept {
+graph_equal(constexpr_graph<Cap> const& a,
+            constexpr_graph<Cap> const& b) noexcept {
     // Different node or edge count → not equal.
     if (a.V_ != b.V_ || a.E_ != b.E_) {
         return false;

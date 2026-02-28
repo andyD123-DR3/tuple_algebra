@@ -21,20 +21,20 @@ using namespace ctdp::graph;
 
 // Empty graph: 0 nodes, 0 edges
 constexpr auto make_empty() {
-    graph_builder<8, 16> b;
+    graph_builder<cap_from<8, 16>> b;
     return b.finalise();
 }
 
 // Single node, no edges
 constexpr auto make_singleton() {
-    graph_builder<8, 16> b;
+    graph_builder<cap_from<8, 16>> b;
     [[maybe_unused]] auto n = b.add_node();
     return b.finalise();
 }
 
 // Linear chain: 0→1→2→3
 constexpr auto make_chain() {
-    graph_builder<8, 16> b;
+    graph_builder<cap_from<8, 16>> b;
     auto n0 = b.add_node();
     auto n1 = b.add_node();
     auto n2 = b.add_node();
@@ -47,7 +47,7 @@ constexpr auto make_chain() {
 
 // Triangle DAG: 0→1, 0→2, 1→2
 constexpr auto make_triangle() {
-    graph_builder<8, 16> b;
+    graph_builder<cap_from<8, 16>> b;
     auto n0 = b.add_node();
     auto n1 = b.add_node();
     auto n2 = b.add_node();
@@ -59,7 +59,7 @@ constexpr auto make_triangle() {
 
 // Diamond: 0→1, 0→2, 1→3, 2→3
 constexpr auto make_diamond() {
-    graph_builder<8, 16> b;
+    graph_builder<cap_from<8, 16>> b;
     auto n0 = b.add_node();
     auto n1 = b.add_node();
     auto n2 = b.add_node();
@@ -73,7 +73,7 @@ constexpr auto make_diamond() {
 
 // Disconnected DAG: 0→1, 2→3 (two components)
 constexpr auto make_disconnected() {
-    graph_builder<8, 16> b;
+    graph_builder<cap_from<8, 16>> b;
     auto n0 = b.add_node();
     auto n1 = b.add_node();
     auto n2 = b.add_node();
@@ -85,7 +85,7 @@ constexpr auto make_disconnected() {
 
 // Star: 0→1, 0→2, 0→3, 0→4
 constexpr auto make_star() {
-    graph_builder<8, 16> b;
+    graph_builder<cap_from<8, 16>> b;
     auto n0 = b.add_node();
     auto n1 = b.add_node();
     auto n2 = b.add_node();
@@ -100,7 +100,7 @@ constexpr auto make_star() {
 
 // 3-cycle: 0→1→2→0
 constexpr auto make_cycle3() {
-    graph_builder<8, 16> b;
+    graph_builder<cap_from<8, 16>> b;
     auto n0 = b.add_node();
     auto n1 = b.add_node();
     auto n2 = b.add_node();
@@ -112,7 +112,7 @@ constexpr auto make_cycle3() {
 
 // Cycle with tail: 0→1→2→1 (tail 0, cycle {1,2})
 constexpr auto make_cycle_with_tail() {
-    graph_builder<8, 16> b;
+    graph_builder<cap_from<8, 16>> b;
     auto n0 = b.add_node();
     auto n1 = b.add_node();
     auto n2 = b.add_node();
@@ -124,7 +124,7 @@ constexpr auto make_cycle_with_tail() {
 
 // Two separate cycles: {0→1→0}, {2→3→4→2}
 constexpr auto make_two_cycles() {
-    graph_builder<8, 16> b;
+    graph_builder<cap_from<8, 16>> b;
     auto n0 = b.add_node();
     auto n1 = b.add_node();
     auto n2 = b.add_node();
@@ -144,7 +144,7 @@ constexpr auto make_two_cycles() {
 // Builder strips self-edges, so the smallest cycle is 2 nodes.
 // Let's make: 0→1→0 (2-cycle)
 constexpr auto make_two_cycle() {
-    graph_builder<8, 16> b;
+    graph_builder<cap_from<8, 16>> b;
     auto n0 = b.add_node();
     auto n1 = b.add_node();
     b.add_edge(n0, n1);
@@ -155,7 +155,7 @@ constexpr auto make_two_cycle() {
 // Complex DAG: wide then narrow
 //   0→1, 0→2, 0→3, 1→4, 2→4, 3→4, 4→5
 constexpr auto make_wide_dag() {
-    graph_builder<8, 16> b;
+    graph_builder<cap_from<8, 16>> b;
     auto n0 = b.add_node();
     auto n1 = b.add_node();
     auto n2 = b.add_node();
@@ -175,7 +175,7 @@ constexpr auto make_wide_dag() {
 // Mixed graph: has both an SCC and acyclic parts
 // Structure: 0→1→2→0 (cycle), 3→0 (feeds into cycle), 2→4 (exits cycle)
 constexpr auto make_mixed_scc() {
-    graph_builder<8, 16> b;
+    graph_builder<cap_from<8, 16>> b;
     auto n0 = b.add_node();
     auto n1 = b.add_node();
     auto n2 = b.add_node();
@@ -191,7 +191,7 @@ constexpr auto make_mixed_scc() {
 
 // Four isolated nodes: 0, 1, 2, 3 — no edges
 constexpr auto make_isolated4() {
-    graph_builder<8, 16> b;
+    graph_builder<cap_from<8, 16>> b;
     [[maybe_unused]] auto _ = b.add_nodes(4);
     return b.finalise();
 }
@@ -200,7 +200,7 @@ constexpr auto make_isolated4() {
 // Component A: 0→1→0 (cycle)
 // Component B: 2→3→4 (chain)
 constexpr auto make_disconnected_mixed() {
-    graph_builder<8, 16> b;
+    graph_builder<cap_from<8, 16>> b;
     auto n0 = b.add_node();
     auto n1 = b.add_node();
     auto n2 = b.add_node();
@@ -215,7 +215,7 @@ constexpr auto make_disconnected_mixed() {
 
 // Two independent sources converging: 0→2, 1→2, 2→3
 constexpr auto make_converge() {
-    graph_builder<8, 16> b;
+    graph_builder<cap_from<8, 16>> b;
     auto n0 = b.add_node();
     auto n1 = b.add_node();
     auto n2 = b.add_node();
