@@ -43,6 +43,8 @@ namespace ctdp::graph::io {
 ///
 /// The text must contain a `nodes N` line before any `edge` lines.
 /// Lines starting with `#` are comments.  Blank lines are ignored.
+/// Trailing tokens after SRC DST on edge lines (e.g. weights) are
+/// silently skipped, so weighted files can be parsed as unweighted.
 ///
 /// Example:
 /// ```cpp

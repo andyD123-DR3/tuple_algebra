@@ -16,6 +16,7 @@
 #include "ctdp/graph/graph_equal.h"
 #include "ctdp/graph/graph_builder.h"
 #include "ctdp/graph/constexpr_graph.h"
+#include "ctdp/graph/edge_property_map.h"
 #include "ctdp/graph/symmetric_graph.h"
 #include <gtest/gtest.h>
 
@@ -622,4 +623,268 @@ TEST(GraphIO, SymmetricStreamCapacityDoublingError) {
         EXPECT_NE(msg.find("doubled"), std::string::npos)
             << "Diagnostic should mention 'doubled': " << msg;
     }
+}
+
+// =============================================================================
+// Task 7: Weighted stream round-trip tests (requires Task 4)
+// =============================================================================
+
+TEST(GraphIO, WeightedDirectedStreamRoundTrip) {
+    // Build a weighted directed graph, write, read back, compare.
+    cg::graph_builder<cg::cap::small> b;
+    auto n0 = b.add_node();
+    auto n1 = b.add_node();
+    auto n2 = b.add_node();
+    b.add_edge(n0, n1);
+    b.add_edge(n0, n2);
+    b.add_edge(n1, n2);
+    auto g1 = b.finalise();
+
+    cg::edge_property_map<double, cg::cap::small::max_e> w1(g1.edge_count(), 0.0);
+    // Assign weights in CSR order: 0->1 = 1.5, 0->2 = 2.5, 1->2 = 3.5
+    w1[0] = 1.5;
+    w1[1] = 2.5;
+    w1[2] = 3.5;
+
+    std::ostringstream oss;
+    io::write(oss, g1, [&](auto const&, std::size_t e) { return w1[e]; });
+
+    std::istringstream iss(oss.str());
+    auto [g2, w2] = io::read_weighted_directed<cg::cap::small>(iss);
+
+    EXPECT_TRUE(cg::graph_equal(g1, g2));
+    for (std::size_t i = 0; i < g1.edge_count(); ++i) {
+        EXPECT_DOUBLE_EQ(w1[i], w2[i]) << "Weight mismatch at edge " << i;
+    }
+}
+
+TEST(GraphIO, WeightedSymmetricStreamRoundTrip) {
+    // Build a weighted symmetric graph, write, read back, compare.
+    cg::symmetric_graph_builder<cg::cap::small> b;
+    auto n0 = b.add_node();
+    auto n1 = b.add_node();
+    auto n2 = b.add_node();
+    b.add_edge(n0, n1);
+    b.add_edge(n1, n2);
+    auto g1 = b.finalise();
+
+    // Symmetric graph: edges in CSR are 0->1, 1->0, 1->2, 2->1
+    cg::edge_property_map<double, cg::cap::small::max_e> w1(g1.edge_count(), 0.0);
+    // Assign same weight to both directions.
+    std::size_t eidx = 0;
+    for (std::size_t u = 0; u < g1.node_count(); ++u) {
+        auto nbrs = g1.out_neighbors(cg::node_id{static_cast<std::uint16_t>(u)});
+        for (auto it = nbrs.begin(); it != nbrs.end(); ++it) {
+            auto v = *it;
+            // 0--1 edge: w=4.0, 1--2 edge: w=7.0
+            if ((u == 0 && cg::to_index(v) == 1) || (u == 1 && cg::to_index(v) == 0)) {
+                w1[eidx] = 4.0;
+            } else {
+                w1[eidx] = 7.0;
+            }
+            ++eidx;
+        }
+    }
+
+    std::ostringstream oss;
+    io::write(oss, g1, [&](auto const&, std::size_t e) { return w1[e]; });
+
+    std::istringstream iss(oss.str());
+    auto [g2, w2] = io::read_weighted_symmetric<cg::cap::small>(iss);
+
+    EXPECT_EQ(g1.node_count(), g2.node_count());
+    EXPECT_EQ(g1.edge_count(), g2.edge_count());
+    for (std::size_t i = 0; i < g1.edge_count(); ++i) {
+        EXPECT_DOUBLE_EQ(w1[i], w2[i]) << "Weight mismatch at edge " << i;
+    }
+}
+
+TEST(GraphIO, WeightedEdgesWithoutWeightDefaultToZero) {
+    // Edge lines without a weight token should default to 0.0.
+    std::istringstream iss(
+        "nodes 3\n"
+        "edge 0 1\n"
+        "edge 1 2 5.5\n");
+    auto [g, w] = io::read_weighted_directed<cg::cap::small>(iss);
+
+    EXPECT_EQ(g.node_count(), 3u);
+    EXPECT_EQ(g.edge_count(), 2u);
+
+    // Edge 0->1 has no weight -> 0.0, edge 1->2 has weight 5.5.
+    std::size_t eidx = 0;
+    for (std::size_t u = 0; u < g.node_count(); ++u) {
+        auto nbrs = g.out_neighbors(cg::node_id{static_cast<std::uint16_t>(u)});
+        for (auto it = nbrs.begin(); it != nbrs.end(); ++it) {
+            auto v = *it;
+            if (u == 0 && cg::to_index(v) == 1) {
+                EXPECT_DOUBLE_EQ(w[eidx], 0.0);
+            } else if (u == 1 && cg::to_index(v) == 2) {
+                EXPECT_DOUBLE_EQ(w[eidx], 5.5);
+            }
+            ++eidx;
+        }
+    }
+}
+
+// =============================================================================
+// Task 7: DOT output expansions
+// =============================================================================
+
+TEST(GraphIO, DotWeightedSymmetric) {
+    cg::symmetric_graph_builder<cg::cap::small> b;
+    auto n0 = b.add_node();
+    auto n1 = b.add_node();
+    auto n2 = b.add_node();
+    b.add_edge(n0, n1);
+    b.add_edge(n1, n2);
+    auto g = b.finalise();
+
+    cg::edge_property_map<double, cg::cap::small::max_e> w(g.edge_count(), 0.0);
+    std::size_t eidx = 0;
+    for (std::size_t u = 0; u < g.node_count(); ++u) {
+        auto nbrs = g.out_neighbors(cg::node_id{static_cast<std::uint16_t>(u)});
+        for (auto it = nbrs.begin(); it != nbrs.end(); ++it) {
+            auto v = *it;
+            if ((u == 0 && cg::to_index(v) == 1) ||
+                (u == 1 && cg::to_index(v) == 0)) {
+                w[eidx] = 2.0;
+            } else {
+                w[eidx] = 3.0;
+            }
+            ++eidx;
+        }
+    }
+
+    std::ostringstream oss;
+    io::write_dot(oss, g, [&](auto const&, std::size_t e) { return w[e]; });
+
+    std::string dot = oss.str();
+    // Should use "graph" (not "digraph") and "--" (not "->").
+    EXPECT_NE(dot.find("graph G"), std::string::npos);
+    EXPECT_NE(dot.find(" -- "), std::string::npos);
+    EXPECT_EQ(dot.find("digraph"), std::string::npos);
+    EXPECT_EQ(dot.find(" -> "), std::string::npos);
+    // Should have weight labels.
+    EXPECT_NE(dot.find("[label="), std::string::npos);
+}
+
+TEST(GraphIO, DotEmptyGraph) {
+    cg::graph_builder<cg::cap::small> b;
+    (void)b.add_node();
+    (void)b.add_node();
+    auto g = b.finalise();
+
+    std::ostringstream oss;
+    io::write_dot(oss, g);
+
+    std::string dot = oss.str();
+    EXPECT_NE(dot.find("digraph G"), std::string::npos);
+    // Two isolated nodes should appear.
+    EXPECT_NE(dot.find("0;"), std::string::npos);
+    EXPECT_NE(dot.find("1;"), std::string::npos);
+}
+
+// =============================================================================
+// Task 7: Error handling for weighted readers
+// =============================================================================
+
+TEST(GraphIO, ErrorWeightedReadMissingNodes) {
+    std::istringstream iss("edge 0 1 3.0\n");
+    EXPECT_THROW(
+        (void)io::read_weighted_directed<cg::cap::small>(iss),
+        std::runtime_error);
+}
+
+TEST(GraphIO, ErrorWeightedReadNodeOutOfRange) {
+    std::istringstream iss(
+        "nodes 3\n"
+        "edge 0 99 1.0\n");
+    EXPECT_THROW(
+        (void)io::read_weighted_directed<cg::cap::small>(iss),
+        std::runtime_error);
+}
+
+TEST(GraphIO, ErrorWeightedSymmetricReadMissingNodes) {
+    std::istringstream iss("edge 0 1 3.0\n");
+    EXPECT_THROW(
+        (void)io::read_weighted_symmetric<cg::cap::small>(iss),
+        std::runtime_error);
+}
+
+// =============================================================================
+// Task 7: Capacity boundary tests
+// =============================================================================
+
+TEST(GraphIO, CapacityBoundaryExactFitNodes) {
+    // Read a graph at exactly cap_from<4, 8>::max_v = 4 nodes.
+    std::istringstream iss(
+        "nodes 4\n"
+        "edge 0 1\n"
+        "edge 2 3\n");
+    using exact_cap = cap_from<4, 8>;
+    auto g = io::read_directed<exact_cap>(iss);
+    EXPECT_EQ(g.node_count(), 4u);
+    EXPECT_EQ(g.edge_count(), 2u);
+}
+
+TEST(GraphIO, CapacityBoundaryExactFitEdges) {
+    // Read a graph at exactly cap_from<4, 3>::max_e = 3 edges.
+    std::istringstream iss(
+        "nodes 4\n"
+        "edge 0 1\n"
+        "edge 1 2\n"
+        "edge 2 3\n");
+    using exact_cap = cap_from<4, 3>;
+    auto g = io::read_directed<exact_cap>(iss);
+    EXPECT_EQ(g.edge_count(), 3u);
+}
+
+// =============================================================================
+// Task 7: Weighted tag-object overload tests
+// =============================================================================
+
+TEST(GraphIO, WeightedTagObjectReadDirected) {
+    std::istringstream iss(
+        "nodes 3\n"
+        "edge 0 1 2.5\n"
+        "edge 1 2 3.5\n");
+    auto [g, w] = io::read_weighted_directed(iss, cg::cap::small{});
+
+    static_assert(std::is_same_v<
+        decltype(g), cg::constexpr_graph<cg::cap::small>>);
+
+    EXPECT_EQ(g.node_count(), 3u);
+    EXPECT_EQ(g.edge_count(), 2u);
+}
+
+TEST(GraphIO, WeightedTagObjectReadSymmetric) {
+    std::istringstream iss(
+        "nodes 3\n"
+        "edge 0 1 2.5\n"
+        "edge 1 2 3.5\n");
+    auto [g, w] = io::read_weighted_symmetric(iss, cg::cap::small{});
+
+    static_assert(std::is_same_v<
+        decltype(g), cg::symmetric_graph<cg::cap::small>>);
+
+    EXPECT_EQ(g.node_count(), 3u);
+    // 2 undirected * 2 = 4 directed edges.
+    EXPECT_EQ(g.edge_count(), 4u);
+}
+
+// =============================================================================
+// Task 7: Stream reader lenience (unknown lines skipped)
+// =============================================================================
+
+TEST(GraphIO, StreamReaderSkipsUnknownLines) {
+    // Runtime stream readers are lenient — unknown lines are silently
+    // skipped (unlike constexpr parsers which reject them).
+    std::istringstream iss(
+        "nodes 2\n"
+        "edge 0 1\n"
+        "garbage_line_ignored\n"
+        "symmetric\n");
+    auto g = io::read_directed<cg::cap::small>(iss);
+    EXPECT_EQ(g.node_count(), 2u);
+    EXPECT_EQ(g.edge_count(), 1u);
 }
