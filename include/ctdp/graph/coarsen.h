@@ -1,6 +1,11 @@
 // graph/transforms/coarsen.h - Graph coarsening via node grouping
 // Part of the compile-time DP library (C++20)
 //
+// RELATIONSHIP TO contract.h:
+// coarsen.h is the cost-aware variant that merges kernel_info alongside
+// topology.  For pure-topology contraction without kernel_info, see
+// contract.h.
+//
 // ALGORITHM:
 // Given a graph G and a group assignment (node → group_id), produce a
 // coarsened graph G' where:

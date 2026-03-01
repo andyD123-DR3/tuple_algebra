@@ -1,6 +1,14 @@
 // graph/transforms/contract.h — Graph contraction via node group merging
 // Part of the compile-time DP library (C++20)
 //
+// RELATIONSHIP TO coarsen.h:
+// contract.h is the pure-topology variant of coarsen.h.  Both collapse
+// groups of nodes into super-nodes, but:
+//   - contract.h operates on topology only (no kernel_info dependency)
+//   - coarsen.h merges kernel_info metadata alongside the topology
+// Use contract.h when you have group assignments but no cost annotations.
+// Use coarsen.h when you need fused kernel_info on the coarsened graph.
+//
 // ALGORITHM:
 // Given a directed graph G and a group assignment (node → group_id),
 // produce a contracted graph G' where:

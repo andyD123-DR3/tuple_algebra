@@ -61,7 +61,10 @@
 #include "merge_rules.h"
 
 // --- I/O ---
-#include "graph_io.h"
+// graph_io.h is intentionally excluded from the umbrella header because
+// its runtime I/O functions pull in <iostream> and <string>, which are
+// expensive to compile.  Include graph_io.h directly when needed:
+//   #include <ctdp/graph/graph_io.h>
 
 // --- Helpers ---
 #include "array_helpers.h"

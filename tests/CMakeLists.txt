@@ -61,6 +61,9 @@ ctdp_add_test(graph_step2_test graph/graph_step2_test.cc)
 # Step 3: Topological sort, SCC, connected components
 ctdp_add_test(graph_step3_test graph/graph_step3_test.cc)
 
+# (Step 4 — annotations: property_map, kernel_info, I/O — was folded into
+#  test_graph_io and the hardening tests rather than a standalone step file.)
+
 # Step 5: Fusion legality, coarsening, fusion groups
 ctdp_add_test(graph_step5_test graph/graph_step5_test.cc)
 
