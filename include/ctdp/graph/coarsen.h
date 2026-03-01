@@ -43,7 +43,7 @@ namespace ctdp::graph {
 /// from original nodes to super-nodes (same as input group_of).
 template<std::size_t MaxV, std::size_t MaxE>
 struct coarsen_result {
-    constexpr_graph<MaxV, MaxE> graph{};
+    constexpr_graph<cap_from<MaxV, MaxE>> graph{};
     kernel_map<MaxV> kernels{};
     std::size_t group_count = 0;
 };
@@ -126,7 +126,7 @@ coarsen(G const& g,
     }
 
     // Step 2: Build coarsened graph edges.
-    graph_builder<MaxV, MaxE> builder;
+    graph_builder<cap_from<MaxV, MaxE>> builder;
     for (std::size_t i = 0; i < group_count; ++i) {
         [[maybe_unused]] auto n = builder.add_node();
     }

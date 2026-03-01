@@ -28,14 +28,14 @@ using namespace ctdp::graph;
 // =============================================================================
 
 // This should compile fine: MaxV within uint16_t range.
-static_assert(constexpr_graph<512, 1024>::max_vertices == 512);
+static_assert(constexpr_graph<cap_from<512, 1024>>::max_vertices == 512);
 
 // The following would fail to compile (uncomment to verify):
-// constexpr_graph<70000, 1024> too_big;  // static_assert: MaxV > 65535
+// constexpr_graph<cap_from<70000, 1024>> too_big;  // static_assert: MaxV > 65535
 
 TEST(GraphHardening, Uint16StaticAssert) {
     // Verify the static_assert doesn't fire for valid sizes.
-    constexpr_graph<64, 128> small;
+    constexpr_graph<cap_from<64, 128>> small;
     EXPECT_EQ(small.node_count(), 0u);
 }
 
@@ -46,7 +46,7 @@ TEST(GraphHardening, Uint16StaticAssert) {
 TEST(GraphHardening, BuilderAddNodeWithinCapacity) {
     // Normal usage should work fine.
     constexpr auto g = []() {
-        graph_builder<4, 8> b;
+        graph_builder<cap_from<4, 8>> b;
         auto n0 = b.add_node();
         auto n1 = b.add_node();
         auto n2 = b.add_node();
@@ -63,7 +63,7 @@ TEST(GraphHardening, BuilderAddNodeWithinCapacity) {
 
 TEST(GraphHardening, BuilderAddNodesWithinCapacity) {
     constexpr auto g = []() {
-        graph_builder<8, 16> b;
+        graph_builder<cap_from<8, 16>> b;
         auto first = b.add_nodes(5);
         // first should be node 0
         b.add_edge(first, node_id{1});
@@ -75,7 +75,7 @@ TEST(GraphHardening, BuilderAddNodesWithinCapacity) {
 
 // The following would fail at compile time due to capacity guard:
 // constexpr auto overflow = []() {
-//     graph_builder<2, 4> b;
+//     graph_builder<cap_from<2, 4>> b;
 //     b.add_node(); b.add_node();
 //     b.add_node();  // BOOM: V_ >= MaxV
 //     return b.finalise();
@@ -116,7 +116,7 @@ TEST(GraphHardening, ConnectedComponentsCapacityGuardPasses) {
 TEST(GraphHardening, CoarsenValidGroupAssignment) {
     // Chain 0→1→2→3, group {0,1}=0 and {2,3}=1
     constexpr auto g = from_pipeline<8>(4);
-    constexpr auto kmap = make_uniform_kernel_map<8>(g,
+    [[maybe_unused]] constexpr auto kmap = make_uniform_kernel_map<8>(g,
         kernel_info{.flops = 10, .bytes_read = 40});
 
     constexpr auto result = []() {

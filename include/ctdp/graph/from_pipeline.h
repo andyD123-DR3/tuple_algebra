@@ -6,6 +6,7 @@
 // kernel fusion. from_pipeline(N) creates an explicit constexpr_graph
 // with edges 0→1→2→...→N-1.
 
+
 #ifndef CTDP_GRAPH_FROM_PIPELINE_H
 #define CTDP_GRAPH_FROM_PIPELINE_H
 

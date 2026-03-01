@@ -412,9 +412,9 @@ build_row_graph_with(sparse_pattern<MaxRows, MaxNNZ> const& pat) {
 /// topological_sort, build_schedule_space, build_constraints.
 template<std::size_t MaxV, std::size_t MaxE,
          std::size_t MaxRows, std::size_t MaxNNZ>
-[[nodiscard]] constexpr constexpr_graph<MaxV, MaxE>
+[[nodiscard]] constexpr constexpr_graph<cap_from<MaxV, MaxE>>
 build_row_graph(sparse_pattern<MaxRows, MaxNNZ> const& pat) {
-    return build_row_graph_with<graph_builder<MaxV, MaxE>>(pat);
+    return build_row_graph_with<graph_builder<cap_from<MaxV, MaxE>>>(pat);
 }
 
 /// Undirected row-conflict graph for coloring algorithms.
@@ -422,9 +422,9 @@ build_row_graph(sparse_pattern<MaxRows, MaxNNZ> const& pat) {
 /// Returns symmetric_graph (u↔v) — suitable for graph_coloring.
 template<std::size_t MaxV, std::size_t MaxE,
          std::size_t MaxRows, std::size_t MaxNNZ>
-[[nodiscard]] constexpr symmetric_graph<MaxV, MaxE>
+[[nodiscard]] constexpr symmetric_graph<cap_from<MaxV, MaxE>>
 build_row_conflict_graph(sparse_pattern<MaxRows, MaxNNZ> const& pat) {
-    return build_row_graph_with<symmetric_graph_builder<MaxV, MaxE>>(pat);
+    return build_row_graph_with<symmetric_graph_builder<cap_from<MaxV, MaxE>>>(pat);
 }
 
 // =============================================================================
@@ -469,8 +469,8 @@ template<std::size_t MaxV, std::size_t MaxE>
 struct spmv_analysis {
     sparsity_metrics metrics{};
     format_recommendation format{};
-    constexpr_graph<MaxV, MaxE> row_graph{};
-    symmetric_graph<MaxV, MaxE> conflict_graph{};  // undirected, for coloring
+    constexpr_graph<cap_from<MaxV, MaxE>> row_graph{};
+    symmetric_graph<cap_from<MaxV, MaxE>> conflict_graph{};  // undirected, for coloring
     kernel_map<MaxV> kernels{};
     fuse_group_result<MaxV> fusion{};
     schedule_space<MaxV> space{};

@@ -40,6 +40,7 @@
 #ifndef CTDP_GRAPH_WEIGHTED_VIEW_H
 #define CTDP_GRAPH_WEIGHTED_VIEW_H
 
+#include "capacity_types.h"
 #include "constexpr_graph.h"
 #include "edge_property_map.h"
 #include "graph_concepts.h"
@@ -309,7 +310,7 @@ make_weighted_view(Graph const& graph,
 template<std::size_t MaxV, std::size_t MaxE, typename Weight>
 [[nodiscard]] constexpr bool
 verify_symmetric_weights(
-    symmetric_graph<MaxV, MaxE> const& g,
+    symmetric_graph<cap_from<MaxV, MaxE>> const& g,
     edge_property_map<Weight, 2 * MaxE> const& weights)
 {
     auto const& d = g.directed();
@@ -385,7 +386,7 @@ concept symmetric_weighted_queryable =
 namespace detail_verify {
 template<std::size_t V, std::size_t E>
 using test_directed_weighted =
-    weighted_view<constexpr_graph<V, E>, double, E>;
+    weighted_view<constexpr_graph<cap_from<V, E>>, double, E>;
 } // namespace detail_verify
 
 static_assert(graph_queryable<

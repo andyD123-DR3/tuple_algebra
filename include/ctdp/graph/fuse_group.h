@@ -110,7 +110,7 @@ find_fusion_groups(G const& g,
     // Step 2: Build undirected fusability graph.
     // Add both directions for each fusion pair so union-find in
     // connected_components sees them as undirected.
-    graph_builder<MaxV, MaxE> fb;
+    graph_builder<cap_from<MaxV, MaxE>> fb;
     for (std::size_t i = 0; i < V; ++i) {
         [[maybe_unused]] auto n = fb.add_node();
     }
@@ -126,7 +126,7 @@ find_fusion_groups(G const& g,
 
     // Step 4: Validate acyclicity of the coarsened graph.
     // Build the coarsened graph directly (lightweight check).
-    graph_builder<MaxV, MaxE> cb;
+    graph_builder<cap_from<MaxV, MaxE>> cb;
     for (std::size_t i = 0; i < cc.component_count; ++i) {
         [[maybe_unused]] auto n = cb.add_node();
     }

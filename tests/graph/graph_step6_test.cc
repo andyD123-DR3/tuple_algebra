@@ -23,19 +23,19 @@ using namespace ctdp::graph;
 // =============================================================================
 
 constexpr auto make_empty() {
-    graph_builder<8, 16> b;
+    graph_builder<cap_from<8, 16>> b;
     return b.finalise();
 }
 
 constexpr auto make_singleton() {
-    graph_builder<8, 16> b;
+    graph_builder<cap_from<8, 16>> b;
     [[maybe_unused]] auto n = b.add_node();
     return b.finalise();
 }
 
 // 0→1→2→3
 constexpr auto make_chain() {
-    graph_builder<8, 16> b;
+    graph_builder<cap_from<8, 16>> b;
     auto n0 = b.add_node();
     auto n1 = b.add_node();
     auto n2 = b.add_node();
@@ -48,7 +48,7 @@ constexpr auto make_chain() {
 
 // 0→1, 0→2, 1→3, 2→3
 constexpr auto make_diamond() {
-    graph_builder<8, 16> b;
+    graph_builder<cap_from<8, 16>> b;
     auto n0 = b.add_node();
     auto n1 = b.add_node();
     auto n2 = b.add_node();
@@ -62,7 +62,7 @@ constexpr auto make_diamond() {
 
 // 0→1, 2→3 (disconnected)
 constexpr auto make_disconnected() {
-    graph_builder<8, 16> b;
+    graph_builder<cap_from<8, 16>> b;
     auto n0 = b.add_node();
     auto n1 = b.add_node();
     auto n2 = b.add_node();
@@ -74,7 +74,7 @@ constexpr auto make_disconnected() {
 
 // 0→1, 0→2, 0→3, 0→4
 constexpr auto make_star() {
-    graph_builder<8, 16> b;
+    graph_builder<cap_from<8, 16>> b;
     auto n0 = b.add_node();
     auto n1 = b.add_node();
     auto n2 = b.add_node();
@@ -89,7 +89,7 @@ constexpr auto make_star() {
 
 // Two sources converge: 0→2, 1→2, 2→3
 constexpr auto make_converge() {
-    graph_builder<8, 16> b;
+    graph_builder<cap_from<8, 16>> b;
     auto n0 = b.add_node();
     auto n1 = b.add_node();
     auto n2 = b.add_node();
