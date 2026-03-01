@@ -88,6 +88,15 @@ ctdp_add_test(test_weighted_view graph/test_weighted_view.cpp)
 # Graph transforms: transpose, induced_subgraph, contract
 ctdp_add_test(test_transforms graph/test_transforms.cpp)
 
+# Graph merge rules: named merge policies + group reduction
+ctdp_add_test(test_merge_rules graph/test_merge_rules.cpp)
+
+# Segmentation DP: composite DP over graph partitions
+ctdp_add_test(test_segmentation_dp graph/test_segmentation_dp.cpp)
+
+# Graph umbrella header: compilation + smoke test
+ctdp_add_test(test_graph_umbrella graph/test_graph_umbrella.cpp)
+
 # Bipartite matching: bipartite_graph, Hopcroft-Karp
 ctdp_add_test(test_bipartite_matching graph/test_bipartite_matching.cpp)
 
@@ -111,6 +120,9 @@ add_custom_target(check
             test_graph_coloring
             test_weighted_view
             test_transforms
+            test_merge_rules
+            test_segmentation_dp
+            test_graph_umbrella
             test_bipartite_matching
             test_instantiation
             test_solver_concepts test_per_element_space
