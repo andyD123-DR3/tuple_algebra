@@ -26,6 +26,9 @@ ctdp_add_test(test_io_lexer core/test_io_lexer.cpp)
 # ── Solver library tests (original Half A) ───────────────────────────────
 ctdp_add_test(solver_test solver/solver_test.cc)
 
+# ── Solver I/O tests (cost table) ────────────────────────────────────────
+ctdp_add_test(test_cost_table_io solver/test_cost_table_io.cpp)
+
 # ── Solver library tests (integrated Half B: algorithms, spaces, cost models, memo)
 ctdp_add_test(test_solver_concepts     test_solver_concepts.cpp)
 ctdp_add_test(test_per_element_space   test_per_element_space.cpp)
@@ -153,6 +156,7 @@ add_custom_target(check
             test_heterogeneous_space
             test_constrained_search
             test_constraints
+            test_cost_table_io
             test_space_v072
     COMMENT "Running all CTDP tests"
 )
