@@ -13,7 +13,7 @@ using namespace ctdp::graph;
 
 TEST(SymmetricGraph, EmptyGraph) {
     constexpr auto g = []() {
-        symmetric_graph_builder<4, 8> b;
+        symmetric_graph_builder<cap_from<4, 8>> b;
         return b.finalise();
     }();
 
@@ -25,7 +25,7 @@ TEST(SymmetricGraph, EmptyGraph) {
 
 TEST(SymmetricGraph, SingleEdge) {
     constexpr auto g = []() {
-        symmetric_graph_builder<4, 8> b;
+        symmetric_graph_builder<cap_from<4, 8>> b;
         auto n0 = b.add_node();
         auto n1 = b.add_node();
         b.add_edge(n0, n1);
@@ -39,7 +39,7 @@ TEST(SymmetricGraph, SingleEdge) {
 
 TEST(SymmetricGraph, Triangle) {
     constexpr auto g = []() {
-        symmetric_graph_builder<4, 8> b;
+        symmetric_graph_builder<cap_from<4, 8>> b;
         auto n0 = b.add_node();
         auto n1 = b.add_node();
         auto n2 = b.add_node();
@@ -56,7 +56,7 @@ TEST(SymmetricGraph, Triangle) {
 
 TEST(SymmetricGraph, SelfEdgeIgnored) {
     constexpr auto g = []() {
-        symmetric_graph_builder<4, 8> b;
+        symmetric_graph_builder<cap_from<4, 8>> b;
         auto n0 = b.add_node();
         [[maybe_unused]] auto n1 = b.add_node();
         b.add_edge(n0, n0);  // self-edge — should be ignored
@@ -69,7 +69,7 @@ TEST(SymmetricGraph, SelfEdgeIgnored) {
 
 TEST(SymmetricGraph, DuplicateEdgeDeduped) {
     constexpr auto g = []() {
-        symmetric_graph_builder<4, 8> b;
+        symmetric_graph_builder<cap_from<4, 8>> b;
         auto n0 = b.add_node();
         auto n1 = b.add_node();
         b.add_edge(n0, n1);
@@ -89,7 +89,7 @@ TEST(SymmetricGraph, DuplicateEdgeDeduped) {
 
 TEST(SymmetricGraph, NeighborsSymmetric) {
     constexpr auto g = []() {
-        symmetric_graph_builder<8, 16> b;
+        symmetric_graph_builder<cap_from<8, 16>> b;
         auto n0 = b.add_node();
         auto n1 = b.add_node();
         auto n2 = b.add_node();
@@ -116,7 +116,7 @@ TEST(SymmetricGraph, NeighborsSymmetric) {
 TEST(SymmetricGraph, NeighborsAlias) {
     // neighbors() and out_neighbors() return the same thing.
     constexpr auto g = []() {
-        symmetric_graph_builder<4, 8> b;
+        symmetric_graph_builder<cap_from<4, 8>> b;
         auto n0 = b.add_node();
         auto n1 = b.add_node();
         b.add_edge(n0, n1);
@@ -132,7 +132,7 @@ TEST(SymmetricGraph, NeighborsAlias) {
 
 TEST(SymmetricGraph, AdjacentQuery) {
     constexpr auto g = []() {
-        symmetric_graph_builder<4, 8> b;
+        symmetric_graph_builder<cap_from<4, 8>> b;
         auto n0 = b.add_node();
         auto n1 = b.add_node();
         [[maybe_unused]] auto n2 = b.add_node();
@@ -152,7 +152,7 @@ TEST(SymmetricGraph, AdjacentQuery) {
 
 TEST(SymmetricGraph, MaxDegree) {
     constexpr auto g = []() {
-        symmetric_graph_builder<8, 16> b;
+        symmetric_graph_builder<cap_from<8, 16>> b;
         auto n0 = b.add_node();
         auto n1 = b.add_node();
         auto n2 = b.add_node();
@@ -174,8 +174,8 @@ TEST(SymmetricGraph, MaxDegree) {
 // =============================================================================
 
 TEST(SymmetricGraph, Concepts) {
-    using SG = symmetric_graph<8, 16>;
-    using DG = constexpr_graph<8, 16>;
+    using SG = symmetric_graph<cap_from<8, 16>>;
+    using DG = constexpr_graph<cap_from<8, 16>>;
 
     static_assert(graph_queryable<SG>);
     static_assert(sized_graph<SG>);
@@ -192,7 +192,7 @@ TEST(SymmetricGraph, Concepts) {
 
 TEST(SymmetricGraph, ConnectedComponents) {
     constexpr auto g = []() {
-        symmetric_graph_builder<8, 16> b;
+        symmetric_graph_builder<cap_from<8, 16>> b;
         // Component 1: {0, 1, 2}
         auto n0 = b.add_node();
         auto n1 = b.add_node();
@@ -223,7 +223,7 @@ TEST(SymmetricGraph, ConnectedComponents) {
 
 TEST(SymmetricGraph, PetersenGraph) {
     constexpr auto g = []() {
-        symmetric_graph_builder<16, 32> b;
+        symmetric_graph_builder<cap_from<16, 32>> b;
         for (int i = 0; i < 10; ++i) (void)b.add_node();
 
         // Outer cycle: 0-1-2-3-4-0
@@ -268,7 +268,7 @@ TEST(SymmetricGraph, PetersenGraph) {
 // =============================================================================
 
 constexpr auto make_path_4() {
-    symmetric_graph_builder<8, 8> b;
+    symmetric_graph_builder<cap_from<8, 8>> b;
     auto n0 = b.add_node();
     auto n1 = b.add_node();
     auto n2 = b.add_node();

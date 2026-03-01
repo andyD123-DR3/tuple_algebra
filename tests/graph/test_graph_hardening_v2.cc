@@ -3,6 +3,7 @@
 // capacity guards on fusion_legal, fuse_group, coarsen.
 
 #include "ctdp/graph/graph_builder.h"
+#include "ctdp/graph/capacity_types.h"
 #include "ctdp/graph/constexpr_graph.h"
 #include "ctdp/graph/property_map.h"
 #include "ctdp/graph/scc.h"
@@ -18,9 +19,10 @@ using namespace ctdp::graph;
 // P0-1: add_edge validation
 // =============================================================================
 
+
 TEST(GraphHardeningV2, AddEdgeRejectsInvalidSourceAtRuntime) {
     // At runtime, require_capacity throws on invalid node_id.
-    graph_builder<4, 8> b;
+    graph_builder<cap_from<4, 8>> b;
     auto n0 = b.add_node();
     auto n1 = b.add_node();
     (void)n0; (void)n1;
@@ -30,7 +32,7 @@ TEST(GraphHardeningV2, AddEdgeRejectsInvalidSourceAtRuntime) {
 }
 
 TEST(GraphHardeningV2, AddEdgeRejectsInvalidTargetAtRuntime) {
-    graph_builder<4, 8> b;
+    graph_builder<cap_from<4, 8>> b;
     auto n0 = b.add_node();
     (void)n0;
 
@@ -38,14 +40,14 @@ TEST(GraphHardeningV2, AddEdgeRejectsInvalidTargetAtRuntime) {
 }
 
 TEST(GraphHardeningV2, AddEdgeRejectsOnEmptyGraph) {
-    graph_builder<4, 8> b;
+    graph_builder<cap_from<4, 8>> b;
     // No nodes added at all.
     EXPECT_THROW(b.add_edge(node_id{0}, node_id{1}), std::logic_error);
 }
 
 TEST(GraphHardeningV2, AddEdgeAcceptsValidIds) {
     // Should not throw.
-    graph_builder<4, 8> b;
+    graph_builder<cap_from<4, 8>> b;
     auto n0 = b.add_node();
     auto n1 = b.add_node();
     EXPECT_NO_THROW(b.add_edge(n0, n1));
@@ -54,7 +56,7 @@ TEST(GraphHardeningV2, AddEdgeAcceptsValidIds) {
 }
 
 TEST(GraphHardeningV2, SymmetricBuilderRejectsInvalidIds) {
-    symmetric_graph_builder<4, 8> b;
+    symmetric_graph_builder<cap_from<4, 8>> b;
     auto n0 = b.add_node();
     (void)n0;
 
@@ -72,7 +74,7 @@ TEST(GraphHardeningV2, SymmetricBuilderRejectsInvalidIds) {
 TEST(GraphHardeningV2, SCCStarGraphCorrectness) {
     constexpr std::size_t N = 64;
     constexpr auto g = []() {
-        graph_builder<N, N> b;
+        graph_builder<cap_from<N, N>> b;
         for (std::size_t i = 0; i < N; ++i) (void)b.add_node();
         for (std::size_t i = 1; i < N; ++i) {
             b.add_edge(node_id{0}, node_id{static_cast<std::uint16_t>(i)});
@@ -92,7 +94,7 @@ TEST(GraphHardeningV2, SCCStarGraphCorrectness) {
 TEST(GraphHardeningV2, SCCCycleGraph) {
     constexpr std::size_t N = 32;
     constexpr auto g = []() {
-        graph_builder<N, N> b;
+        graph_builder<cap_from<N, N>> b;
         for (std::size_t i = 0; i < N; ++i) (void)b.add_node();
         for (std::size_t i = 0; i < N; ++i) {
             b.add_edge(
@@ -117,7 +119,7 @@ TEST(GraphHardeningV2, SCCCompleteDag) {
     constexpr std::size_t N = 16;
     constexpr std::size_t E = N * (N - 1) / 2;
     constexpr auto g = []() {
-        graph_builder<N, E + 1> b;
+        graph_builder<cap_from<N, E + 1>> b;
         for (std::size_t i = 0; i < N; ++i) (void)b.add_node();
         for (std::size_t i = 0; i < N; ++i) {
             for (std::size_t j = i + 1; j < N; ++j) {
@@ -144,7 +146,7 @@ TEST(GraphHardeningV2, PropertyMapFactoryGuard) {
     // Build a graph with 4 nodes, but try to make a property_map with MaxV=2.
     // This should throw at runtime (and would fail constexpr at compile time).
     auto g = []() {
-        graph_builder<8, 8> b;
+        graph_builder<cap_from<8, 8>> b;
         for (int i = 0; i < 4; ++i) (void)b.add_node();
         return b.finalise();
     }();
@@ -165,7 +167,7 @@ TEST(GraphHardeningV2, IncludeHygiene) {
     // If we got here, all graph headers compiled with <ctdp/core/...> paths.
     // Verify a few key types are accessible.
     constexpr auto g = []() {
-        graph_builder<4, 4> b;
+        graph_builder<cap_from<4, 4>> b;
         auto n0 = b.add_node();
         auto n1 = b.add_node();
         b.add_edge(n0, n1);

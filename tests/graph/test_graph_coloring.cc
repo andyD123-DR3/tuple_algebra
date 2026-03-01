@@ -5,6 +5,7 @@
 #include "ctdp/engine/bridge/coloring_to_groups.h"
 #include "ctdp/graph/symmetric_graph.h"
 #include "ctdp/graph/graph_builder.h"
+#include "ctdp/graph/capacity_types.h"
 #include <gtest/gtest.h>
 
 using namespace ctdp::graph;
@@ -13,22 +14,23 @@ using namespace ctdp::graph;
 // Helper: build common test graphs
 // =============================================================================
 
+
 // Empty graph: 0 nodes
 constexpr auto make_empty_sym() {
-    symmetric_graph_builder<4, 4> b;
+    symmetric_graph_builder<cap_from<4, 4>> b;
     return b.finalise();
 }
 
 // Single node, no edges
 constexpr auto make_isolated_node() {
-    symmetric_graph_builder<4, 4> b;
+    symmetric_graph_builder<cap_from<4, 4>> b;
     (void)b.add_node();
     return b.finalise();
 }
 
 // Single edge: 0 — 1
 constexpr auto make_single_edge() {
-    symmetric_graph_builder<4, 4> b;
+    symmetric_graph_builder<cap_from<4, 4>> b;
     auto n0 = b.add_node();
     auto n1 = b.add_node();
     b.add_edge(n0, n1);
@@ -37,7 +39,7 @@ constexpr auto make_single_edge() {
 
 // Triangle: 0 — 1 — 2 — 0
 constexpr auto make_triangle() {
-    symmetric_graph_builder<4, 4> b;
+    symmetric_graph_builder<cap_from<4, 4>> b;
     auto n0 = b.add_node();
     auto n1 = b.add_node();
     auto n2 = b.add_node();
@@ -49,7 +51,7 @@ constexpr auto make_triangle() {
 
 // Path: 0 — 1 — 2 — 3
 constexpr auto make_path4() {
-    symmetric_graph_builder<4, 4> b;
+    symmetric_graph_builder<cap_from<4, 4>> b;
     auto n0 = b.add_node();
     auto n1 = b.add_node();
     auto n2 = b.add_node();
@@ -62,7 +64,7 @@ constexpr auto make_path4() {
 
 // Complete graph K4: every pair connected
 constexpr auto make_k4() {
-    symmetric_graph_builder<4, 8> b;
+    symmetric_graph_builder<cap_from<4, 8>> b;
     auto n0 = b.add_node();
     auto n1 = b.add_node();
     auto n2 = b.add_node();
@@ -78,7 +80,7 @@ constexpr auto make_k4() {
 
 // Star: node 0 connected to all others
 constexpr auto make_star5() {
-    symmetric_graph_builder<8, 8> b;
+    symmetric_graph_builder<cap_from<8, 8>> b;
     auto center = b.add_node();
     for (std::size_t i = 0; i < 4; ++i) {
         auto leaf = b.add_node();
@@ -89,7 +91,7 @@ constexpr auto make_star5() {
 
 // Bipartite K_{2,3}: {0,1} connected to {2,3,4}
 constexpr auto make_bipartite() {
-    symmetric_graph_builder<8, 8> b;
+    symmetric_graph_builder<cap_from<8, 8>> b;
     for (std::size_t i = 0; i < 5; ++i) (void)b.add_node();
     b.add_edge(node_id{0}, node_id{2});
     b.add_edge(node_id{0}, node_id{3});
@@ -102,7 +104,7 @@ constexpr auto make_bipartite() {
 
 // Petersen graph: 10 nodes, 15 edges, 3-regular, chromatic number = 3
 constexpr auto make_petersen() {
-    symmetric_graph_builder<10, 16> b;
+    symmetric_graph_builder<cap_from<10, 16>> b;
     for (std::size_t i = 0; i < 10; ++i) (void)b.add_node();
     // Outer cycle: 0-1-2-3-4-0
     b.add_edge(node_id{0}, node_id{1});
@@ -127,7 +129,7 @@ constexpr auto make_petersen() {
 
 // Cycle C5 (odd cycle, chromatic number = 3)
 constexpr auto make_cycle5() {
-    symmetric_graph_builder<8, 8> b;
+    symmetric_graph_builder<cap_from<8, 8>> b;
     for (std::size_t i = 0; i < 5; ++i) (void)b.add_node();
     for (std::size_t i = 0; i < 5; ++i) {
         b.add_edge(
@@ -308,7 +310,7 @@ TEST(GraphColoring, QualityMetric) {
 TEST(GraphColoring, DisconnectedGraph) {
     // Two isolated edges: {0-1} and {2-3}
     constexpr auto g = []() {
-        symmetric_graph_builder<4, 4> b;
+        symmetric_graph_builder<cap_from<4, 4>> b;
         for (std::size_t i = 0; i < 4; ++i) (void)b.add_node();
         b.add_edge(node_id{0}, node_id{1});
         b.add_edge(node_id{2}, node_id{3});
@@ -385,11 +387,11 @@ static_assert(coloring_pipeline_test().is_valid_dag);
 
 TEST(GraphColoring, ConceptEnforcement) {
     // symmetric_graph satisfies symmetric_graph_queryable.
-    using SG = symmetric_graph<4, 4>;
+    using SG = symmetric_graph<cap_from<4, 4>>;
     static_assert(symmetric_graph_queryable<SG>);
 
     // constexpr_graph does NOT satisfy symmetric_graph_queryable.
-    using CG = constexpr_graph<4, 4>;
+    using CG = constexpr_graph<cap_from<4, 4>>;
     static_assert(!symmetric_graph_queryable<CG>);
 
     // Therefore graph_coloring(constexpr_graph{}) would be a compile error.
@@ -419,7 +421,7 @@ TEST(GraphColoring, BandedRowConflict) {
     // This is a path graph — should be 2-colourable.
     constexpr std::size_t N = 8;
     constexpr auto g = []() {
-        symmetric_graph_builder<N, N> b;
+        symmetric_graph_builder<cap_from<N, N>> b;
         for (std::size_t i = 0; i < N; ++i) (void)b.add_node();
         for (std::size_t i = 0; i + 1 < N; ++i) {
             b.add_edge(
