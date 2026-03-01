@@ -63,6 +63,7 @@ ctdp_add_test(graph_step3_test graph/graph_step3_test.cc)
 
 # (Step 4 — annotations: property_map, kernel_info, I/O — was folded into
 #  test_graph_io and the hardening tests rather than a standalone step file.)
+ctdp_add_test(test_graph_io graph/test_graph_io.cpp)
 
 # Step 5: Fusion legality, coarsening, fusion groups
 ctdp_add_test(graph_step5_test graph/graph_step5_test.cc)
@@ -126,6 +127,7 @@ add_custom_target(check
             test_merge_rules
             test_segmentation_dp
             test_graph_umbrella
+            test_graph_io
             test_bipartite_matching
             test_instantiation
             test_solver_concepts test_per_element_space

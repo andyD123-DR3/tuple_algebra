@@ -50,7 +50,7 @@ TEST(GraphIO, ConstexprParseDirected) {
 
     // Build the same graph manually and compare.
     constexpr auto expected = []() {
-        cg::graph_builder<cap_from<8, 24>> b;
+        cg::graph_builder<cg::cap::tiny> b;
         auto n0 = b.add_node();
         auto n1 = b.add_node();
         auto n2 = b.add_node();
@@ -130,7 +130,7 @@ TEST(GraphIO, ConstexprParseWeighted) {
 TEST(GraphIO, RuntimeRoundTripDirected) {
     // Build a graph.
     auto g = []() {
-        cg::graph_builder<cap_from<16, 64>> b;
+        cg::graph_builder<cg::cap::small> b;
         auto n0 = b.add_node();
         auto n1 = b.add_node();
         auto n2 = b.add_node();
