@@ -30,7 +30,7 @@ namespace ctdp::graph::io {
 ///   0 -> 2;
 /// }
 /// ```
-template<typename G>
+template<graph_queryable G>
 void write_dot(std::ostream& os, G const& g,
                std::string_view graph_name = "G")
 {
@@ -58,7 +58,7 @@ void write_dot(std::ostream& os, G const& g,
 }
 
 /// Write a weighted graph in DOT format with edge labels.
-template<typename G, typename WeightFn>
+template<graph_queryable G, typename WeightFn>
     requires std::invocable<WeightFn, G const&, std::size_t>
 void write_dot(std::ostream& os, G const& g, WeightFn weight_fn,
                std::string_view graph_name = "G")

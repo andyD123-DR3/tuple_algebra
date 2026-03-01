@@ -42,7 +42,7 @@ namespace ctdp::graph::io {
 ///   ...
 ///
 /// Output for symmetric graphs adds a `symmetric` flag line.
-template<typename G>
+template<graph_queryable G>
 void write(std::ostream& os, G const& g) {
     os << "nodes " << g.node_count() << '\n';
 
@@ -64,7 +64,7 @@ void write(std::ostream& os, G const& g) {
 }
 
 /// Write a weighted graph.  WeightFn(graph, edge_index) -> numeric weight.
-template<typename G, typename WeightFn>
+template<graph_queryable G, typename WeightFn>
     requires std::invocable<WeightFn, G const&, std::size_t>
 void write(std::ostream& os, G const& g, WeightFn weight_fn) {
     os << "nodes " << g.node_count() << '\n';
