@@ -564,3 +564,62 @@ TEST(GraphIO, TagObjectRoundTrip) {
 
     EXPECT_TRUE(cg::graph_equal(g1, g2));
 }
+
+// =============================================================================
+// Task 6: Symmetric capacity-doubling validation
+// =============================================================================
+
+TEST(GraphIO, SymmetricParseCapacityDoublingError) {
+    // cap_from<4, 4> gives max 4 directed edges.
+    // 3 undirected edges -> 6 directed -> exceeds capacity.
+    constexpr auto text =
+        "nodes 4\n"
+        "edge 0 1\n"
+        "edge 0 2\n"
+        "edge 1 2\n";  // 3 * 2 = 6 > 4
+
+    using small_cap = cg::cap_from<4, 4>;
+    EXPECT_THROW(
+        (void)io::parse_symmetric<small_cap>(text),
+        std::runtime_error);
+
+    // Verify the diagnostic mentions "doubled".
+    try {
+        (void)io::parse_symmetric<small_cap>(text);
+        FAIL() << "Expected exception";
+    } catch (std::runtime_error const& e) {
+        std::string msg = e.what();
+        EXPECT_NE(msg.find("doubled"), std::string::npos)
+            << "Diagnostic should mention 'doubled': " << msg;
+    }
+}
+
+TEST(GraphIO, SymmetricStreamCapacityDoublingError) {
+    // Same test but via runtime read_symmetric.
+    // cap_from<4, 4>: max 4 directed edges, 3 undirected = 6 directed.
+    std::istringstream iss(
+        "nodes 4\n"
+        "edge 0 1\n"
+        "edge 0 2\n"
+        "edge 1 2\n");
+
+    using small_cap = cg::cap_from<4, 4>;
+    EXPECT_THROW(
+        (void)io::read_symmetric<small_cap>(iss),
+        std::runtime_error);
+
+    // Verify the diagnostic mentions "doubled" (same check as constexpr test).
+    std::istringstream iss2(
+        "nodes 4\n"
+        "edge 0 1\n"
+        "edge 0 2\n"
+        "edge 1 2\n");
+    try {
+        (void)io::read_symmetric<small_cap>(iss2);
+        FAIL() << "Expected exception";
+    } catch (std::runtime_error const& e) {
+        std::string msg = e.what();
+        EXPECT_NE(msg.find("doubled"), std::string::npos)
+            << "Diagnostic should mention 'doubled': " << msg;
+    }
+}
