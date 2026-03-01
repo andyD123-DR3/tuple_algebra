@@ -34,6 +34,8 @@ namespace ctdp::calibrator::examples {
 struct memory_point {
     std::size_t bytes = 0;   ///< Working set size in bytes
     int         stride = 64; ///< Access stride in bytes (cache line)
+
+    bool operator==(memory_point const&) const = default;
 };
 
 /// Application identity: "array traversal at various sizes"
@@ -138,6 +140,8 @@ enum class parse_strategy : int {
 struct parser_point {
     int            digits   = 0;
     parse_strategy strategy = parse_strategy::generic;
+
+    bool operator==(parser_point const&) const = default;
 };
 
 /// Application identity: "integer field parser"
