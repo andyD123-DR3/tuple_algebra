@@ -20,6 +20,13 @@ target_link_libraries(variadic_reduce PRIVATE ctdp_algebra)
 add_executable(matrix_chain_demo matrix_chain_demo.cpp)
 target_link_libraries(matrix_chain_demo PRIVATE ctdp_all)
 
+# ── Matrix Chain ET (Expression Template Instantiation) ──────────────────────
+# Companion to matrix_chain_demo.  Proves the plan can be instantiated as a
+# TYPE: compile-time DP → nested Mul<L,R> expression template → zero-overhead
+# execution.  Association order locked by type system.  Self-contained (no
+# framework headers) for Godbolt portability.
+add_executable(matrix_chain_et matrix_chain_et.cpp)
+
 # ── Per-Element Demo ─────────────────────────────────────────────────────────
 # Factored optimisation: additive cost, dynamic constraints, select_and_run.
 add_executable(per_element_demo per_element_demo.cpp)
@@ -32,6 +39,7 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
     target_compile_options(spmv_benchmark PRIVATE -O3 -march=native)
     target_compile_options(variadic_reduce PRIVATE -O3 -march=native)
     target_compile_options(matrix_chain_demo PRIVATE -O3 -march=native)
+    target_compile_options(matrix_chain_et PRIVATE -O2)
     target_compile_options(per_element_demo PRIVATE -O3 -march=native)
 elseif(CMAKE_CXX_COMPILER_ID STREQUAL "Clang" OR
        CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
@@ -40,12 +48,14 @@ elseif(CMAKE_CXX_COMPILER_ID STREQUAL "Clang" OR
     target_compile_options(spmv_benchmark PRIVATE -O3 -march=native)
     target_compile_options(variadic_reduce PRIVATE -O3 -march=native)
     target_compile_options(matrix_chain_demo PRIVATE -O3 -march=native)
+    target_compile_options(matrix_chain_et PRIVATE -O2)
     target_compile_options(per_element_demo PRIVATE -O3 -march=native)
 elseif(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
     target_compile_options(fix_cacheline PRIVATE /O2 /constexpr:steps300000000)
     target_compile_options(spmv_benchmark PRIVATE /O2)
     target_compile_options(variadic_reduce PRIVATE /O2)
     target_compile_options(matrix_chain_demo PRIVATE /O2)
+    target_compile_options(matrix_chain_et PRIVATE /O2)
     target_compile_options(per_element_demo PRIVATE /O2)
 endif()
 
