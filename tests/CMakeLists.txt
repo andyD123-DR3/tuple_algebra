@@ -21,6 +21,7 @@ endfunction()
 
 # ── Core library tests ───────────────────────────────────────────────────
 ctdp_add_test(core_test core/core_test.cc)
+ctdp_add_test(test_io_lexer core/test_io_lexer.cpp)
 
 # ── Solver library tests (original Half A) ───────────────────────────────
 ctdp_add_test(solver_test solver/solver_test.cc)
@@ -64,6 +65,9 @@ ctdp_add_test(graph_step3_test graph/graph_step3_test.cc)
 # (Step 4 — annotations: property_map, kernel_info, I/O — was folded into
 #  test_graph_io and the hardening tests rather than a standalone step file.)
 ctdp_add_test(test_graph_io graph/test_graph_io.cpp)
+
+# Graph I/O layering invariants: detail standalone, parse without iostream
+ctdp_add_test(test_io_layering graph/test_io_layering.cpp)
 
 # Step 5: Fusion legality, coarsening, fusion groups
 ctdp_add_test(graph_step5_test graph/graph_step5_test.cc)
@@ -115,7 +119,7 @@ ctdp_add_test(test_space_v072 test_space_v072.cpp)
 # ── Aggregate target ─────────────────────────────────────────────────────────
 add_custom_target(check
     COMMAND ${CMAKE_CTEST_COMMAND} --output-on-failure
-    DEPENDS core_test solver_test algebra_test
+    DEPENDS core_test test_io_lexer solver_test algebra_test
             graph_step1_test graph_step2_test graph_step3_test
             graph_step5_test graph_step6_test graph_step7_test
             graph_hardening_test
@@ -128,6 +132,7 @@ add_custom_target(check
             test_segmentation_dp
             test_graph_umbrella
             test_graph_io
+            test_io_layering
             test_bipartite_matching
             test_instantiation
             test_solver_concepts test_per_element_space
