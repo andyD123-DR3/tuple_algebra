@@ -9,7 +9,7 @@
 // symmetric_graph enforces undirectedness by construction.
 //
 // INTERNAL REPRESENTATION:
-// bipartite_graph wraps constexpr_graph<MaxL + MaxR, MaxE>.
+// bipartite_graph wraps constexpr_graph<cap_from<MaxL + MaxR, MaxE>>.
 // Nodes [0, L) are the LEFT partition.
 // Nodes [L, L+R) are the RIGHT partition.
 // All edges go from left to right (directed).  The builder rejects
@@ -26,6 +26,7 @@
 // - Variable-to-constraint matching in CSP
 // - Register allocation (variables = left, registers = right)
 // - Any maximum cardinality matching problem on a bipartite structure
+
 
 #ifndef CTDP_GRAPH_BIPARTITE_GRAPH_H
 #define CTDP_GRAPH_BIPARTITE_GRAPH_H
@@ -76,7 +77,7 @@ class bipartite_graph {
         "bipartite_graph: both partitions must be non-empty");
 
 public:
-    using inner_graph_type = constexpr_graph<MaxL + MaxR, MaxE>;
+    using inner_graph_type = constexpr_graph<cap_from<MaxL + MaxR, MaxE>>;
 
     static constexpr std::size_t max_left = MaxL;
     static constexpr std::size_t max_right = MaxR;
@@ -287,7 +288,7 @@ public:
     }
 
 private:
-    graph_builder<MaxL + MaxR, MaxE> inner_{};
+    graph_builder<cap_from<MaxL + MaxR, MaxE>> inner_{};
     std::size_t L_ = 0;
     std::size_t R_ = 0;
     bool partition_set_ = false;
@@ -321,7 +322,7 @@ concept bipartite_graph_queryable =
 
 static_assert(graph_queryable<bipartite_graph<4, 4, 8>>);
 static_assert(bipartite_graph_queryable<bipartite_graph<4, 4, 8>>);
-static_assert(!bipartite_graph_queryable<constexpr_graph<8, 16>>);
+static_assert(!bipartite_graph_queryable<constexpr_graph<cap_from<8, 16>>>);
 // symmetric_graph negative check lives in test_bipartite_matching.cpp
 // to avoid pulling symmetric_graph.h into this header.
 

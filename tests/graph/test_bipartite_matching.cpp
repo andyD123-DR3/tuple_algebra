@@ -23,6 +23,7 @@
 
 using namespace ctdp::graph;
 
+
 // =========================================================================
 // Helper: common test graphs
 // =========================================================================
@@ -168,8 +169,8 @@ TEST(BipartiteBuilder, RejectsFinaliseBeforePartition) {
 TEST(BipartiteGraph, ConceptSatisfaction) {
     static_assert(graph_queryable<bipartite_graph<4, 4, 8>>);
     static_assert(bipartite_graph_queryable<bipartite_graph<4, 4, 8>>);
-    static_assert(!bipartite_graph_queryable<constexpr_graph<8, 16>>);
-    static_assert(!bipartite_graph_queryable<symmetric_graph<8, 16>>);
+    static_assert(!bipartite_graph_queryable<constexpr_graph<cap_from<8, 16>>>);
+    static_assert(!bipartite_graph_queryable<symmetric_graph<cap_from<8, 16>>>);
 }
 
 // =========================================================================
@@ -423,5 +424,5 @@ TEST(HopcroftKarp, LargerCapacity) {
 // 14. Negative concept checks
 // =========================================================================
 
-static_assert(!bipartite_graph_queryable<constexpr_graph<8, 16>>);
-static_assert(!bipartite_graph_queryable<symmetric_graph<8, 16>>);
+static_assert(!bipartite_graph_queryable<constexpr_graph<cap_from<8, 16>>>);
+static_assert(!bipartite_graph_queryable<symmetric_graph<cap_from<8, 16>>>);

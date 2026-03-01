@@ -25,6 +25,7 @@
 
 using namespace ctdp::graph;
 
+
 // =========================================================================
 // Test graph fixture: diamond graph  0 → 1, 0 → 2, 1 → 3, 2 → 3
 //
@@ -42,7 +43,7 @@ using namespace ctdp::graph;
 // =========================================================================
 
 constexpr auto make_diamond() {
-    graph_builder<8, 16> b;
+    graph_builder<cap_from<8, 16>> b;
     auto n0 = b.add_node();
     auto n1 = b.add_node();
     auto n2 = b.add_node();
@@ -165,7 +166,7 @@ TEST(ConstexprGraph, TopologyToken) {
 TEST(ConstexprGraph, DifferentGraphDifferentToken) {
     // Build a different graph — triangle
     constexpr auto triangle = []() {
-        graph_builder<8, 16> b;
+        graph_builder<cap_from<8, 16>> b;
         auto n0 = b.add_node();
         auto n1 = b.add_node();
         auto n2 = b.add_node();
@@ -185,16 +186,16 @@ TEST(ConstexprGraph, DifferentGraphDifferentToken) {
 
 TEST(WeightedView, ConceptSatisfaction) {
     static_assert(graph_queryable<
-        weighted_view<constexpr_graph<8, 16>, double, 16>>);
+        weighted_view<constexpr_graph<cap_from<8, 16>>, double, 16>>);
     static_assert(weighted_graph_queryable<
-        weighted_view<constexpr_graph<8, 16>, double, 16>>);
+        weighted_view<constexpr_graph<cap_from<8, 16>>, double, 16>>);
     static_assert(!symmetric_weighted_queryable<
-        weighted_view<constexpr_graph<8, 16>, double, 16>>);
+        weighted_view<constexpr_graph<cap_from<8, 16>>, double, 16>>);
 
     static_assert(weighted_graph_queryable<
-        weighted_view<symmetric_graph<8, 16>, double, 32>>);
+        weighted_view<symmetric_graph<cap_from<8, 16>>, double, 32>>);
     static_assert(symmetric_weighted_queryable<
-        weighted_view<symmetric_graph<8, 16>, double, 32>>);
+        weighted_view<symmetric_graph<cap_from<8, 16>>, double, 32>>);
 }
 
 TEST(WeightedView, ForwardsGraphQueries) {
@@ -222,7 +223,7 @@ TEST(WeightedView, SizeMismatchThrows) {
 TEST(WeightedView, TokenMismatchThrows) {
     // Build a different graph, get its token
     auto triangle = []() {
-        graph_builder<8, 16> b;
+        graph_builder<cap_from<8, 16>> b;
         auto n0 = b.add_node();
         auto n1 = b.add_node();
         auto n2 = b.add_node();
@@ -300,7 +301,7 @@ TEST(WeightedView, BoundedWeightedNeighbors) {
 // =========================================================================
 
 constexpr auto make_sym_triangle() {
-    symmetric_graph_builder<8, 16> b;
+    symmetric_graph_builder<cap_from<8, 16>> b;
     auto n0 = b.add_node();
     auto n1 = b.add_node();
     auto n2 = b.add_node();
@@ -402,7 +403,7 @@ TEST(WeightedView, ConstrainedAlgorithm) {
 TEST(WeightedView, EdgeOrderingDeterminism) {
     // Build same graph twice with edges in DIFFERENT insertion order
     constexpr auto g1 = []() {
-        graph_builder<8, 16> b;
+        graph_builder<cap_from<8, 16>> b;
         auto n0 = b.add_node(); auto n1 = b.add_node();
         auto n2 = b.add_node(); auto n3 = b.add_node();
         b.add_edge(n0, n1); b.add_edge(n0, n2);
@@ -411,7 +412,7 @@ TEST(WeightedView, EdgeOrderingDeterminism) {
     }();
 
     constexpr auto g2 = []() {
-        graph_builder<8, 16> b;
+        graph_builder<cap_from<8, 16>> b;
         auto n0 = b.add_node(); auto n1 = b.add_node();
         auto n2 = b.add_node(); auto n3 = b.add_node();
         // Reversed insertion order
@@ -440,7 +441,7 @@ TEST(WeightedView, EdgeOrderingDeterminism) {
 TEST(WeightedView, StaleMapAfterRebuild) {
     // Build graph, create weights
     auto g1 = []() {
-        graph_builder<8, 16> b;
+        graph_builder<cap_from<8, 16>> b;
         (void)b.add_node(); (void)b.add_node(); (void)b.add_node();
         b.add_edge(node_id{0}, node_id{1});
         b.add_edge(node_id{1}, node_id{2});
@@ -451,7 +452,7 @@ TEST(WeightedView, StaleMapAfterRebuild) {
 
     // "Rebuild" — add an extra edge → different topology
     auto g2 = []() {
-        graph_builder<8, 16> b;
+        graph_builder<cap_from<8, 16>> b;
         (void)b.add_node(); (void)b.add_node(); (void)b.add_node();
         b.add_edge(node_id{0}, node_id{1});
         b.add_edge(node_id{1}, node_id{2});
@@ -467,7 +468,7 @@ TEST(WeightedView, StaleMapAfterRebuild) {
 // 11. Negative concept checks
 // =========================================================================
 
-static_assert(!weighted_graph_queryable<constexpr_graph<8, 16>>);
-static_assert(!weighted_graph_queryable<symmetric_graph<8, 16>>);
+static_assert(!weighted_graph_queryable<constexpr_graph<cap_from<8, 16>>>);
+static_assert(!weighted_graph_queryable<symmetric_graph<cap_from<8, 16>>>);
 static_assert(!symmetric_weighted_queryable<
-    weighted_view<constexpr_graph<8, 16>, double, 16>>);
+    weighted_view<constexpr_graph<cap_from<8, 16>>, double, 16>>);

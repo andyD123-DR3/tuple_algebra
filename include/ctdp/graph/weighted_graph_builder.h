@@ -25,6 +25,7 @@
 #include <cstddef>
 #include <cstdint>
 
+
 namespace ctdp::graph {
 
 // =========================================================================
@@ -73,7 +74,7 @@ template<typename Weight, std::size_t MaxE, std::size_t MaxV>
     requires (MaxE > 0)
 [[nodiscard]] constexpr edge_property_map<Weight, 2 * MaxE>
 make_symmetric_weight_map(
-    symmetric_graph<MaxV, MaxE> const& g,
+    symmetric_graph<cap_from<MaxV, MaxE>> const& g,
     auto&& fn)
 {
     auto const& d = g.directed();
