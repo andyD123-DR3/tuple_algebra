@@ -163,6 +163,7 @@ template<capacity_policy Cap = cap::large>
     symmetric_graph_builder<Cap> b;
     bool have_nodes = false;
     std::size_t node_count = 0;
+    std::size_t edge_count_undirected = 0;
     std::string line;
 
     while (std::getline(is, line)) {
@@ -196,8 +197,19 @@ template<capacity_policy Cap = cap::large>
             if (src >= node_count || dst >= node_count) {
                 throw std::runtime_error("read_symmetric: node id out of range");
             }
+
+            // Each undirected edge produces two directed edges in storage.
+            // Check BEFORE add_edge to give a clear diagnostic rather than
+            // a cryptic builder overflow (std::length_error).
+            if (2 * (edge_count_undirected + 1) > Cap::max_e) {
+                throw std::runtime_error(
+                    "read_symmetric: doubled edge count exceeds capacity "
+                    "(each undirected edge produces two directed edges)");
+            }
+
             b.add_edge(node_id{static_cast<std::uint16_t>(src)},
                         node_id{static_cast<std::uint16_t>(dst)});
+            ++edge_count_undirected;
             continue;
         }
     }
