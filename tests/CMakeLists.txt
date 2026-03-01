@@ -66,6 +66,12 @@ ctdp_add_test(graph_step3_test graph/graph_step3_test.cc)
 #  test_graph_io and the hardening tests rather than a standalone step file.)
 ctdp_add_test(test_graph_io graph/test_graph_io.cpp)
 
+# Capacity policies: named tiers, concept, convenience aliases
+ctdp_add_test(test_capacity_policy graph/test_capacity_policy.cpp)
+
+# Deduction aliases: result-type deduction, is_symmetric_graph trait
+ctdp_add_test(test_deduction_aliases graph/test_deduction_aliases.cpp)
+
 # Graph I/O layering invariants: detail standalone, parse without iostream
 ctdp_add_test(test_io_layering graph/test_io_layering.cpp)
 
@@ -133,6 +139,8 @@ add_custom_target(check
             test_graph_umbrella
             test_graph_io
             test_io_layering
+            test_capacity_policy
+            test_deduction_aliases
             test_bipartite_matching
             test_instantiation
             test_solver_concepts test_per_element_space

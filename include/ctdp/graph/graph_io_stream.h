@@ -96,7 +96,11 @@ void write(std::ostream& os, G const& g, WeightFn weight_fn) {
 // =============================================================================
 
 /// Read a directed graph from a stream.  Same format as parse_directed.
-template<capacity_policy Cap = cap::medium>
+///
+/// Default capacity is cap::large (256 nodes, 1024 edges) — generous
+/// to avoid surprising failures when reading graphs of unknown size.
+/// Pass an explicit policy for tighter control: read_directed<cap::small>(is).
+template<capacity_policy Cap = cap::large>
 [[nodiscard]] auto read_directed(std::istream& is)
     -> constexpr_graph<Cap>
 {
@@ -150,7 +154,9 @@ template<capacity_policy Cap = cap::medium>
 }
 
 /// Read a symmetric (undirected) graph from a stream.
-template<capacity_policy Cap = cap::medium>
+///
+/// Default capacity is cap::large — see read_directed for rationale.
+template<capacity_policy Cap = cap::large>
 [[nodiscard]] auto read_symmetric(std::istream& is)
     -> symmetric_graph<Cap>
 {
@@ -201,6 +207,38 @@ template<capacity_policy Cap = cap::medium>
     }
 
     return b.finalise();
+}
+
+} // namespace ctdp::graph::io
+
+// =============================================================================
+// Tag-object convenience overloads
+// =============================================================================
+//
+// These allow capacity to be specified via a tag object instead of an
+// explicit template argument:
+//
+//   auto g = io::read_directed(stream, cap::small{});
+//   auto g = io::read_symmetric(stream, cap::tiny{});
+//
+// The tag is not used at runtime — it exists solely for type deduction.
+
+namespace ctdp::graph::io {
+
+/// Read a directed graph with capacity deduced from a tag object.
+template<capacity_policy Cap>
+[[nodiscard]] auto read_directed(std::istream& is, Cap /*tag*/)
+    -> constexpr_graph<Cap>
+{
+    return read_directed<Cap>(is);
+}
+
+/// Read a symmetric graph with capacity deduced from a tag object.
+template<capacity_policy Cap>
+[[nodiscard]] auto read_symmetric(std::istream& is, Cap /*tag*/)
+    -> symmetric_graph<Cap>
+{
+    return read_symmetric<Cap>(is);
 }
 
 } // namespace ctdp::graph::io

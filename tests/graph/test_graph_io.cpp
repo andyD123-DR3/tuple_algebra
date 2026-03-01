@@ -21,6 +21,7 @@
 
 #include <sstream>
 #include <string>
+#include <type_traits>
 
 namespace cg = ctdp::graph;
 using cg::cap_from;
@@ -462,4 +463,104 @@ TEST(GraphIO, DefaultMaxEBuilder) {
 
     static_assert(g.node_count() == 2);
     static_assert(g.edge_count() == 1);
+}
+
+// =============================================================================
+// 23. Runtime readers default to cap::large (256 nodes, 1024 edges)
+// =============================================================================
+
+TEST(GraphIO, RuntimeReadDefaultIsLarge) {
+    // Build a graph that exceeds cap::medium (max_v=64) but fits cap::large.
+    std::ostringstream oss;
+    oss << "nodes 100\n";
+    for (int i = 0; i < 99; ++i) {
+        oss << "edge " << i << " " << (i + 1) << "\n";
+    }
+    std::string text = oss.str();
+
+    // Default read_directed should handle 100 nodes (cap::large, max_v=256).
+    std::istringstream iss(text);
+    auto g = io::read_directed(iss);  // no explicit Cap — defaults to cap::large
+    EXPECT_EQ(g.node_count(), 100u);
+    EXPECT_EQ(g.edge_count(), 99u);
+}
+
+TEST(GraphIO, RuntimeReadSymmetricDefaultIsLarge) {
+    std::ostringstream oss;
+    oss << "nodes 100\nsymmetric\n";
+    for (int i = 0; i < 99; ++i) {
+        oss << "edge " << i << " " << (i + 1) << "\n";
+    }
+
+    std::istringstream iss(oss.str());
+    auto g = io::read_symmetric(iss);  // defaults to cap::large
+    EXPECT_EQ(g.node_count(), 100u);
+    EXPECT_EQ(g.undirected_edge_count(), 99u);
+}
+
+// =============================================================================
+// 24. Tag-object capacity overloads
+// =============================================================================
+
+TEST(GraphIO, TagObjectReadDirected) {
+    std::istringstream iss("nodes 3\nedge 0 1\nedge 1 2\n");
+    auto g = io::read_directed(iss, cg::cap::tiny{});
+
+    // Verify correct type: constexpr_graph<cap::tiny>
+    static_assert(std::is_same_v<
+        decltype(g), cg::constexpr_graph<cg::cap::tiny>>);
+
+    EXPECT_EQ(g.node_count(), 3u);
+    EXPECT_EQ(g.edge_count(), 2u);
+}
+
+TEST(GraphIO, TagObjectReadSymmetric) {
+    std::istringstream iss("nodes 3\nedge 0 1\nedge 1 2\n");
+    auto g = io::read_symmetric(iss, cg::cap::small{});
+
+    static_assert(std::is_same_v<
+        decltype(g), cg::symmetric_graph<cg::cap::small>>);
+
+    EXPECT_EQ(g.node_count(), 3u);
+    EXPECT_EQ(g.undirected_edge_count(), 2u);
+}
+
+namespace {
+struct tag_test_custom_cap {
+    static constexpr std::size_t max_v = 32;
+    static constexpr std::size_t max_e = 128;
+};
+} // anonymous namespace
+
+TEST(GraphIO, TagObjectCustomPolicy) {
+    std::istringstream iss("nodes 4\nedge 0 1\nedge 2 3\n");
+    auto g = io::read_directed(iss, tag_test_custom_cap{});
+
+    static_assert(std::is_same_v<
+        decltype(g), cg::constexpr_graph<tag_test_custom_cap>>);
+
+    EXPECT_EQ(g.node_count(), 4u);
+    EXPECT_EQ(g.edge_count(), 2u);
+}
+
+TEST(GraphIO, TagObjectRoundTrip) {
+    // Build → write → read via tag object → compare.
+    auto g1 = []() {
+        cg::graph_builder<cg::cap::small> b;
+        auto n0 = b.add_node();
+        auto n1 = b.add_node();
+        auto n2 = b.add_node();
+        b.add_edge(n0, n1);
+        b.add_edge(n1, n2);
+        b.add_edge(n0, n2);
+        return b.finalise();
+    }();
+
+    std::ostringstream oss;
+    io::write(oss, g1);
+
+    std::istringstream iss(oss.str());
+    auto g2 = io::read_directed(iss, cg::cap::small{});
+
+    EXPECT_TRUE(cg::graph_equal(g1, g2));
 }
