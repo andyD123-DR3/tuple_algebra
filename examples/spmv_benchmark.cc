@@ -322,12 +322,12 @@ bench_result run_scenario(
               << "  NNZ=" << pat.nnz
               << "  BW=" << metrics.bandwidth
               << "  Diags=" << metrics.num_diagonals
-              << std::string(std::max(0, 27 - static_cast<int>(
+              << std::string(static_cast<std::size_t>(std::max(0, 27 - static_cast<int>(
                   std::to_string(pat.rows).size() +
                   std::to_string(pat.cols).size() +
                   std::to_string(pat.nnz).size() +
                   std::to_string(metrics.bandwidth).size() +
-                  std::to_string(metrics.num_diagonals).size())), ' ')
+                  std::to_string(metrics.num_diagonals).size()))), ' ')
               << "║\n";
     std::cout << "║  Uniformity=" << std::fixed << std::setprecision(2)
               << metrics.uniformity()
@@ -347,9 +347,9 @@ bench_result run_scenario(
                   << (is_rec ? "◀ CT-RECOMMENDED" : "")
                   << (is_fast && !is_rec ? "◀ actual fastest" : "")
                   << (is_fast && is_rec ? " ★ MATCH" : "")
-                  << std::string(std::max(0,
+                  << std::string(static_cast<std::size_t>(std::max(0,
                       is_rec ? (is_fast ? 17 : 22) :
-                      (is_fast ? 22 : 38)), ' ')
+                      (is_fast ? 22 : 38))), ' ')
                   << "║\n";
     };
 

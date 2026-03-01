@@ -113,7 +113,7 @@ std::vector<tile_shape> build_tile_space() {
 
 // ─── Reporting ──────────────────────────────────────────────────────────
 
-void rule(char c = '-', int w = 72) { std::cerr << std::string(w, c) << "\n"; }
+void rule(char c = '-', int w = 72) { std::cerr << std::string(static_cast<std::size_t>(w), c) << "\n"; }
 
 void print_quality_row(const model_quality& q) {
     std::cerr << std::fixed << std::setprecision(4)

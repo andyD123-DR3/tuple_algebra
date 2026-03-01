@@ -9,7 +9,6 @@
 // Since constexpr_graph stores CSR in canonicalised order (sorted adjacency),
 // equality reduces to comparing the offsets and neighbor arrays.
 
-
 #ifndef CTDP_GRAPH_EQUAL_H
 #define CTDP_GRAPH_EQUAL_H
 

@@ -85,6 +85,9 @@ ctdp_add_test(test_graph_coloring graph/test_graph_coloring.cc)
 # Weighted view: edge_property_map, weighted_view, symmetric weights
 ctdp_add_test(test_weighted_view graph/test_weighted_view.cpp)
 
+# Graph transforms: transpose, induced_subgraph, contract
+ctdp_add_test(test_transforms graph/test_transforms.cpp)
+
 # Bipartite matching: bipartite_graph, Hopcroft-Karp
 ctdp_add_test(test_bipartite_matching graph/test_bipartite_matching.cpp)
 
@@ -107,6 +110,7 @@ add_custom_target(check
             test_graph_hardening_v2
             test_graph_coloring
             test_weighted_view
+            test_transforms
             test_bipartite_matching
             test_instantiation
             test_solver_concepts test_per_element_space
