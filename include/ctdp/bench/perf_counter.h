@@ -1,0 +1,301 @@
+#ifndef CTDP_BENCH_PERF_COUNTER_H
+#define CTDP_BENCH_PERF_COUNTER_H
+
+// ctdp::bench::perf_counter — Hardware performance counter abstraction
+//
+// Two tiers:
+//   Tier 0: Always available — RDTSC cycles + thread CPU time (clock_gettime)
+//   Tier 1: Linux perf_event_open — instructions, cache refs/misses,
+//           branches, branch misses, context switches
+//
+// counter_snapshot: 7 raw counters + 7 derived ratios
+// perf_counter_group: RAII group that manages perf_event file descriptors
+
+#include <cstdint>
+#include <cstring>
+#include <string>
+#include <array>
+
+#ifdef __linux__
+#include <linux/perf_event.h>
+#include <sys/ioctl.h>
+#include <sys/syscall.h>
+#include <unistd.h>
+#include <time.h>
+#endif
+
+#ifdef __x86_64__
+#include <x86intrin.h>
+#endif
+
+namespace ctdp::bench {
+
+// ─── counter_snapshot ───────────────────────────────────────────────
+
+/// Raw counters harvested from a single measurement interval.
+struct counter_snapshot {
+    // Tier 0 — always available
+    std::uint64_t tsc_cycles       = 0;   ///< RDTSC delta
+    double        thread_cpu_ns    = 0.0; ///< CLOCK_THREAD_CPUTIME_NS delta
+
+    // Tier 1 — Linux perf_event (0 if unavailable)
+    std::uint64_t instructions     = 0;
+    std::uint64_t cache_references = 0;
+    std::uint64_t cache_misses     = 0;
+    std::uint64_t branches         = 0;
+    std::uint64_t branch_misses    = 0;
+
+    // Derived ratios — computed after harvesting via compute_derived()
+    double ipc             = 0.0;   ///< instructions / tsc_cycles
+    double cache_miss_rate = 0.0;   ///< cache_misses / cache_references
+    double branch_miss_rate= 0.0;   ///< branch_misses / branches
+    double cycles_per_ns   = 0.0;   ///< tsc_cycles / wall_ns
+    double instructions_per_ns = 0.0;
+    double cache_refs_per_ns   = 0.0;
+    double branches_per_ns     = 0.0;
+
+    /// Compute derived ratios from raw counters.
+    /// @param wall_ns wall-clock nanoseconds for the measurement interval
+    void compute_derived(double wall_ns) noexcept {
+        ipc = (tsc_cycles > 0)
+            ? static_cast<double>(instructions) / static_cast<double>(tsc_cycles)
+            : 0.0;
+        cache_miss_rate = (cache_references > 0)
+            ? static_cast<double>(cache_misses) / static_cast<double>(cache_references)
+            : 0.0;
+        branch_miss_rate = (branches > 0)
+            ? static_cast<double>(branch_misses) / static_cast<double>(branches)
+            : 0.0;
+
+        if (wall_ns > 0.0) {
+            cycles_per_ns       = static_cast<double>(tsc_cycles) / wall_ns;
+            instructions_per_ns = static_cast<double>(instructions) / wall_ns;
+            cache_refs_per_ns   = static_cast<double>(cache_references) / wall_ns;
+            branches_per_ns     = static_cast<double>(branches) / wall_ns;
+        }
+    }
+};
+
+// ─── RDTSC ──────────────────────────────────────────────────────────
+
+/// Read Time Stamp Counter — serialising variant
+[[nodiscard]] inline std::uint64_t rdtsc_start() noexcept {
+#ifdef __x86_64__
+    unsigned int aux;
+    return __rdtscp(&aux);
+#else
+    return 0;
+#endif
+}
+
+/// Read Time Stamp Counter — post-measurement (no serialisation needed)
+[[nodiscard]] inline std::uint64_t rdtsc_end() noexcept {
+#ifdef __x86_64__
+    unsigned int aux;
+    return __rdtscp(&aux);
+#else
+    return 0;
+#endif
+}
+
+// ─── Thread CPU time ────────────────────────────────────────────────
+
+/// Get thread CPU time in nanoseconds
+[[nodiscard]] inline double thread_cpu_time_ns() noexcept {
+#ifdef __linux__
+    struct timespec ts;
+    clock_gettime(CLOCK_THREAD_CPUTIME_ID, &ts);
+    return static_cast<double>(ts.tv_sec) * 1e9 + static_cast<double>(ts.tv_nsec);
+#else
+    return 0.0;
+#endif
+}
+
+// ─── perf_counter_group ─────────────────────────────────────────────
+
+/// RAII group for Linux perf_event counters.
+/// Tier 0: always works (RDTSC + thread CPU).
+/// Tier 1: requires perf_event_open (may need CAP_SYS_ADMIN or
+///          perf_event_paranoid <= 1).
+class perf_counter_group {
+public:
+    perf_counter_group() noexcept {
+#ifdef __linux__
+        open_counters();
+#endif
+    }
+
+    ~perf_counter_group() noexcept {
+#ifdef __linux__
+        close_counters();
+#endif
+    }
+
+    // Non-copyable, movable
+    perf_counter_group(perf_counter_group const&) = delete;
+    perf_counter_group& operator=(perf_counter_group const&) = delete;
+    perf_counter_group(perf_counter_group&&) noexcept = default;
+    perf_counter_group& operator=(perf_counter_group&&) noexcept = default;
+
+    /// Whether Tier 1 (perf_event) counters are available
+    [[nodiscard]] bool tier1_available() const noexcept { return tier1_ok_; }
+
+    /// Start counting
+    void start() noexcept {
+        // Tier 0
+        start_cpu_ns_ = thread_cpu_time_ns();
+        start_tsc_    = rdtsc_start();
+
+#ifdef __linux__
+        if (tier1_ok_) {
+            // Reset and enable the group leader
+            ioctl(fds_[0], PERF_EVENT_IOC_RESET, PERF_IOC_FLAG_GROUP);
+            ioctl(fds_[0], PERF_EVENT_IOC_ENABLE, PERF_IOC_FLAG_GROUP);
+        }
+#endif
+    }
+
+    /// Stop counting
+    void stop() noexcept {
+        // Tier 0
+        end_tsc_    = rdtsc_end();
+        end_cpu_ns_ = thread_cpu_time_ns();
+
+#ifdef __linux__
+        if (tier1_ok_) {
+            ioctl(fds_[0], PERF_EVENT_IOC_DISABLE, PERF_IOC_FLAG_GROUP);
+            read_counters();
+        }
+#endif
+    }
+
+    /// Harvest a snapshot of the last start/stop interval
+    [[nodiscard]] counter_snapshot snapshot() const noexcept {
+        counter_snapshot snap;
+        snap.tsc_cycles    = end_tsc_ - start_tsc_;
+        snap.thread_cpu_ns = end_cpu_ns_ - start_cpu_ns_;
+
+        if (tier1_ok_) {
+            snap.instructions     = values_[0];
+            snap.cache_references = values_[1];
+            snap.cache_misses     = values_[2];
+            snap.branches         = values_[3];
+            snap.branch_misses    = values_[4];
+        }
+
+        return snap;
+    }
+
+private:
+    // Tier 0 state
+    std::uint64_t start_tsc_ = 0, end_tsc_ = 0;
+    double start_cpu_ns_ = 0.0, end_cpu_ns_ = 0.0;
+
+    // Tier 1 state
+    bool tier1_ok_ = false;
+
+    static constexpr int kNumCounters = 5;
+    std::array<int, kNumCounters> fds_{};
+    std::array<std::uint64_t, kNumCounters> values_{};
+
+#ifdef __linux__
+    static long perf_event_open(struct perf_event_attr* attr, pid_t pid,
+                                int cpu, int group_fd, unsigned long flags) {
+        return syscall(__NR_perf_event_open, attr, pid, cpu, group_fd, flags);
+    }
+
+    void open_counters() noexcept {
+        fds_.fill(-1);
+        values_.fill(0);
+
+        struct perf_event_attr attrs[kNumCounters];
+        std::memset(attrs, 0, sizeof(attrs));
+
+        // Instructions
+        attrs[0].type           = PERF_TYPE_HARDWARE;
+        attrs[0].config         = PERF_COUNT_HW_INSTRUCTIONS;
+        attrs[0].size           = sizeof(struct perf_event_attr);
+        attrs[0].disabled       = 1;
+        attrs[0].exclude_kernel = 1;
+        attrs[0].exclude_hv     = 1;
+
+        // Cache references
+        attrs[1].type           = PERF_TYPE_HARDWARE;
+        attrs[1].config         = PERF_COUNT_HW_CACHE_REFERENCES;
+        attrs[1].size           = sizeof(struct perf_event_attr);
+        attrs[1].exclude_kernel = 1;
+        attrs[1].exclude_hv     = 1;
+
+        // Cache misses
+        attrs[2].type           = PERF_TYPE_HARDWARE;
+        attrs[2].config         = PERF_COUNT_HW_CACHE_MISSES;
+        attrs[2].size           = sizeof(struct perf_event_attr);
+        attrs[2].exclude_kernel = 1;
+        attrs[2].exclude_hv     = 1;
+
+        // Branches
+        attrs[3].type           = PERF_TYPE_HARDWARE;
+        attrs[3].config         = PERF_COUNT_HW_BRANCH_INSTRUCTIONS;
+        attrs[3].size           = sizeof(struct perf_event_attr);
+        attrs[3].exclude_kernel = 1;
+        attrs[3].exclude_hv     = 1;
+
+        // Branch misses
+        attrs[4].type           = PERF_TYPE_HARDWARE;
+        attrs[4].config         = PERF_COUNT_HW_BRANCH_MISSES;
+        attrs[4].size           = sizeof(struct perf_event_attr);
+        attrs[4].exclude_kernel = 1;
+        attrs[4].exclude_hv     = 1;
+
+        // Open group leader
+        fds_[0] = static_cast<int>(
+            perf_event_open(&attrs[0], 0, -1, -1, 0));
+        if (fds_[0] < 0) {
+            tier1_ok_ = false;
+            return;
+        }
+
+        // Open remaining counters in the group
+        for (int i = 1; i < kNumCounters; ++i) {
+            fds_[i] = static_cast<int>(
+                perf_event_open(&attrs[i], 0, -1, fds_[0], 0));
+            if (fds_[i] < 0) {
+                close_counters();
+                tier1_ok_ = false;
+                return;
+            }
+        }
+
+        tier1_ok_ = true;
+    }
+
+    void close_counters() noexcept {
+        for (auto& fd : fds_) {
+            if (fd >= 0) {
+                close(fd);
+                fd = -1;
+            }
+        }
+        tier1_ok_ = false;
+    }
+
+    void read_counters() noexcept {
+        for (int i = 0; i < kNumCounters; ++i) {
+            std::uint64_t val = 0;
+            if (fds_[i] >= 0) {
+                auto bytes = read(fds_[i], &val, sizeof(val));
+                (void)bytes;
+            }
+            values_[static_cast<std::size_t>(i)] = val;
+        }
+    }
+#else
+    void open_counters() noexcept { tier1_ok_ = false; }
+    void close_counters() noexcept {}
+    void read_counters() noexcept {}
+#endif
+};
+
+} // namespace ctdp::bench
+
+#endif // CTDP_BENCH_PERF_COUNTER_H
