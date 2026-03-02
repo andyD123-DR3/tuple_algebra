@@ -22,9 +22,9 @@
 #include <immintrin.h>
 
 // ============================================================================
-// Portability: MSVC doesn't provide std::aligned_alloc
+// Portability: MSVC and MinGW don't provide std::aligned_alloc
 // ============================================================================
-#ifdef _MSC_VER
+#if defined(_MSC_VER) || defined(__MINGW32__) || defined(__MINGW64__)
 #include <malloc.h>
 static void* portable_aligned_alloc(std::size_t align, std::size_t size) {
     return _aligned_malloc(size, align);

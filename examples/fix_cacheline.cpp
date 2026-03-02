@@ -47,6 +47,11 @@
 #include <vector>
 #include <algorithm>
 
+// ── Portability: aligned allocation ──────────────────────────────────
+#if defined(_MSC_VER) || defined(__MINGW32__) || defined(__MINGW64__)
+#include <malloc.h>
+#endif
+
 // ── MSVC portability for GCC/Clang built-ins ────────────────────────────
 #ifdef _MSC_VER
 #include <intrin.h>
@@ -410,7 +415,7 @@ static inline double seconds_since(std::chrono::steady_clock::time_point t0) {
 }
 
 static auto aligned_blob_64(std::size_t bytes) {
-#ifdef _MSC_VER
+#if defined(_MSC_VER) || defined(__MINGW32__) || defined(__MINGW64__)
     auto p = std::unique_ptr<std::byte, decltype(&_aligned_free)>(
         static_cast<std::byte*>(_aligned_malloc(bytes, 64)),
         &_aligned_free);

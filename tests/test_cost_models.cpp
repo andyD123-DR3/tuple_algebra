@@ -94,7 +94,7 @@ constexpr auto make_weighted_test() {
 static_assert(make_weighted_test()(std::array{3, 4}) == 9.5);
 
 TEST(WeightedCost, BasicEvaluation) {
-    constexpr auto cost = make_weighted_test();
+    const auto cost = make_weighted_test();
     EXPECT_DOUBLE_EQ(cost(std::array{3, 4}), 9.5);
     EXPECT_DOUBLE_EQ(cost(std::array{0, 0}), 0.0);
 }
