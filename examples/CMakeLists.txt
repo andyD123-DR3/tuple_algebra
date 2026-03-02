@@ -119,3 +119,40 @@ elseif(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
     target_compile_options(cache_line_layout PRIVATE /O2
         /constexpr:steps500000000)
 endif()
+
+# ══════════════════════════════════════════════════════════════════════════════
+# Calibration examples (Phase 3 / Phase 7)
+# ══════════════════════════════════════════════════════════════════════════════
+
+# calibration_main  — Phase 2 CLI runner (measure + CSV output)
+add_executable(calibration_main calibration_main.cpp)
+target_link_libraries(calibration_main PRIVATE ctdp::calibrator)
+target_include_directories(calibration_main PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+
+# calibration_demo  — Phase 7 end-to-end demo (full pipeline → wisdom)
+add_executable(calibration_demo calibration_demo.cpp)
+target_link_libraries(calibration_demo PRIVATE ctdp::calibrator)
+target_include_directories(calibration_demo PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+
+# example_memory_regime — Memory regime characterisation
+add_executable(example_memory_regime example_memory_regime.cpp)
+target_link_libraries(example_memory_regime PRIVATE ctdp::calibrator)
+target_include_directories(example_memory_regime PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+
+# example_parser_pipeline — Parser strategy comparison
+add_executable(example_parser_pipeline example_parser_pipeline.cpp)
+target_link_libraries(example_parser_pipeline PRIVATE ctdp::calibrator)
+target_include_directories(example_parser_pipeline PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+
+# Compiler options for calibration examples
+if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR
+   CMAKE_CXX_COMPILER_ID STREQUAL "Clang" OR
+   CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
+    foreach(tgt calibration_main calibration_demo example_memory_regime example_parser_pipeline)
+        target_compile_options(${tgt} PRIVATE -O2 -Wall -Wextra -Wpedantic)
+    endforeach()
+elseif(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
+    foreach(tgt calibration_main calibration_demo example_memory_regime example_parser_pipeline)
+        target_compile_options(${tgt} PRIVATE /O2 /W4)
+    endforeach()
+endif()

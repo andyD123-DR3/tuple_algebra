@@ -160,3 +160,37 @@ add_custom_target(check
             test_space_v072
     COMMENT "Running all CTDP tests"
 )
+
+# ── Calibration tests (standalone, no GTest) ─────────────────────────────────
+# These use their own lightweight assert-based test infrastructure.
+set(CTDP_CALIBRATION_TEST_SOURCES
+    calibration_test.cpp
+    phase3_test.cpp
+    phase4_integration_test.cpp
+    phase5_test.cpp
+    phase6_test.cpp
+)
+
+foreach(src ${CTDP_CALIBRATION_TEST_SOURCES})
+    get_filename_component(name ${src} NAME_WE)
+    set(target "ctdp_${name}")
+    add_executable(${target} ${src})
+    target_link_libraries(${target} PRIVATE ctdp::calibrator)
+
+    # Phase 4+ tests need examples/ headers (calibration_scenarios.h)
+    if(NOT ${name} STREQUAL "calibration_test" AND
+       NOT ${name} STREQUAL "phase3_test")
+        target_include_directories(${target} PRIVATE
+            ${CMAKE_CURRENT_SOURCE_DIR}/../examples)
+    endif()
+
+    if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR
+       CMAKE_CXX_COMPILER_ID STREQUAL "Clang" OR
+       CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
+        target_compile_options(${target} PRIVATE -O2 -Wall -Wextra -Wpedantic)
+    elseif(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
+        target_compile_options(${target} PRIVATE /O2 /W4)
+    endif()
+
+    add_test(NAME ${target} COMMAND ${target})
+endforeach()

@@ -107,9 +107,35 @@ target_include_directories(ctdp_space INTERFACE
 )
 target_link_libraries(ctdp_space INTERFACE ctdp_solver)
 
+# Bench: measurement infrastructure (zero CT-DP knowledge)
+add_library(ctdp_bench INTERFACE)
+target_include_directories(ctdp_bench INTERFACE
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+    $<INSTALL_INTERFACE:include>
+)
+
+# Calibrator: framework-facing calibration harness (depends on bench)
+add_library(ctdp_calibrator INTERFACE)
+target_include_directories(ctdp_calibrator INTERFACE
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+    $<INSTALL_INTERFACE:include>
+)
+target_link_libraries(ctdp_calibrator INTERFACE ctdp_bench)
+
 # Convenience target: all libraries
 add_library(ctdp_all INTERFACE)
-target_link_libraries(ctdp_all INTERFACE ctdp_core ctdp_solver ctdp_algebra ctdp_graph ctdp_engine ctdp_domain ctdp_space)
+target_link_libraries(ctdp_all INTERFACE ctdp_core ctdp_solver ctdp_algebra ctdp_graph ctdp_engine ctdp_domain ctdp_space ctdp_bench ctdp_calibrator)
+
+# ── Namespaced aliases (for ctdp::foo syntax in sub-projects) ────────────────
+add_library(ctdp::core       ALIAS ctdp_core)
+add_library(ctdp::solver     ALIAS ctdp_solver)
+add_library(ctdp::algebra    ALIAS ctdp_algebra)
+add_library(ctdp::graph      ALIAS ctdp_graph)
+add_library(ctdp::engine     ALIAS ctdp_engine)
+add_library(ctdp::domain     ALIAS ctdp_domain)
+add_library(ctdp::space      ALIAS ctdp_space)
+add_library(ctdp::bench      ALIAS ctdp_bench)
+add_library(ctdp::calibrator ALIAS ctdp_calibrator)
 
 # ── Subdirectories ───────────────────────────────────────────────────────────
 if(CTDP_BUILD_TESTS)
@@ -125,7 +151,7 @@ endif()
 include(GNUInstallDirs)
 install(DIRECTORY include/ctdp/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/ctdp)
 install(DIRECTORY include/ct_dp/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/ct_dp)
-install(TARGETS ctdp_core ctdp_solver ctdp_algebra ctdp_graph ctdp_engine ctdp_domain ctdp_space ctdp_all
+install(TARGETS ctdp_core ctdp_solver ctdp_algebra ctdp_graph ctdp_engine ctdp_domain ctdp_space ctdp_bench ctdp_calibrator ctdp_all
     EXPORT ctdpTargets)
 install(EXPORT ctdpTargets
     NAMESPACE ctdp::
