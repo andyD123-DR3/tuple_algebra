@@ -356,12 +356,13 @@ void test_harness_run_scaling() {
     TEST(harness_run_scaling);
 
     // Larger size = more work = more time
-    mock_scenario scenario{{mock_point{10}, mock_point{100}, mock_point{1000}}};
+    // Use wide size gap (1 vs 5000) and more iters for CI robustness
+    mock_scenario scenario{{mock_point{1}, mock_point{500}, mock_point{5000}}};
 
     ctdp::calibrator::harness_config cfg;
-    cfg.reps          = 5;
-    cfg.warmup_iters  = 10;
-    cfg.measure_iters = 1;
+    cfg.reps          = 11;
+    cfg.warmup_iters  = 50;
+    cfg.measure_iters = 10;
     cfg.pin_cpu       = false;
     cfg.boost_priority = false;
     cfg.flush_cache    = false;
@@ -375,7 +376,7 @@ void test_harness_run_scaling() {
     CHECK(results.size() == 3);
 
     // Timing should increase with size (loose check — at least monotone)
-    // size=1000 should be measurably slower than size=10
+    // size=5000 should be measurably slower than size=1
     CHECK(results[2].median_ns > results[0].median_ns);
 
     PASS();
