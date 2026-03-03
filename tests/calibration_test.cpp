@@ -122,7 +122,13 @@ struct trivial_scenario {
     void prepare(mock_point const&) {}
 
     [[nodiscard]] ctdp::bench::result_token execute(mock_point const&) const {
-        return ctdp::bench::result_token{42};
+        // Minimal but measurable work — enough to exceed Windows QPC granularity
+        std::uint64_t acc = 42;
+        for (int i = 0; i < 1000; ++i) {
+            acc += static_cast<std::uint64_t>(i);
+            ctdp::bench::DoNotOptimize(acc);
+        }
+        return ctdp::bench::result_token{acc};
     }
 };
 
@@ -440,6 +446,7 @@ void test_harness_measure_point_directly() {
     ctdp::calibrator::harness_config cfg;
     cfg.reps = 4;
     cfg.warmup_iters = 3;
+    cfg.measure_iters = 100;
     cfg.pin_cpu = false;
     cfg.boost_priority = false;
     cfg.flush_cache = false;

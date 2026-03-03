@@ -539,7 +539,7 @@ auto measure_scenario(S& scenario, std::size_t reps = 3)
         auto fn = [&]() -> bench::result_token {
             return scenario.execute(pt);
         };
-        auto meas = bench::measure_repeated(fn, []{}, nm, reps, 10, 1);
+        auto meas = bench::measure_repeated(fn, []{}, nm, reps, 10, 100);
         results.push_back(dp_t{
             .space_point    = pt,
             .median_ns      = meas.median_ns,

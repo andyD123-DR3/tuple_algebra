@@ -16,6 +16,10 @@
 #include <string>
 #include <array>
 
+#if defined(_MSC_VER)
+#include <intrin.h>   // __rdtsc
+#endif
+
 #ifdef __linux__
 #include <linux/perf_event.h>
 #include <sys/ioctl.h>
@@ -83,6 +87,8 @@ struct counter_snapshot {
 #ifdef __x86_64__
     unsigned int aux;
     return __rdtscp(&aux);
+#elif defined(_M_X64) || defined(_M_AMD64)
+    return __rdtsc();
 #else
     return 0;
 #endif
@@ -93,6 +99,8 @@ struct counter_snapshot {
 #ifdef __x86_64__
     unsigned int aux;
     return __rdtscp(&aux);
+#elif defined(_M_X64) || defined(_M_AMD64)
+    return __rdtsc();
 #else
     return 0;
 #endif
