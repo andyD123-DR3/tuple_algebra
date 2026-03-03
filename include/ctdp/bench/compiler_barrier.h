@@ -14,6 +14,7 @@
 
 #include <cstdint>
 #include <type_traits>
+#include <atomic>
 
 namespace ctdp::bench {
 
@@ -80,8 +81,8 @@ inline void DoNotOptimize(T* val) noexcept {
 inline void ClobberMemory() noexcept {
 #if defined(__GNUC__) || defined(__clang__)
     asm volatile("" : : : "memory");
-#elif defined(_MSC_VER)
-    _ReadWriteBarrier();
+#else
+    std::atomic_signal_fence(std::memory_order_acq_rel);
 #endif
 }
 
