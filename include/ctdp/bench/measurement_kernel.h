@@ -96,6 +96,7 @@ template <typename Callable, typename Setup, Metric M>
     result_token accumulated{0};
     for (std::size_t i = 0; i < measure_iters; ++i) {
         auto tok = fn();
+        DoNotOptimize(tok.value);  // force materialisation per iteration
         accumulated = mix_token(accumulated, tok);
         ClobberMemory();
     }
