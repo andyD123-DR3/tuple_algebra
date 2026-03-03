@@ -4,6 +4,12 @@
 add_executable(fix_cacheline fix_cacheline.cpp)
 target_link_libraries(fix_cacheline PRIVATE ctdp_all)
 
+# ── FIX Parser p99 Calibration ────────────────────────────────────────────────
+# Demonstrates p99-aware calibration of template-specialised FIX parsers.
+# 241 ET parser configurations measured with 100K samples each.
+add_executable(fix_p99_calibration fix_p99_calibration.cpp)
+target_link_libraries(fix_p99_calibration PRIVATE ctdp_all)
+
 # ── SpMV Benchmark ───────────────────────────────────────────────────────────
 # Demonstrates compile-time format selection matching runtime performance.
 # Build with -O3 for meaningful timings.
@@ -36,6 +42,7 @@ target_link_libraries(per_element_demo PRIVATE ctdp_all)
 if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
     target_compile_options(fix_cacheline PRIVATE -O3 -march=native
         -fconstexpr-ops-limit=300000000)
+    target_compile_options(fix_p99_calibration PRIVATE -O2 -march=native)
     target_compile_options(spmv_benchmark PRIVATE -O3 -march=native)
     target_compile_options(variadic_reduce PRIVATE -O3 -march=native)
     target_compile_options(matrix_chain_demo PRIVATE -O3 -march=native)
@@ -45,6 +52,7 @@ elseif(CMAKE_CXX_COMPILER_ID STREQUAL "Clang" OR
        CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
     target_compile_options(fix_cacheline PRIVATE -O3 -march=native
         -fconstexpr-steps=300000000)
+    target_compile_options(fix_p99_calibration PRIVATE -O2 -march=native)
     target_compile_options(spmv_benchmark PRIVATE -O3 -march=native)
     target_compile_options(variadic_reduce PRIVATE -O3 -march=native)
     target_compile_options(matrix_chain_demo PRIVATE -O3 -march=native)
@@ -52,6 +60,7 @@ elseif(CMAKE_CXX_COMPILER_ID STREQUAL "Clang" OR
     target_compile_options(per_element_demo PRIVATE -O3 -march=native)
 elseif(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
     target_compile_options(fix_cacheline PRIVATE /O2 /constexpr:steps300000000)
+    target_compile_options(fix_p99_calibration PRIVATE /O2)
     target_compile_options(spmv_benchmark PRIVATE /O2)
     target_compile_options(variadic_reduce PRIVATE /O2)
     target_compile_options(matrix_chain_demo PRIVATE /O2)

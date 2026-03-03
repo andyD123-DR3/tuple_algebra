@@ -125,6 +125,9 @@ ctdp_add_test(test_performance_models test_performance_models.cpp)
 # ── Space layer v0.7.2 tests (descriptor_space, valid_view, tiers) ───────
 ctdp_add_test(test_space_v072 test_space_v072.cpp)
 
+# ── Bench / calibrator tests (percentile, FIX ET parser) ────────────────
+ctdp_add_test(test_percentile bench/test_percentile.cpp)
+
 # ── Aggregate target ─────────────────────────────────────────────────────────
 add_custom_target(check
     COMMAND ${CMAKE_CTEST_COMMAND} --output-on-failure
@@ -158,6 +161,7 @@ add_custom_target(check
             test_constraints
             test_cost_table_io
             test_space_v072
+            test_percentile
     COMMENT "Running all CTDP tests"
 )
 
