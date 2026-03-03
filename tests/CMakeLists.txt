@@ -194,3 +194,10 @@ foreach(src ${CTDP_CALIBRATION_TEST_SOURCES})
 
     add_test(NAME ${target} COMMAND ${target})
 endforeach()
+
+# Phase 4 and 5 validate calibration profiles against live measurements,
+# so they require stable hardware timing (CPU pinning, no noisy neighbours).
+# Exclude from default CI with:  ctest -LE hardware
+set_tests_properties(ctdp_phase4_integration_test ctdp_phase5_test
+    PROPERTIES LABELS "hardware"
+)
