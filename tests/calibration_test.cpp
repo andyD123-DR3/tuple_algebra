@@ -98,8 +98,9 @@ struct mock_scenario {
         std::uint64_t acc = 0;
         for (int i = 0; i < pt.size * 100; ++i) {
             acc += static_cast<std::uint64_t>(i);
+            ctdp::bench::DoNotOptimize(acc);  // prevent strength reduction
         }
-        return ctdp::bench::result_token{acc};
+        return ctdp::bench::result_token{ acc };
     }
 };
 
