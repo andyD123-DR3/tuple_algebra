@@ -1,7 +1,7 @@
 #ifndef CTDP_CALIBRATOR_FIX_ET_PARSER_H
 #define CTDP_CALIBRATOR_FIX_ET_PARSER_H
 
-// ctdp::calibrator::fix — Expression-template FIX parser infrastructure
+// ctdp::calibrator::fix -- Expression-template FIX parser infrastructure
 //
 // Template-specialised parser for FIX protocol integer fields.
 // Each field in the message is parsed by a compile-time-chosen
@@ -11,7 +11,7 @@
 // cannot achieve.
 //
 // Key lesson from Phase 10: runtime dispatch overestimates latency
-// by 1.2–1.9× compared to template-specialised code.  Calibration
+// by 1.2-1.9x compared to template-specialised code.  Calibration
 // must measure actual ET instantiations, not isolated strategies.
 //
 // Usage:
@@ -28,7 +28,17 @@
 //   Compatible with calibrator::Scenario concept
 
 #include <ctdp/bench/compiler_barrier.h>
+#include <ctdp/bench/perf_counter.h>
 #include <ctdp/bench/percentile.h>
+
+// Portable always-inline: GCC/Clang use the attribute, MSVC uses __forceinline.
+#if defined(_MSC_VER)
+#  define CTDP_ALWAYS_INLINE __forceinline
+#elif defined(__GNUC__) || defined(__clang__)
+#  define CTDP_ALWAYS_INLINE [[gnu::always_inline]] inline
+#else
+#  define CTDP_ALWAYS_INLINE inline
+#endif
 
 #include <array>
 #include <chrono>
@@ -41,9 +51,9 @@
 
 namespace ctdp::calibrator::fix {
 
-// ═══════════════════════════════════════════════════════════════════
+// ===================================================================
 // Strategy enum and configuration
-// ═══════════════════════════════════════════════════════════════════
+// ===================================================================
 
 /// Parsing strategy for a single integer field.
 enum class Strategy : std::uint8_t {
@@ -95,7 +105,7 @@ inline constexpr int total_digits = [] {
     return sum;
 }();
 
-/// Config → string representation (e.g. "UUSLSUUSSUUU")
+/// Config -> string representation (e.g. "UUSLSUUSSUUU")
 [[nodiscard]] inline std::string config_to_string(fix_config const& cfg) {
     std::string s;
     s.reserve(num_fields);
@@ -103,7 +113,7 @@ inline constexpr int total_digits = [] {
     return s;
 }
 
-/// String → config
+/// String -> config
 [[nodiscard]] inline fix_config config_from_string(std::string_view s) {
     fix_config cfg{};
     for (int i = 0; i < num_fields && i < static_cast<int>(s.size()); ++i) {
@@ -113,15 +123,14 @@ inline constexpr int total_digits = [] {
 }
 
 
-// ═══════════════════════════════════════════════════════════════════
+// ===================================================================
 // Per-strategy parsing implementations (template-specialised)
-// ═══════════════════════════════════════════════════════════════════
+// ===================================================================
 
-// ─── Unrolled: compile-time digit count, no branches ────────────
+// --- Unrolled: compile-time digit count, no branches ------------
 
 template<int N>
-[[gnu::always_inline]]
-inline std::uint64_t parse_unrolled(const char* s) noexcept {
+CTDP_ALWAYS_INLINE std::uint64_t parse_unrolled(const char* s) noexcept {
     std::uint64_t r = 0;
     // Fully unrolled via if constexpr chain
     if constexpr (N >= 1)  r = r * 10 + static_cast<std::uint64_t>(s[0]  - '0');
@@ -137,11 +146,10 @@ inline std::uint64_t parse_unrolled(const char* s) noexcept {
     return r;
 }
 
-// ─── SWAR: 4-digit chunks via word-level parallelism ────────────
+// --- SWAR: 4-digit chunks via word-level parallelism ------------
 
 template<int N>
-[[gnu::always_inline]]
-inline std::uint64_t parse_swar(const char* s) noexcept {
+CTDP_ALWAYS_INLINE std::uint64_t parse_swar(const char* s) noexcept {
     std::uint64_t result = 0;
     constexpr int full_chunks = N / 4;
     constexpr int tail = N - full_chunks * 4;
@@ -170,11 +178,10 @@ inline std::uint64_t parse_swar(const char* s) noexcept {
     return result;
 }
 
-// ─── Loop: simple counted loop, compiler decides unrolling ──────
+// --- Loop: simple counted loop, compiler decides unrolling ------
 
 template<int N>
-[[gnu::always_inline]]
-inline std::uint64_t parse_loop(const char* s) noexcept {
+CTDP_ALWAYS_INLINE std::uint64_t parse_loop(const char* s) noexcept {
     std::uint64_t result = 0;
     for (int i = 0; i < N; ++i) {
         result = result * 10 + static_cast<std::uint64_t>(s[i] - '0');
@@ -182,11 +189,10 @@ inline std::uint64_t parse_loop(const char* s) noexcept {
     return result;
 }
 
-// ─── Generic: loop with bounds checking (most defensive) ────────
+// --- Generic: loop with bounds checking (most defensive) --------
 
 template<int N>
-[[gnu::always_inline]]
-inline std::uint64_t parse_generic(const char* s) noexcept {
+CTDP_ALWAYS_INLINE std::uint64_t parse_generic(const char* s) noexcept {
     std::uint64_t result = 0;
     for (int i = 0; i < N; ++i) {
         char c = s[i];
@@ -196,11 +202,10 @@ inline std::uint64_t parse_generic(const char* s) noexcept {
     return result;
 }
 
-// ─── Strategy dispatch (compile-time) ───────────────────────────
+// --- Strategy dispatch (compile-time) ---------------------------
 
 template<Strategy S, int Digits>
-[[gnu::always_inline]]
-inline std::uint64_t parse_field(const char* p) noexcept {
+CTDP_ALWAYS_INLINE std::uint64_t parse_field(const char* p) noexcept {
     if constexpr (S == Strategy::Unrolled) {
         return parse_unrolled<Digits>(p);
     } else if constexpr (S == Strategy::SWAR) {
@@ -213,17 +218,16 @@ inline std::uint64_t parse_field(const char* p) noexcept {
 }
 
 
-// ═══════════════════════════════════════════════════════════════════
+// ===================================================================
 // Expression-template parser (the full 12-field ET chain)
-// ═══════════════════════════════════════════════════════════════════
+// ===================================================================
 
 namespace detail {
 
 /// Recursive field parser: processes field I, then I+1, etc.
 /// Accumulates results via XOR to prevent dead code elimination.
 template<fix_config Config, int I = 0>
-[[gnu::always_inline]]
-inline std::uint64_t parse_fields(const char* msg,
+CTDP_ALWAYS_INLINE std::uint64_t parse_fields(const char* msg,
                                    const int* offsets,
                                    std::uint64_t acc) noexcept
 {
@@ -244,7 +248,7 @@ inline std::uint64_t parse_fields(const char* msg,
 ///
 /// The compiler sees the entire 12-field parse chain as one function.
 /// This enables cross-field ILP, register allocation across the chain,
-/// and cache-line amortisation — effects that runtime dispatch misses.
+/// and cache-line amortisation -- effects that runtime dispatch misses.
 ///
 /// @tparam Config  Array of 12 strategies, one per field.
 template<fix_config Config>
@@ -254,8 +258,8 @@ struct fix_et_parser {
     ///
     /// @param msg      Pointer to message data (digit characters)
     /// @param offsets  Byte offsets to each field within the message
-    [[nodiscard]] [[gnu::always_inline]]
-    static bench::result_token parse(const char* msg,
+    [[nodiscard]] static inline
+    bench::result_token parse(const char* msg,
                                       const int* offsets) noexcept
     {
         return bench::result_token{
@@ -265,9 +269,9 @@ struct fix_et_parser {
 };
 
 
-// ═══════════════════════════════════════════════════════════════════
+// ===================================================================
 // Message generation (for benchmarking)
-// ═══════════════════════════════════════════════════════════════════
+// ===================================================================
 
 /// Pre-computed field offsets for the standard FIX message layout.
 /// Fields are packed with SOH (0x01) delimiters between them.
@@ -320,61 +324,203 @@ generate_message_pool(std::size_t count, std::uint64_t seed = 42)
 }
 
 
-// ═══════════════════════════════════════════════════════════════════
+// ===================================================================
 // Measurement infrastructure
-// ═══════════════════════════════════════════════════════════════════
+// ===================================================================
 
-/// Measure the p99 latency of a specific ET parser configuration.
+// --- TSC calibration --------------------------------------------
+
+/// Calibrate the TSC frequency by timing a known-duration busy-wait
+/// against steady_clock.  Returns cycles per nanosecond.
 ///
-/// Performs `samples` parse invocations, records wall-clock time for
-/// each, and computes the full percentile distribution.
+/// Result is cached after first call -- TSC frequency is constant
+/// within a process lifetime on modern x86 (invariant TSC).
+[[nodiscard]] inline double calibrate_tsc() noexcept {
+    static double cached = 0.0;
+    if (cached > 0.0) return cached;
+
+    using clock = std::chrono::steady_clock;
+    constexpr auto target_ns = 10'000'000;  // 10 ms
+
+    // Warmup: let the TSC stabilise
+    auto warm = bench::rdtsc_start();
+    bench::DoNotOptimize(warm);
+
+    auto wall_start = clock::now();
+    auto tsc_start  = bench::rdtsc_start();
+
+    // Busy-wait for target duration
+    for (;;) {
+        auto now = clock::now();
+        auto elapsed = std::chrono::duration_cast<std::chrono::nanoseconds>(
+            now - wall_start).count();
+        if (elapsed >= target_ns) break;
+    }
+
+    auto tsc_end  = bench::rdtsc_end();
+    auto wall_end = clock::now();
+
+    double wall_ns = static_cast<double>(
+        std::chrono::duration_cast<std::chrono::nanoseconds>(
+            wall_end - wall_start).count());
+    double tsc_delta = static_cast<double>(tsc_end - tsc_start);
+
+    cached = tsc_delta / wall_ns;  // cycles per nanosecond
+    return cached;
+}
+
+/// Configuration for measurement runs.
+struct measurement_config {
+    std::size_t samples       = 100'000; ///< Number of timing samples
+    std::size_t batch_size    = 64;      ///< Parses per timing sample
+    std::size_t warmup_parses = 4'000;   ///< Warmup invocations
+    double      cycles_per_ns = 0.0;     ///< TSC freq (0 = auto-calibrate)
+};
+
+// --- Per-invocation rdtsc measurement ---------------------------
+
+/// Measure per-parse latency using rdtsc with no batching.
+///
+/// Each sample is a single parse timed by rdtsc.  Overhead is
+/// ~8 ns per sample (the rdtsc pair), giving ~0.3 ns resolution
+/// on a 3 GHz core.  Suitable for distribution analysis where
+/// per-invocation variance matters.
 ///
 /// @tparam Config   The parser configuration to measure
 /// @param messages  Pre-generated message pool
-/// @param samples   Number of parse invocations (100K minimum for p99)
-/// @return          Complete percentile distribution
+/// @param cfg       Measurement parameters
+/// @return          Complete percentile distribution (in nanoseconds)
 template<fix_config Config>
-[[nodiscard]] bench::percentile_result measure_config(
+[[nodiscard]] bench::percentile_result measure_config_rdtsc(
     std::vector<std::string> const& messages,
-    std::size_t samples = 100'000)
+    measurement_config const& cfg)
 {
+    double cpns = cfg.cycles_per_ns;
+    if (cpns <= 0.0) cpns = calibrate_tsc();
+
     std::vector<double> latencies;
-    latencies.reserve(samples);
+    latencies.reserve(cfg.samples);
 
     auto const* offsets = standard_offsets.data();
     std::size_t pool_size = messages.size();
 
-    // Warmup: 1000 invocations to prime branch predictor & icache
-    for (std::size_t i = 0; i < 1000; ++i) {
+    // Warmup
+    for (std::size_t i = 0; i < cfg.warmup_parses; ++i) {
         auto tok = fix_et_parser<Config>::parse(
             messages[i % pool_size].data(), offsets);
         bench::DoNotOptimize(tok.value);
         bench::ClobberMemory();
     }
 
-    // Measurement: open-loop, fixed iteration count
-    for (std::size_t i = 0; i < samples; ++i) {
+    // Measurement: one parse per sample, rdtsc timing
+    for (std::size_t i = 0; i < cfg.samples; ++i) {
         auto const& msg = messages[i % pool_size];
 
-        auto t0 = std::chrono::steady_clock::now();
+        auto tsc0 = bench::rdtsc_start();
         auto tok = fix_et_parser<Config>::parse(msg.data(), offsets);
-        auto t1 = std::chrono::steady_clock::now();
+        auto tsc1 = bench::rdtsc_end();
 
         bench::DoNotOptimize(tok.value);
-        bench::ClobberMemory();
 
-        double ns = std::chrono::duration<double, std::nano>(t1 - t0).count();
-        latencies.push_back(ns);
+        double cycles = static_cast<double>(tsc1 - tsc0);
+        latencies.push_back(cycles / cpns);
     }
 
     return bench::compute_percentiles(
         std::span<const double>{latencies});
 }
 
+// --- Batched measurement ----------------------------------------
 
-// ═══════════════════════════════════════════════════════════════════
+/// Measure per-parse latency using batched timing.
+///
+/// Each sample times `batch_size` consecutive parses in a tight loop,
+/// then divides by batch_size.  This amortises clock overhead to
+/// give sub-nanosecond resolution on mean latency.
+///
+/// The distribution reflects batch-averaged behaviour: it smooths
+/// out per-invocation spikes but captures sustained performance
+/// variations (icache eviction, frequency transitions, etc.).
+///
+/// @tparam Config   The parser configuration to measure
+/// @param messages  Pre-generated message pool
+/// @param cfg       Measurement parameters
+/// @return          Complete percentile distribution (in nanoseconds)
+template<fix_config Config>
+[[nodiscard]] bench::percentile_result measure_config_batched(
+    std::vector<std::string> const& messages,
+    measurement_config const& cfg)
+{
+    double cpns = cfg.cycles_per_ns;
+    if (cpns <= 0.0) cpns = calibrate_tsc();
+
+    std::size_t batch = cfg.batch_size;
+    if (batch == 0) batch = 1;
+
+    std::vector<double> latencies;
+    latencies.reserve(cfg.samples);
+
+    auto const* offsets = standard_offsets.data();
+    std::size_t pool_size = messages.size();
+
+    // Warmup
+    for (std::size_t i = 0; i < cfg.warmup_parses; ++i) {
+        auto tok = fix_et_parser<Config>::parse(
+            messages[i % pool_size].data(), offsets);
+        bench::DoNotOptimize(tok.value);
+        bench::ClobberMemory();
+    }
+
+    // Measurement: batch_size parses per sample
+    std::size_t msg_idx = 0;
+    for (std::size_t s = 0; s < cfg.samples; ++s) {
+        auto tsc0 = bench::rdtsc_start();
+
+        for (std::size_t b = 0; b < batch; ++b) {
+            auto tok = fix_et_parser<Config>::parse(
+                messages[msg_idx % pool_size].data(), offsets);
+            bench::DoNotOptimize(tok.value);
+            ++msg_idx;
+        }
+
+        auto tsc1 = bench::rdtsc_end();
+
+        double total_cycles = static_cast<double>(tsc1 - tsc0);
+        double per_parse_ns = total_cycles / (cpns * static_cast<double>(batch));
+        latencies.push_back(per_parse_ns);
+    }
+
+    return bench::compute_percentiles(
+        std::span<const double>{latencies});
+}
+
+// --- Default measure_config (batched, backward compatible) ------
+
+/// Measure the p99 latency of a specific ET parser configuration.
+///
+/// Uses batched rdtsc timing: 64 parses per sample, 100K samples.
+/// Each reported value is the amortised per-parse latency in
+/// nanoseconds with sub-nanosecond resolution.
+///
+/// @tparam Config   The parser configuration to measure
+/// @param messages  Pre-generated message pool
+/// @param samples   Number of timing samples (100K minimum for p99)
+/// @return          Complete percentile distribution
+template<fix_config Config>
+[[nodiscard]] bench::percentile_result measure_config(
+    std::vector<std::string> const& messages,
+    std::size_t samples = 100'000)
+{
+    measurement_config cfg;
+    cfg.samples    = samples;
+    cfg.batch_size = 64;
+    return measure_config_batched<Config>(messages, cfg);
+}
+
+
+// ===================================================================
 // Constexpr PRNG for compile-time config generation
-// ═══════════════════════════════════════════════════════════════════
+// ===================================================================
 
 /// SplitMix64 PRNG (constexpr-compatible).
 constexpr std::uint64_t splitmix64(std::uint64_t& state) noexcept {
@@ -407,7 +553,7 @@ constexpr std::array<fix_config, N> generate_random_configs(
     return configs;
 }
 
-// ─── Named baseline configurations ─────────────────────────────
+// --- Named baseline configurations -----------------------------
 
 /// All-Unrolled: maximum ILP, largest code size
 inline constexpr fix_config all_unrolled = {
@@ -443,5 +589,7 @@ inline constexpr fix_config all_generic = {
 
 
 } // namespace ctdp::calibrator::fix
+
+#undef CTDP_ALWAYS_INLINE
 
 #endif // CTDP_CALIBRATOR_FIX_ET_PARSER_H

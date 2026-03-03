@@ -1,4 +1,4 @@
-// examples/fix_p99_calibration.cpp — FIX parser p99 calibration via CT-DP
+// examples/fix_p99_calibration.cpp -- FIX parser p99 calibration via CT-DP
 //
 // Demonstrates the complete p99 calibration pipeline:
 //
@@ -12,10 +12,10 @@
 //   8. Compare against baselines
 //
 // Key findings from Phase 10:
-//   - Runtime dispatch overestimates latency by 1.2–1.9× vs ET
+//   - Runtime dispatch overestimates latency by 1.2-1.9x vs ET
 //   - p99 needs 100K+ samples for stability (not 10K)
 //   - Uniform random sampling is critical (biased breaks everything)
-//   - Direct measurement beats ML models (NN R²=0.54 was insufficient)
+//   - Direct measurement beats ML models (NN R^2=0.54 was insufficient)
 //   - Performance plateaus: many configs achieve similar p99
 //
 // Build:
@@ -48,9 +48,9 @@
 namespace fix  = ctdp::calibrator::fix;
 namespace bench = ctdp::bench;
 
-// ═══════════════════════════════════════════════════════════════════
+// ===================================================================
 // Compile-time configuration generation
-// ═══════════════════════════════════════════════════════════════════
+// ===================================================================
 
 // 200 uniformly random configurations (seed=42 for reproducibility)
 inline constexpr auto random_configs =
@@ -66,8 +66,8 @@ inline constexpr fix::fix_config phase10g_optimal = {
     fix::Strategy::Unrolled, fix::Strategy::Unrolled
 };
 
-// ─── Simplex neighbors of phase10g_optimal ──────────────────────
-// For each of 12 fields, try the other 3 strategies → 36 neighbors.
+// --- Simplex neighbors of phase10g_optimal ----------------------
+// For each of 12 fields, try the other 3 strategies -> 36 neighbors.
 
 template<fix::fix_config Base, int Field, fix::Strategy NewS>
 constexpr fix::fix_config make_neighbor() {
@@ -98,9 +98,9 @@ inline constexpr auto simplex_neighbors = [] {
 }();
 
 
-// ═══════════════════════════════════════════════════════════════════
-// Dispatch table: map runtime index → template-specialised measure
-// ═══════════════════════════════════════════════════════════════════
+// ===================================================================
+// Dispatch table: map runtime index -> template-specialised measure
+// ===================================================================
 
 // Each entry: { config, name, measure_function_ptr }
 struct config_entry {
@@ -119,7 +119,7 @@ bench::percentile_result measure_wrapper(
     return fix::measure_config<Cfg>(msgs, samples);
 }
 
-// ─── Build the dispatch table at compile time ───────────────────
+// --- Build the dispatch table at compile time -------------------
 
 // Random configs (200)
 template<std::size_t... Is>
@@ -155,9 +155,9 @@ inline auto baseline_entries = std::array<config_entry, 5>{{
 }};
 
 
-// ═══════════════════════════════════════════════════════════════════
+// ===================================================================
 // Result storage
-// ═══════════════════════════════════════════════════════════════════
+// ===================================================================
 
 struct calibration_result {
     std::string          config_str;
@@ -166,9 +166,9 @@ struct calibration_result {
 };
 
 
-// ═══════════════════════════════════════════════════════════════════
+// ===================================================================
 // CLI
-// ═══════════════════════════════════════════════════════════════════
+// ===================================================================
 
 struct cli_options {
     bool        csv_mode   = false;
@@ -202,9 +202,9 @@ cli_options parse_cli(int argc, char** argv) {
 }
 
 
-// ═══════════════════════════════════════════════════════════════════
+// ===================================================================
 // Main
-// ═══════════════════════════════════════════════════════════════════
+// ===================================================================
 
 int main(int argc, char** argv) {
     auto opts = parse_cli(argc, argv);
@@ -228,18 +228,19 @@ int main(int argc, char** argv) {
         all_entries.push_back(&random_table[i]);
     }
 
-    // ─── Header ─────────────────────────────────────────────────
+    // --- Header -------------------------------------------------
     if (!opts.csv_mode) {
         std::printf(
-            "╔═══════════════════════════════════════════════════════╗\n"
-            "║  FIX Parser p99 Calibration (Expression Templates)   ║\n"
-            "╚═══════════════════════════════════════════════════════╝\n\n");
+            "+-------------------------------------------------------+\n"
+            "|  FIX Parser p99 Calibration (Expression Templates)   |\n"
+            "+-------------------------------------------------------+\n\n");
 
         std::printf("  Configurations:  %zu\n", all_entries.size());
         std::printf("    Baselines:     %zu\n", baseline_entries.size());
         std::printf("    Simplex:       %zu\n", simplex_table.size());
         std::printf("    Random:        %zu\n", random_count);
         std::printf("  Samples/config:  %zu\n", opts.samples);
+        std::printf("  Batch size:      64 parses/sample\n");
         std::printf("  Fields:          %d\n", fix::num_fields);
         std::printf("  Total digits:    %d\n", fix::total_digits);
         std::printf("  Strategy space:  4^%d = %d configurations\n",
@@ -247,7 +248,19 @@ int main(int argc, char** argv) {
         std::printf("  Compiler:        %s\n\n", __VERSION__);
     }
 
-    // ─── Generate message pool ──────────────────────────────────
+    // --- Calibrate TSC --------------------------------------------
+    if (!opts.csv_mode) {
+        std::printf("Calibrating TSC... ");
+        std::fflush(stdout);
+    }
+
+    double cpns = fix::calibrate_tsc();
+
+    if (!opts.csv_mode) {
+        std::printf("%.3f GHz (%.2f cycles/ns)\n", cpns, cpns);
+    }
+
+    // --- Generate message pool ----------------------------------
     if (!opts.csv_mode) {
         std::printf("Generating %zu-message pool... ", opts.pool_size);
         std::fflush(stdout);
@@ -259,7 +272,7 @@ int main(int argc, char** argv) {
         std::printf("done.\n\n");
     }
 
-    // ─── Measure all configurations ─────────────────────────────
+    // --- Measure all configurations -----------------------------
     std::vector<calibration_result> results;
     results.reserve(all_entries.size());
 
@@ -300,7 +313,7 @@ int main(int argc, char** argv) {
 
     if (opts.csv_mode) return 0;
 
-    // ─── Analysis ───────────────────────────────────────────────
+    // --- Analysis -----------------------------------------------
     std::printf("\n");
     std::printf("Measurement complete: %.1f ms (%.0f configs/sec)\n\n",
         elapsed_ms,
@@ -310,13 +323,13 @@ int main(int argc, char** argv) {
     std::sort(results.begin(), results.end(),
         [](auto const& a, auto const& b) { return a.pctl.p99 < b.pctl.p99; });
 
-    // ─── Top 10 by p99 ──────────────────────────────────────────
-    std::printf("═══ Top 10 by p99 Latency ═══\n\n");
+    // --- Top 10 by p99 ------------------------------------------
+    std::printf("=== Top 10 by p99 Latency ===\n\n");
     std::printf("  %-4s  %-14s %-8s  %8s  %8s  %8s  %8s  %6s\n",
                 "Rank", "Config", "Group", "Mean", "p50", "p99", "p999", "Tail");
     std::printf("  %-4s  %-14s %-8s  %8s  %8s  %8s  %8s  %6s\n",
-                "────", "──────────────", "────────",
-                "────────", "────────", "────────", "────────", "──────");
+                "----", "--------------", "--------",
+                "--------", "--------", "--------", "--------", "------");
 
     std::size_t top_n = std::min<std::size_t>(10, results.size());
     for (std::size_t i = 0; i < top_n; ++i) {
@@ -327,8 +340,8 @@ int main(int argc, char** argv) {
             r.pctl.tail_ratio());
     }
 
-    // ─── Baseline comparison ────────────────────────────────────
-    std::printf("\n═══ Baseline Comparison ═══\n\n");
+    // --- Baseline comparison ------------------------------------
+    std::printf("\n=== Baseline Comparison ===\n\n");
 
     // Find baselines in results
     auto find_result = [&](std::string_view cfg_str) -> calibration_result const* {
@@ -355,7 +368,7 @@ int main(int argc, char** argv) {
     std::printf("  %-14s  %8s  %8s  %8s  %10s\n",
                 "Config", "Mean", "p99", "p999", "vs Best p99");
     std::printf("  %-14s  %8s  %8s  %8s  %10s\n",
-                "──────────────", "────────", "────────", "────────", "──────────");
+                "--------------", "--------", "--------", "--------", "----------");
 
     for (auto const& bl : baselines) {
         auto const* r = find_result(bl.config);
@@ -366,8 +379,8 @@ int main(int argc, char** argv) {
         }
     }
 
-    // ─── Best overall ───────────────────────────────────────────
-    std::printf("\n═══ Optimal Configuration ═══\n\n");
+    // --- Best overall -------------------------------------------
+    std::printf("\n=== Optimal Configuration ===\n\n");
     std::printf("  Config:  %s  (%s)\n", best.config_str.c_str(), best.group);
     std::printf("  Mean:    %.1f ns\n", best.pctl.mean);
     std::printf("  p50:     %.1f ns\n", best.pctl.p50);
@@ -385,10 +398,10 @@ int main(int argc, char** argv) {
     std::printf("\n  Strategy mix: %dU %dS %dL %dG\n",
                 counts[0], counts[1], counts[2], counts[3]);
 
-    // ─── Summary ────────────────────────────────────────────────
+    // --- Summary ------------------------------------------------
     auto const* phase10g = find_result("UUSLSUUSUUUU");
 
-    std::printf("\n═══ Summary ═══\n\n");
+    std::printf("\n=== Summary ===\n\n");
     std::printf("  Configs measured:    %zu\n", results.size());
     std::printf("  Samples per config:  %zu\n", opts.samples);
     std::printf("  Measurement time:    %.1f ms\n", elapsed_ms);
@@ -400,7 +413,7 @@ int main(int argc, char** argv) {
         std::printf("  p99 vs Phase10g:     %+.1f%%\n", -improvement);
     }
 
-    std::printf("\n  Lesson: \"Success is not skill in optimising —\n"
+    std::printf("\n  Lesson: \"Success is not skill in optimising --\n"
                 "           it is skill in defining and measuring.\"\n\n");
 
     return 0;

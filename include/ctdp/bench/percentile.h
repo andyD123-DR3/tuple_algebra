@@ -1,7 +1,7 @@
 #ifndef CTDP_BENCH_PERCENTILE_H
 #define CTDP_BENCH_PERCENTILE_H
 
-// ctdp::bench::percentile — Tail-latency statistics for p99 calibration
+// ctdp::bench::percentile -- Tail-latency statistics for p99 calibration
 //
 // Extends statistics.h with percentile computation over raw timing
 // vectors.  Designed for HFT-grade measurement where p99 and p99.9
@@ -25,7 +25,7 @@
 
 namespace ctdp::bench {
 
-// ─── Percentile result ──────────────────────────────────────────────
+// --- Percentile result ----------------------------------------------
 
 /// Complete latency distribution summary.
 struct percentile_result {
@@ -49,7 +49,7 @@ struct percentile_result {
     }
 };
 
-// ─── Core percentile function ───────────────────────────────────────
+// --- Core percentile function ---------------------------------------
 
 /// Compute a single percentile from sorted data.
 /// Uses linear interpolation between adjacent values.
@@ -81,7 +81,7 @@ struct percentile_result {
     return percentile_sorted(sorted, p);
 }
 
-// ─── Full distribution computation ──────────────────────────────────
+// --- Full distribution computation ----------------------------------
 
 /// Compute the complete latency distribution from raw timing data.
 ///

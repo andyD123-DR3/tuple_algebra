@@ -1,4 +1,4 @@
-// tests/bench/test_percentile.cpp — Tests for bench::percentile
+// tests/bench/test_percentile.cpp -- Tests for bench::percentile
 
 #include <ctdp/bench/percentile.h>
 
@@ -9,7 +9,7 @@
 
 namespace bench = ctdp::bench;
 
-// ─── percentile_sorted ──────────────────────────────────────────────
+// --- percentile_sorted ----------------------------------------------
 
 TEST(Percentile, SortedEmptyReturnsZero) {
     std::vector<double> empty;
@@ -54,7 +54,7 @@ TEST(Percentile, SortedP99OnLargeData) {
     EXPECT_NEAR(991.0, p99, 2.0);
 }
 
-// ─── percentile (unsorted) ──────────────────────────────────────────
+// --- percentile (unsorted) ------------------------------------------
 
 TEST(Percentile, UnsortedMatchesSorted) {
     std::vector<double> unsorted = {50.0, 10.0, 30.0, 20.0, 40.0};
@@ -65,7 +65,7 @@ TEST(Percentile, UnsortedMatchesSorted) {
         bench::percentile(unsorted, 75.0));
 }
 
-// ─── compute_percentiles ────────────────────────────────────────────
+// --- compute_percentiles --------------------------------------------
 
 TEST(Percentile, ComputePercentilesEmpty) {
     std::vector<double> empty;
@@ -91,7 +91,7 @@ TEST(Percentile, ComputePercentilesBasic) {
 }
 
 TEST(Percentile, TailRatio) {
-    // Construct data where p99 is 10× the median
+    // Construct data where p99 is 10x the median
     std::vector<double> data(100, 10.0); // 99 values at 10
     data.push_back(100.0);               // 1 value at 100
 
@@ -109,7 +109,7 @@ TEST(Percentile, JitterNs) {
 }
 
 
-// ─── FIX ET Parser ──────────────────────────────────────────────────
+// --- FIX ET Parser --------------------------------------------------
 
 #include <ctdp/calibrator/fix_et_parser.h>
 
@@ -201,7 +201,7 @@ TEST(FixETParser, MessagePoolGeneration) {
         EXPECT_EQ(expected_len, msg.size());
     }
 
-    // Different seed → different messages
+    // Different seed -> different messages
     auto pool2 = fix::generate_message_pool(100, 99);
     EXPECT_NE(pool[0], pool2[0]);
 }
