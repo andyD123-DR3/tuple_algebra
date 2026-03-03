@@ -96,7 +96,7 @@ struct mock_scenario {
 
     [[nodiscard]] ctdp::bench::result_token execute(mock_point const& pt) const {
         std::uint64_t acc = 0;
-        for (int i = 0; i < pt.size * 100; ++i) {
+        for (int i = 0; i < pt.size * 10000; ++i) {
             acc += static_cast<std::uint64_t>(i);
             ctdp::bench::DoNotOptimize(acc);  // prevent strength reduction
         }
@@ -323,7 +323,7 @@ void test_harness_run_trivial() {
     ctdp::calibrator::harness_config cfg;
     cfg.reps          = 3;
     cfg.warmup_iters  = 5;
-    cfg.measure_iters = 1;
+    cfg.measure_iters = 100;
     cfg.pin_cpu       = false;   // don't require root
     cfg.boost_priority = false;
     cfg.flush_cache    = false;  // speed up test
@@ -363,7 +363,7 @@ void test_harness_run_scaling() {
     ctdp::calibrator::harness_config cfg;
     cfg.reps          = 11;
     cfg.warmup_iters  = 50;
-    cfg.measure_iters = 10;
+    cfg.measure_iters = 100;
     cfg.pin_cpu       = false;
     cfg.boost_priority = false;
     cfg.flush_cache    = false;
@@ -391,7 +391,7 @@ void test_harness_with_cache_flush() {
     ctdp::calibrator::harness_config cfg;
     cfg.reps          = 3;
     cfg.warmup_iters  = 2;
-    cfg.measure_iters = 1;
+    cfg.measure_iters = 100;
     cfg.pin_cpu       = false;
     cfg.boost_priority = false;
     cfg.flush_cache    = true;   // test with cache flushing
@@ -472,7 +472,7 @@ void test_harness_with_counter_metric() {
     ctdp::calibrator::harness_config cfg;
     cfg.reps          = 3;
     cfg.warmup_iters  = 5;
-    cfg.measure_iters = 1;
+    cfg.measure_iters = 100;
     cfg.pin_cpu       = false;
     cfg.boost_priority = false;
     cfg.flush_cache    = false;
@@ -728,7 +728,7 @@ void test_end_to_end_harness_to_csv() {
     ctdp::calibrator::harness_config cfg;
     cfg.reps          = 3;
     cfg.warmup_iters  = 5;
-    cfg.measure_iters = 1;
+    cfg.measure_iters = 100;
     cfg.pin_cpu       = false;
     cfg.boost_priority = false;
     cfg.flush_cache    = false;
@@ -815,7 +815,7 @@ void test_statistics_in_data_points() {
     ctdp::calibrator::harness_config cfg;
     cfg.reps = 7;  // odd number for clear median
     cfg.warmup_iters = 3;
-    cfg.measure_iters = 1;
+    cfg.measure_iters = 100;
     cfg.pin_cpu = false;
     cfg.boost_priority = false;
     cfg.flush_cache = false;
