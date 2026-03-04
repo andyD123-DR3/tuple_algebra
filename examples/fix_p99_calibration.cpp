@@ -245,7 +245,13 @@ int main(int argc, char** argv) {
         std::printf("  Total digits:    %d\n", fix::total_digits);
         std::printf("  Strategy space:  4^%d = %d configurations\n",
                     fix::num_fields, 1 << (2 * fix::num_fields));
+#if defined(_MSC_VER)
+        std::printf("  Compiler:        MSVC %d\n\n", _MSC_VER);
+#elif defined(__VERSION__)
         std::printf("  Compiler:        %s\n\n", __VERSION__);
+#else
+        std::printf("  Compiler:        unknown\n\n");
+#endif
     }
 
     // --- Calibrate TSC --------------------------------------------
