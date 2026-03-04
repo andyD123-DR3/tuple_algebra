@@ -10,6 +10,10 @@ target_link_libraries(fix_cacheline PRIVATE ctdp_all)
 add_executable(fix_p99_calibration fix_p99_calibration.cpp)
 target_link_libraries(fix_p99_calibration PRIVATE ctdp_all)
 
+add_executable(fix_p99_svr_search fix_p99_svr_search.cpp)
+target_link_libraries(fix_p99_svr_search PRIVATE ctdp_all)
+
+
 # ── SpMV Benchmark ───────────────────────────────────────────────────────────
 # Demonstrates compile-time format selection matching runtime performance.
 # Build with -O3 for meaningful timings.
@@ -48,6 +52,7 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
     target_compile_options(matrix_chain_demo PRIVATE -O3 -march=native)
     target_compile_options(matrix_chain_et PRIVATE -O2)
     target_compile_options(per_element_demo PRIVATE -O3 -march=native)
+    target_compile_options(fix_p99_calibration PRIVATE -O2 -march=native)
 elseif(CMAKE_CXX_COMPILER_ID STREQUAL "Clang" OR
        CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
     target_compile_options(fix_cacheline PRIVATE -O3 -march=native
@@ -58,6 +63,7 @@ elseif(CMAKE_CXX_COMPILER_ID STREQUAL "Clang" OR
     target_compile_options(matrix_chain_demo PRIVATE -O3 -march=native)
     target_compile_options(matrix_chain_et PRIVATE -O2)
     target_compile_options(per_element_demo PRIVATE -O3 -march=native)
+    target_compile_options(fix_p99_svr_search PRIVATE -O2 -march=native)
 elseif(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
     target_compile_options(fix_cacheline PRIVATE /O2 /constexpr:steps300000000)
     target_compile_options(fix_p99_calibration PRIVATE /O2)
@@ -66,6 +72,7 @@ elseif(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
     target_compile_options(matrix_chain_demo PRIVATE /O2)
     target_compile_options(matrix_chain_et PRIVATE /O2)
     target_compile_options(per_element_demo PRIVATE /O2)
+    target_compile_options(fix_p99_svr_search PRIVATE /O2)
 endif()
 
 # ── GEMM Tile Optimisation ───────────────────────────────────────────────────
