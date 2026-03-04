@@ -31,6 +31,7 @@
 #include <ctdp/bench/perf_counter.h>
 #include <ctdp/bench/percentile.h>
 
+
 // Portable always-inline: GCC/Clang use the attribute, MSVC uses __forceinline.
 #if defined(_MSC_VER)
 #  define CTDP_ALWAYS_INLINE __forceinline
