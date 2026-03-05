@@ -52,7 +52,7 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
     target_compile_options(matrix_chain_demo PRIVATE -O3 -march=native)
     target_compile_options(matrix_chain_et PRIVATE -O2)
     target_compile_options(per_element_demo PRIVATE -O3 -march=native)
-    target_compile_options(fix_p99_calibration PRIVATE -O2 -march=native)
+    target_compile_options(fix_p99_svr_search PRIVATE -O2 -march=native)
 elseif(CMAKE_CXX_COMPILER_ID STREQUAL "Clang" OR
        CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
     target_compile_options(fix_cacheline PRIVATE -O3 -march=native

@@ -104,10 +104,10 @@ struct fix_onehot_extractor {
 // configs at compile time and build function pointers.
 
 // Training set: 200 random configs at compile time (use first N at runtime)
-constexpr auto train_pool = fix::generate_random_configs<500>(12345);
+constexpr auto train_pool = fix::generate_random_configs<200>(12345);
 
 // Verification pool: separate seed so no overlap with training
-constexpr auto verify_pool = fix::generate_random_configs<200>(67890);
+constexpr auto verify_pool = fix::generate_random_configs<100>(67890);
 
 struct config_entry {
     fix::fix_config config;
@@ -144,8 +144,8 @@ constexpr auto make_entries(const char* group)
 }
 
 // Pre-instantiate: 200 training + 200 verification + baselines
-constexpr auto train_entries  = make_entries<train_pool, 500>("train");
-constexpr auto verify_entries = make_entries<verify_pool, 200>("verify");
+constexpr auto train_entries  = make_entries<train_pool, 200>("train");
+constexpr auto verify_entries = make_entries<verify_pool, 100>("verify");
 
 // Baselines
 constexpr auto baseline_entries = std::array<config_entry, 5>{{
@@ -186,7 +186,7 @@ inline std::vector<fix_point> generate_candidates(
 struct options {
     bool quick      = false;
     bool csv_mode   = false;
-    std::size_t train_count   = 500;   // configs to measure for training
+    std::size_t train_count   = 200;   // configs to measure for training
     std::size_t predict_count = 10000; // configs for SVR prediction
     std::size_t verify_count  = 50;    // top predictions to verify
     std::size_t samples       = 50000; // samples per measurement
@@ -210,8 +210,8 @@ int main(int argc, char** argv) {
     }
 
     // Clamp train_count to available pre-instantiated configs
-    if (opts.train_count > 500) opts.train_count = 500;
-    if (opts.verify_count > 200) opts.verify_count = 200;
+    if (opts.train_count > 200) opts.train_count = 200;
+    if (opts.verify_count > 100) opts.verify_count = 100;
 
     if (!opts.csv_mode) {
         std::printf(
