@@ -178,11 +178,14 @@ private:
 //  Plan space: 4 × 4 × 1 × 4 = 64 valid plans (not 256 — MsgType locked).
 // ─────────────────────────────────────────────────────────────────────────────
 
+// Digit counts match field_digits[0..3] in fix_et_parser.h: {3,6,4,8}
+// MsgType (field 2, 4 digits) allows all strategies — the 1-digit restriction
+// was incorrect; the parser uses 4 digits for this slot.
 inline constexpr Schema<4> trivial_schema = {{
-    FieldDescriptor{ "BeginString", 8,  2, all_strategies(),          false },
-    FieldDescriptor{ "BodyLength",  9,  4, all_strategies(),          true  },
-    FieldDescriptor{ "MsgType",    35,  1, strategies({Strategy::Unrolled}), false },
-    FieldDescriptor{ "CheckSum",   10,  3, all_strategies(),          false },
+    FieldDescriptor{ "Field0", 0, 3, all_strategies(),                false },
+    FieldDescriptor{ "Field1", 1, 6, all_strategies(),                true  },
+    FieldDescriptor{ "Field2", 2, 4, strategies({Strategy::Unrolled}), false },
+    FieldDescriptor{ "Field3", 3, 8, all_strategies(),                false },
 }};
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -195,19 +198,21 @@ inline constexpr Schema<4> trivial_schema = {{
 //  Plan space: 4^12 = 16,777,216 (beam search required above N=6).
 // ─────────────────────────────────────────────────────────────────────────────
 
+// Digit counts match field_digits[] in fix_et_parser.h: {3,6,4,8,6,4,2,8,6,3,4,4}
+// Field names are representative labels; the parser treats all as integer fields.
 inline constexpr Schema<12> full_schema = {{
-    FieldDescriptor{ "BeginString",    8,   2, all_strategies(), false },
-    FieldDescriptor{ "BodyLength",     9,   4, all_strategies(), true  },
-    FieldDescriptor{ "MsgType",       35,   1, all_strategies(), false },
-    FieldDescriptor{ "SenderCompID",  49,   4, all_strategies(), false },
-    FieldDescriptor{ "TargetCompID",  56,   4, all_strategies(), false },
-    FieldDescriptor{ "MsgSeqNum",     34,   6, all_strategies(), false },
-    FieldDescriptor{ "ClOrdID",       11,   6, all_strategies(), false },
-    FieldDescriptor{ "Symbol",        55,   4, all_strategies(), false },
-    FieldDescriptor{ "Side",          54,   1, all_strategies(), false },
-    FieldDescriptor{ "TransactTime",  60,   8, all_strategies(), false },
-    FieldDescriptor{ "OrderQty",      38,   6, all_strategies(), false },
-    FieldDescriptor{ "CheckSum",      10,   3, all_strategies(), false },
+    FieldDescriptor{ "Field0",  0,  3, all_strategies(), false },
+    FieldDescriptor{ "Field1",  1,  6, all_strategies(), false },
+    FieldDescriptor{ "Field2",  2,  4, all_strategies(), false },
+    FieldDescriptor{ "Field3",  3,  8, all_strategies(), false },
+    FieldDescriptor{ "Field4",  4,  6, all_strategies(), false },
+    FieldDescriptor{ "Field5",  5,  4, all_strategies(), false },
+    FieldDescriptor{ "Field6",  6,  2, all_strategies(), false },
+    FieldDescriptor{ "Field7",  7,  8, all_strategies(), false },
+    FieldDescriptor{ "Field8",  8,  6, all_strategies(), false },
+    FieldDescriptor{ "Field9",  9,  3, all_strategies(), false },
+    FieldDescriptor{ "Field10", 10, 4, all_strategies(), false },
+    FieldDescriptor{ "Field11", 11, 4, all_strategies(), false },
 }};
 
 // ─────────────────────────────────────────────────────────────────────────────
