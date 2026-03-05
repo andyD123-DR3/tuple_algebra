@@ -25,6 +25,8 @@
 #include <ctdp/solver/cost_models/cross_validation.h>
 #include <ctdp/solver/cost_models/performance_model.h>
 
+#include <ctdp/bench/environment.h>
+
 #include <algorithm>
 #include <chrono>
 #include <cmath>
@@ -193,7 +195,13 @@ struct options {
     std::size_t pool_size     = 5000;  // message pool size
 };
 
-int main(int argc, char** argv) {
+int main(int argc, char** argv)
+{
+
+
+    // Pin to core 1 and boost priority for stable measurements
+    ctdp::bench::environment_guard env_guard(1, true);
+
     options opts;
 
     for (int i = 1; i < argc; ++i) {
