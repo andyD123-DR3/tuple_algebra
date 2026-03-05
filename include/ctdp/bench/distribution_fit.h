@@ -32,7 +32,7 @@
 namespace ctdp::bench {
 
 // =====================================================================
-// Normal distribution quantile (Beasley-Springer-Moro approximation)
+// Normal distribution quantile (Acklam rational approximation)
 // =====================================================================
 
 /// Inverse normal CDF (probit function).
