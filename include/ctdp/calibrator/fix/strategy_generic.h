@@ -10,6 +10,21 @@
 //  All other strategies must produce identical (value, length)
 //  pairs on every field of a valid 10,000-message test corpus.
 //
+//  Correctness status:
+//    ✅ Cross-strategy oracle: all 5 strategies verified against
+//       StrategyGeneric on 70,000 random fields (10,000 per digit
+//       width: 3,4,6,8,12) and a 10,000-message composite corpus.
+//       See tests/test_phase2_strategies.cpp Groups G T34–T40.
+//
+//    ⚠️ DEFERRED: QuickFIX external validation.
+//       Plan §Phase2 calls for QuickFIX-validated corpus check.
+//       Requires a QuickFIX installation; not available in CI.
+//       Action: run test_quickfix_oracle.cpp (to be written) on
+//       a machine with QuickFIX before the first production calibration
+//       run.  Until then, StrategyGeneric is verified as internally
+//       self-consistent but not externally validated against QuickFIX.
+//       Tracking: TODO(quickfix-oracle)
+//
 //  Interface:
 //    static FieldResult parse(const char* p) noexcept
 //
