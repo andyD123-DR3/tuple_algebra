@@ -226,8 +226,8 @@ struct SchemaIndex {
 //  Pre-built schema indices for the two concrete schemas
 // ─────────────────────────────────────────────────────────────────────────────
 
-inline const SchemaIndex<4>  trivial_index{ trivial_schema };
-inline const SchemaIndex<12> full_index   { full_schema    };
+inline constexpr SchemaIndex<4>  trivial_index{ trivial_schema };
+inline constexpr SchemaIndex<12> full_index   { full_schema    };
 
 // ─────────────────────────────────────────────────────────────────────────────
 //  CostTable<N, T> — flat DP cost table indexed by dense_id

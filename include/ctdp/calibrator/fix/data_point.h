@@ -99,9 +99,18 @@ constexpr std::optional<Strategy> strategy_from_char(char c) noexcept {
 
 inline constexpr int NUM_COUNTERS = 6;
 
+// Counter slot assignment (aligns with config_metrics per-parse fields):
+//   [0] instructions     — instructions per parse
+//   [1] cycles           — TSC cycles per parse
+//   [2] ipc              — instructions per cycle
+//   [3] l1d_misses       — L1D read misses per parse
+//   [4] branch_miss_rate — branch miss rate (0.0–1.0)
+//   [5] cache_miss_rate  — LL cache miss rate (0.0–1.0)
+// All values are per-parse averages (doubles), matching config_metrics output.
+// Zero-filled until populated by the measurement harness (fix_bench.h).
 struct PerfSample {
-    double   p99_ns{0.0};
-    std::array<uint64_t, NUM_COUNTERS> counters{};
+    double                          p99_ns{0.0};
+    std::array<double, NUM_COUNTERS> counters{};
 
     [[nodiscard]] constexpr bool valid() const noexcept { return p99_ns > 0.0; }
 };
@@ -146,14 +155,10 @@ struct RunTriple {
     }
 
     // Mean counter vector over A1+A2 — Stage 2 features.
-    // B counters deliberately excluded: Stage 2 correlates counters with
-    // latency under warm-cache conditions only.
     [[nodiscard]] std::array<double, NUM_COUNTERS> mean_ab_counters() const noexcept {
         std::array<double, NUM_COUNTERS> out{};
-        for (int i = 0; i < NUM_COUNTERS; ++i) {
-            out[i] = 0.5 * (static_cast<double>(a1.counters[i]) +
-                            static_cast<double>(a2.counters[i]));
-        }
+        for (int i = 0; i < NUM_COUNTERS; ++i)
+            out[i] = 0.5 * (a1.counters[i] + a2.counters[i]);
         return out;
     }
 };
