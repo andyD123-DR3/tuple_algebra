@@ -175,6 +175,13 @@ set(CTDP_CALIBRATION_TEST_SOURCES
     phase6_test.cpp
 )
 
+# ── fix/ parser-optimiser tests (standalone, no GTest, no HW) ────────────────
+add_executable(test_fix_bench test_fix_bench.cpp)
+target_include_directories(test_fix_bench PRIVATE
+    ${CMAKE_SOURCE_DIR}/include)
+target_compile_features(test_fix_bench PRIVATE cxx_std_20)
+add_test(NAME test_fix_bench COMMAND test_fix_bench)
+
 foreach(src ${CTDP_CALIBRATION_TEST_SOURCES})
     get_filename_component(name ${src} NAME_WE)
     set(target "ctdp_${name}")

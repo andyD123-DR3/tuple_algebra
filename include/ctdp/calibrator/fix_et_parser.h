@@ -50,39 +50,15 @@
 #include <string_view>
 #include <vector>
 
+// Strategy enum and calibrator data types are canonical in data_point.h.
+// fix_et_parser.h pulls them in to avoid ODR violations when both headers
+// are included in the same translation unit.
+#include <ctdp/calibrator/fix/data_point.h>
+
 namespace ctdp::calibrator::fix {
 
-// ===================================================================
-// Strategy enum and configuration
-// ===================================================================
-
-/// Parsing strategy for a single integer field.
-enum class Strategy : std::uint8_t {
-    Unrolled = 0,   // U: fully unrolled, no branches
-    SWAR     = 1,   // S: SWAR 4-at-a-time
-    Loop     = 2,   // L: simple counted loop
-    Generic  = 3    // G: loop with bounds checking
-};
-
-/// Number of strategies
-inline constexpr int num_strategies = 4;
-
-/// Short label for each strategy
-[[nodiscard]] constexpr char strategy_char(Strategy s) noexcept {
-    constexpr char labels[] = {'U', 'S', 'L', 'G'};
-    return labels[static_cast<int>(s)];
-}
-
-/// Strategy from character label
-[[nodiscard]] constexpr Strategy strategy_from_char(char c) noexcept {
-    switch (c) {
-        case 'U': return Strategy::Unrolled;
-        case 'S': return Strategy::SWAR;
-        case 'L': return Strategy::Loop;
-        case 'G': return Strategy::Generic;
-        default:  return Strategy::Generic;
-    }
-}
+// num_strategies alias for any legacy callers
+inline constexpr int num_strategies = NUM_STRATEGIES;
 
 /// Number of integer fields in a FIX MarketData message.
 inline constexpr int num_fields = 12;
@@ -114,11 +90,12 @@ inline constexpr int total_digits = [] {
     return s;
 }
 
-/// String -> config
+/// String -> config (unknown chars default to Generic)
 [[nodiscard]] inline fix_config config_from_string(std::string_view s) {
     fix_config cfg{};
     for (int i = 0; i < num_fields && i < static_cast<int>(s.size()); ++i) {
-        cfg[static_cast<std::size_t>(i)] = strategy_from_char(s[static_cast<std::size_t>(i)]);
+        auto st = strategy_from_char(s[static_cast<std::size_t>(i)]);
+        cfg[static_cast<std::size_t>(i)] = st.value_or(Strategy::Generic);
     }
     return cfg;
 }
