@@ -190,12 +190,12 @@ target_include_directories(test_fix_bench PRIVATE
 target_compile_features(test_fix_bench PRIVATE cxx_std_20)
 add_test(NAME test_fix_bench COMMAND test_fix_bench)
 
-add_executable(test_fix_dp_search tests/test_fix_dp_search.cpp)
+add_executable(test_fix_dp_search test_fix_dp_search.cpp)
 target_include_directories(test_fix_dp_search PRIVATE ${CMAKE_SOURCE_DIR}/include)
 target_compile_features(test_fix_dp_search PRIVATE cxx_std_20)
 add_test(NAME test_fix_dp_search COMMAND test_fix_dp_search)
 
-add_executable(test_phase2_strategies tests/test_phase2_strategies.cpp)
+add_executable(test_phase2_strategies test_phase2_strategies.cpp)
 target_include_directories(test_phase2_strategies PRIVATE ${CMAKE_SOURCE_DIR}/include)
 target_compile_features(test_phase2_strategies PRIVATE cxx_std_20)
 add_test(NAME test_phase2_strategies COMMAND test_phase2_strategies)
