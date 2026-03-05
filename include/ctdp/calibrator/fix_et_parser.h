@@ -30,7 +30,7 @@
 #include <ctdp/bench/compiler_barrier.h>
 #include <ctdp/bench/perf_counter.h>
 #include <ctdp/bench/percentile.h>
-
+#include <ctdp/bench/distribution_fit.h>
 
 // Portable always-inline: GCC/Clang use the attribute, MSVC uses __forceinline.
 #if defined(_MSC_VER)
@@ -516,6 +516,217 @@ template<fix_config Config>
     cfg.samples    = samples;
     cfg.batch_size = 64;
     return measure_config_batched<Config>(messages, cfg);
+}
+
+// --- Measurement with hardware counters (two-pass) ---------------
+//
+// Pass 1: Batched rdtsc timing -> percentile distribution (as above)
+// Pass 2: Large batch with perf_event counter groups -> aggregate
+//          IPC, L1D miss rate, icache miss rate, DTLB miss rate
+//
+// The counter pass runs the same workload but brackets it with
+// Tier 1 (instructions, branches, cache) and Tier 2 (L1D, L1I, DTLB)
+// counter groups.  Results are per-parse averages over the batch.
+
+/// Aggregated per-configuration metrics: timing + hardware counters.
+struct config_metrics {
+    bench::percentile_result timing;  ///< Empirical percentiles from rdtsc
+    bench::distribution_result dist;  ///< Fitted distribution (lognormal/gamma)
+
+    // Distribution-derived percentiles (more stable than empirical)
+    double fitted_p50  = 0.0;        ///< p50 from fitted distribution
+    double fitted_p99  = 0.0;        ///< p99 from fitted distribution
+    double fitted_p999 = 0.0;        ///< p99.9 from fitted distribution
+    double fitted_cv   = 0.0;        ///< Coefficient of variation
+    double fitted_tail = 0.0;        ///< Fitted tail ratio (p99/p50)
+
+    // Per-parse averages from counter pass
+    double ipc              = 0.0;    ///< instructions per cycle
+    double instructions     = 0.0;    ///< instructions per parse
+    double cycles           = 0.0;    ///< cycles per parse
+    double l1d_miss_rate    = 0.0;    ///< L1D read miss / L1D read access
+    double l1d_misses       = 0.0;    ///< L1D read misses per parse
+    double l1i_miss_rate    = 0.0;    ///< icache miss rate
+    double l1i_misses       = 0.0;    ///< icache misses per parse
+    double dtlb_miss_rate   = 0.0;    ///< DTLB miss rate
+    double dtlb_misses      = 0.0;    ///< DTLB misses per parse
+    double branch_miss_rate = 0.0;    ///< branch miss rate
+    double cache_miss_rate  = 0.0;    ///< LL cache miss rate
+
+    bool tier1_available    = false;  ///< Tier 1 counters worked
+    bool tier2_available    = false;  ///< Tier 2 counters worked
+};
+
+/// Measure a configuration with timing, distribution fit, and hardware counters.
+///
+/// Three passes:
+///   Pass 1: batched rdtsc -> raw samples -> empirical percentiles + distribution fit
+///   Pass 2: Tier 1 counter group (instructions, branches, cache)
+///   Pass 3: Tier 2 counter group (L1D, L1I, DTLB)
+///
+/// The distribution fit uses ALL timing samples to estimate lognormal/gamma
+/// parameters, then derives p99 analytically. This is more stable than the
+/// empirical p99 because it leverages the full distribution shape.
+///
+/// @tparam Config   The parser configuration to measure
+/// @param messages  Pre-generated message pool
+/// @param cfg       Measurement parameters
+/// @return          Combined timing + distribution + counter metrics
+template<fix_config Config>
+[[nodiscard]] config_metrics measure_config_with_counters(
+    std::vector<std::string> const& messages,
+    measurement_config const& cfg = {})
+{
+    config_metrics result;
+
+    double cpns = cfg.cycles_per_ns;
+    if (cpns <= 0.0) cpns = calibrate_tsc();
+
+    std::size_t batch = cfg.batch_size;
+    if (batch == 0) batch = 1;
+
+    auto const* offsets = standard_offsets.data();
+    std::size_t pool_size = messages.size();
+
+    // ---- Pass 1: Timing (batched rdtsc) + distribution fit ----
+    {
+        std::vector<double> latencies;
+        latencies.reserve(cfg.samples);
+
+        // Warmup
+        for (std::size_t i = 0; i < cfg.warmup_parses; ++i) {
+            auto tok = fix_et_parser<Config>::parse(
+                messages[i % pool_size].data(), offsets);
+            bench::DoNotOptimize(tok.value);
+            bench::ClobberMemory();
+        }
+
+        // Collect raw per-batch latencies
+        std::size_t msg_idx = 0;
+        for (std::size_t s = 0; s < cfg.samples; ++s) {
+            auto tsc0 = bench::rdtsc_start();
+
+            for (std::size_t b = 0; b < batch; ++b) {
+                auto tok = fix_et_parser<Config>::parse(
+                    messages[msg_idx % pool_size].data(), offsets);
+                bench::DoNotOptimize(tok.value);
+                ++msg_idx;
+            }
+
+            auto tsc1 = bench::rdtsc_end();
+
+            double total_cycles = static_cast<double>(tsc1 - tsc0);
+            double per_parse_ns = total_cycles /
+                (cpns * static_cast<double>(batch));
+            latencies.push_back(per_parse_ns);
+        }
+
+        // Empirical percentiles
+        result.timing = bench::compute_percentiles(
+            std::span<const double>{latencies});
+
+        // Fit distribution to raw samples
+        result.dist = bench::fit_distribution(
+            std::span<const double>{latencies});
+
+        // Extract fitted values
+        result.fitted_p50  = result.dist.fitted_p50();
+        result.fitted_p99  = result.dist.fitted_p99();
+        result.fitted_p999 = result.dist.lognormal.p999();
+        result.fitted_cv   = result.dist.fitted_cv();
+        result.fitted_tail = result.dist.fitted_tail_ratio();
+    }
+
+    // Pass 2: counter groups over a single large batch
+    std::size_t counter_iters = cfg.samples;  // same workload as timing
+
+    // Warmup
+    for (std::size_t i = 0; i < cfg.warmup_parses; ++i) {
+        auto tok = fix_et_parser<Config>::parse(
+            messages[i % pool_size].data(), offsets);
+        bench::DoNotOptimize(tok.value);
+        bench::ClobberMemory();
+    }
+
+    // Tier 1: instructions, branches, cache (aggregate)
+    {
+        bench::perf_counter_group tier1;
+        result.tier1_available = tier1.tier1_available();
+
+        if (result.tier1_available) {
+            tier1.start();
+            for (std::size_t i = 0; i < counter_iters; ++i) {
+                auto tok = fix_et_parser<Config>::parse(
+                    messages[i % pool_size].data(), offsets);
+                bench::DoNotOptimize(tok.value);
+            }
+            tier1.stop();
+
+            auto snap = tier1.snapshot();
+            double n = static_cast<double>(counter_iters);
+
+            result.ipc = (snap.tsc_cycles > 0)
+                ? static_cast<double>(snap.instructions) /
+                  static_cast<double>(snap.tsc_cycles)
+                : 0.0;
+            result.instructions = static_cast<double>(snap.instructions) / n;
+            result.cycles = static_cast<double>(snap.tsc_cycles) / n;
+            result.cache_miss_rate = (snap.cache_references > 0)
+                ? static_cast<double>(snap.cache_misses) /
+                  static_cast<double>(snap.cache_references)
+                : 0.0;
+            result.branch_miss_rate = (snap.branches > 0)
+                ? static_cast<double>(snap.branch_misses) /
+                  static_cast<double>(snap.branches)
+                : 0.0;
+        }
+    }
+
+    // Tier 2: L1D, L1I (icache), DTLB
+    {
+        bench::cache_hierarchy_group tier2;
+        result.tier2_available = tier2.available();
+
+        if (result.tier2_available) {
+            // Second warmup to re-prime caches after Tier 1
+            for (std::size_t i = 0; i < cfg.warmup_parses; ++i) {
+                auto tok = fix_et_parser<Config>::parse(
+                    messages[i % pool_size].data(), offsets);
+                bench::DoNotOptimize(tok.value);
+                bench::ClobberMemory();
+            }
+
+            tier2.start();
+            for (std::size_t i = 0; i < counter_iters; ++i) {
+                auto tok = fix_et_parser<Config>::parse(
+                    messages[i % pool_size].data(), offsets);
+                bench::DoNotOptimize(tok.value);
+            }
+            tier2.stop();
+
+            bench::counter_snapshot snap;
+            tier2.fill_snapshot(snap);
+            double n = static_cast<double>(counter_iters);
+
+            result.l1d_miss_rate = (snap.l1d_read_access > 0)
+                ? static_cast<double>(snap.l1d_read_miss) /
+                  static_cast<double>(snap.l1d_read_access)
+                : 0.0;
+            result.l1d_misses = static_cast<double>(snap.l1d_read_miss) / n;
+            result.l1i_miss_rate = (snap.l1i_read_access > 0)
+                ? static_cast<double>(snap.l1i_read_miss) /
+                  static_cast<double>(snap.l1i_read_access)
+                : 0.0;
+            result.l1i_misses = static_cast<double>(snap.l1i_read_miss) / n;
+            result.dtlb_miss_rate = (snap.dtlb_read_access > 0)
+                ? static_cast<double>(snap.dtlb_read_miss) /
+                  static_cast<double>(snap.dtlb_read_access)
+                : 0.0;
+            result.dtlb_misses = static_cast<double>(snap.dtlb_read_miss) / n;
+        }
+    }
+
+    return result;
 }
 
 
