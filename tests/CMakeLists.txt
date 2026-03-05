@@ -187,6 +187,11 @@ target_include_directories(test_fix_dp_search PRIVATE ${CMAKE_SOURCE_DIR}/includ
 target_compile_features(test_fix_dp_search PRIVATE cxx_std_20)
 add_test(NAME test_fix_dp_search COMMAND test_fix_dp_search)
 
+add_executable(test_phase2_strategies tests/test_phase2_strategies.cpp)
+target_include_directories(test_phase2_strategies PRIVATE ${CMAKE_SOURCE_DIR}/include)
+target_compile_features(test_phase2_strategies PRIVATE cxx_std_20)
+add_test(NAME test_phase2_strategies COMMAND test_phase2_strategies)
+
 foreach(src ${CTDP_CALIBRATION_TEST_SOURCES})
     get_filename_component(name ${src} NAME_WE)
     set(target "ctdp_${name}")
