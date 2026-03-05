@@ -182,6 +182,11 @@ target_include_directories(test_fix_bench PRIVATE
 target_compile_features(test_fix_bench PRIVATE cxx_std_20)
 add_test(NAME test_fix_bench COMMAND test_fix_bench)
 
+add_executable(test_fix_dp_search tests/test_fix_dp_search.cpp)
+target_include_directories(test_fix_dp_search PRIVATE ${CMAKE_SOURCE_DIR}/include)
+target_compile_features(test_fix_dp_search PRIVATE cxx_std_20)
+add_test(NAME test_fix_dp_search COMMAND test_fix_dp_search)
+
 foreach(src ${CTDP_CALIBRATION_TEST_SOURCES})
     get_filename_component(name ${src} NAME_WE)
     set(target "ctdp_${name}")
