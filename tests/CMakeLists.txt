@@ -200,6 +200,19 @@ target_include_directories(test_phase2_strategies PRIVATE ${CMAKE_SOURCE_DIR}/in
 target_compile_features(test_phase2_strategies PRIVATE cxx_std_20)
 add_test(NAME test_phase2_strategies COMMAND test_phase2_strategies)
 
+# Phase 3: calibration driver wiring tests (mock timing — no hardware required)
+add_executable(test_phase3_fix_calibration test_phase3_fix_calibration.cpp)
+target_include_directories(test_phase3_fix_calibration PRIVATE ${CMAKE_SOURCE_DIR}/include)
+target_compile_features(test_phase3_fix_calibration PRIVATE cxx_std_20)
+if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR
+   CMAKE_CXX_COMPILER_ID STREQUAL "Clang" OR
+   CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
+    target_compile_options(test_phase3_fix_calibration PRIVATE -O2 -Wall -Wextra)
+elseif(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
+    target_compile_options(test_phase3_fix_calibration PRIVATE /O2 /W4)
+endif()
+add_test(NAME test_phase3_fix_calibration COMMAND test_phase3_fix_calibration)
+
 foreach(src ${CTDP_CALIBRATION_TEST_SOURCES})
     get_filename_component(name ${src} NAME_WE)
     set(target "ctdp_${name}")
