@@ -135,7 +135,7 @@ add_executable(test_percentile bench/test_percentile.cpp)
 target_link_libraries(test_percentile PRIVATE ctdp_all GTest::gtest GTest::gtest_main)
 target_compile_features(test_percentile PRIVATE cxx_std_20)
 set_target_properties(test_percentile PROPERTIES EXCLUDE_FROM_ALL TRUE)
-gtest_discover_tests(test_percentile)
+# gtest_discover_tests omitted: EXCLUDE_FROM_ALL targets register as NOT_BUILT in CTest
 
 # ── Aggregate target ─────────────────────────────────────────────────────────
 add_custom_target(check
