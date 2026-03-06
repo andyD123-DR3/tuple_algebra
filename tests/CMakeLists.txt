@@ -219,6 +219,11 @@ foreach(src ${CTDP_CALIBRATION_TEST_SOURCES})
     add_executable(${target} ${src})
     target_link_libraries(${target} PRIVATE ctdp::calibrator)
 
+    # Propagate hardware-timing skip flag to calibration tests
+    if(CTDP_SKIP_HW_TIMING_TESTS)
+        target_compile_definitions(${target} PRIVATE CTDP_SKIP_HW_TIMING_TESTS)
+    endif()
+
     # Phase 4+ tests need examples/ headers (calibration_scenarios.h)
     if(NOT ${name} STREQUAL "calibration_test" AND
        NOT ${name} STREQUAL "phase3_test")

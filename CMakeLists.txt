@@ -15,6 +15,9 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 option(CTDP_BUILD_TESTS    "Build unit tests"              ON)
 option(CTDP_BUILD_EXAMPLES "Build example programs"        ON)
 option(CTDP_ASAN           "Enable AddressSanitizer"      OFF)
+option(CTDP_SKIP_HW_TIMING_TESTS
+    "Skip timing-accuracy assertions that require stable hardware (set OFF to enable tight validation locally)"
+    ON)
 
 # ── Compiler-specific settings ───────────────────────────────────────────────
 # Raise constexpr evaluation limits (compile-time DP needs this)
