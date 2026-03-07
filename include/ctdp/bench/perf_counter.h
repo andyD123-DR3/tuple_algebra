@@ -26,7 +26,7 @@
 #include <string>
 #include <array>
 
-#if defined(_MSC_VER) || defined(_WIN32)
+#if defined(_WIN32)
 #ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
 #endif
@@ -34,7 +34,9 @@
 #define NOMINMAX
 #endif
 #include <windows.h>
-#include <intrin.h>   // __rdtsc
+#if defined(_MSC_VER) && !defined(__MINGW32__) && !defined(__MINGW64__)
+#include <intrin.h>   // __rdtsc (MSVC only; MinGW uses x86intrin.h below)
+#endif
 #endif
 
 #ifdef __linux__
@@ -45,8 +47,8 @@
 #include <time.h>
 #endif
 
-#ifdef __x86_64__
-#include <x86intrin.h>
+#if defined(__x86_64__) || defined(__MINGW32__) || defined(__MINGW64__)
+#include <x86intrin.h>  // __rdtsc, __rdtscp for GCC/Clang/MinGW
 #endif
 
 namespace ctdp::bench {
