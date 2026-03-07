@@ -11,9 +11,17 @@
 // beam_search bridges this gap:
 //   - Builds candidates level-by-level (one position per level)
 //   - At each level, expands each beam entry by all choices at that position
-//   - Evaluates cost and constraints on the partially-built candidate
-//   - Keeps only the top BeamWidth feasible candidates (by cost)
-//   - After N levels, returns the best complete candidate
+//   - Ranks expansions by cost alone (constraints are NOT applied here)
+//   - Keeps only the top BeamWidth candidates (by cost)
+//   - After N levels, applies constraints on complete candidates
+//   - Returns the best feasible complete candidate
+//
+// Constraint semantics: constraints are evaluated only on complete
+// candidates after all N dimensions are filled.  During level-by-level
+// expansion, candidates are ranked by cost alone.  This prevents
+// spurious rejections from constraints that inspect unfilled positions
+// (which hold default values).  See CONSTRAINT APPLICATION STRATEGY
+// below for the full rationale.
 //
 // Complexity: O(N × BeamWidth × branching) cost evaluations.
 // This is exact for BeamWidth ≥ S^(N-1), and heuristic otherwise.
@@ -22,9 +30,9 @@
 //   BeamWidth — number of candidates retained at each level (default: 32)
 //
 // Stats field semantics:
-//   candidates_total     — total expansions attempted
-//   candidates_evaluated — cost evaluations (feasible expansions)
-//   candidates_pruned    — constraint failures
+//   candidates_total     — total expansions attempted (expansion + final scan)
+//   candidates_evaluated — cost evaluations during expansion
+//   candidates_pruned    — constraint failures on complete candidates
 //   subproblems_total    — Space::dimension (levels)
 //   subproblems_evaluated — levels actually expanded
 //   beam_width_used      — BeamWidth
