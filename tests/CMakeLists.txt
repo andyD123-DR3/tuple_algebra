@@ -247,8 +247,4 @@ endforeach()
 # Exclude from default CI with:  ctest -LE hardware
 # set_tests_properties(ctdp_phase4_integration_test ctdp_phase5_test
 #     PROPERTIES LABELS "hardware"
-# )    # Propagate hardware-timing skip flag to calibration tests
-    if(CTDP_SKIP_HW_TIMING_TESTS)
-        target_compile_definitions(${target} PRIVATE CTDP_SKIP_HW_TIMING_TESTS)
-    endif()
-
+# )

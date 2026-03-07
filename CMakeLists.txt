@@ -159,6 +159,3 @@ install(TARGETS ctdp_core ctdp_solver ctdp_algebra ctdp_graph ctdp_engine ctdp_d
 install(EXPORT ctdpTargets
     NAMESPACE ctdp::
     DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/ctdp)
-option(CTDP_SKIP_HW_TIMING_TESTS
-    "Skip timing-accuracy assertions that require stable hardware (set OFF to enable tight validation locally)"
-    ON)
