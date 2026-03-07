@@ -53,25 +53,9 @@
 namespace ctdp::calibrator::fix {
 
 // ===================================================================
-// Strategy enum and configuration
-// ===================================================================
+// Strategy enum and calibrator data types are canonical in data_point.h.
+#include <ctdp/calibrator/fix/data_point.h>
 
-/// Parsing strategy for a single integer field.
-enum class Strategy : std::uint8_t {
-    Unrolled = 0,   // U: fully unrolled, no branches
-    SWAR     = 1,   // S: SWAR 4-at-a-time
-    Loop     = 2,   // L: simple counted loop
-    Generic  = 3    // G: loop with bounds checking
-};
-
-/// Number of strategies
-inline constexpr int num_strategies = 4;
-
-/// Short label for each strategy
-[[nodiscard]] constexpr char strategy_char(Strategy s) noexcept {
-    constexpr char labels[] = {'U', 'S', 'L', 'G'};
-    return labels[static_cast<int>(s)];
-}
 
 /// Strategy from character label
 [[nodiscard]] constexpr Strategy strategy_from_char(char c) noexcept {
@@ -118,7 +102,7 @@ inline constexpr int total_digits = [] {
 [[nodiscard]] inline fix_config config_from_string(std::string_view s) {
     fix_config cfg{};
     for (int i = 0; i < num_fields && i < static_cast<int>(s.size()); ++i) {
-        cfg[static_cast<std::size_t>(i)] = strategy_from_char(s[static_cast<std::size_t>(i)]);
+        cfg[static_cast<std::size_t>(i)] = strategy_from_char(s[static_cast<std::size_t>(i)]).value_or(Strategy::Generic);
     }
     return cfg;
 }
