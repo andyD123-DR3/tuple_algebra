@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.20...3.30)
 
 project(ctdp
-    VERSION     0.6.0
+    VERSION     0.8.0
     DESCRIPTION "Compile-Time Dynamic Programming Framework"
     LANGUAGES   CXX
 )

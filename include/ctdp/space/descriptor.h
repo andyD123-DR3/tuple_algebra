@@ -1,7 +1,7 @@
 #ifndef CTDP_SPACE_DESCRIPTOR_H
 #define CTDP_SPACE_DESCRIPTOR_H
 
-// ctdp v0.7.2 — Dimension descriptors + descriptor_space + feature_bridge
+// ctdp v0.8.0 — Dimension descriptors + descriptor_space + feature_bridge
 //
 // Predefined ordinate types with defaults:
 //   positive_int("N")           [1,64] step 1    raw

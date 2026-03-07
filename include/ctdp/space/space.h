@@ -1,7 +1,7 @@
 #ifndef CTDP_SPACE_SPACE_H
 #define CTDP_SPACE_SPACE_H
 
-// ctdp v0.7.2 — Search space concept, algebra, constexpr enumeration
+// ctdp v0.8.0 — Search space concept, algebra, constexpr enumeration
 //
 // Three-layer architecture (this is Layer 1):
 //   Layer 1 (Space):  structure — rank, names, enumeration, algebra

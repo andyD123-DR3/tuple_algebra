@@ -1,6 +1,6 @@
 # CT-DP: Compile-Time Dynamic Programming Framework
 
-**Version 0.7.2** — C++20 header-only framework for compile-time optimization.
+**Version 0.8.0** — C++20 header-only framework for compile-time optimization.
 
 ## Quick Start
 
@@ -12,65 +12,55 @@ cd build && ctest --output-on-failure
 
 ## Libraries
 
-| Library | Headers | Lines | Description |
-|---------|--------:|------:|-------------|
-| **core** | 5 | 1,365 | Constexpr containers, sorting, concepts, limits |
-| **solver** | 6 | 1,244 | DP engine: plans, composition, Pareto sets, traversal |
-| **algebra** | 6 | 937 | Tuple algebra for variadic reductions (P3666R2) |
-| **graph** | 18 | 3,237 | Graph algorithms, fusion, scheduling, SpMV pipeline |
+| Tier | Headers | Lines | Description |
+|------|--------:|------:|-------------|
+| **core** | 15 | 3,104 | Constexpr containers, sorting, concepts, limits, plan, solve_stats |
+| **solver** | 32 | 4,634 | Algorithms (exhaustive, beam, local, interval DP), spaces, ML cost models, memo |
+| **algebra** | 7 | 937 | Tuple algebra for variadic reductions (P3666R2) |
+| **graph** | 41 | 7,923 | CSR storage, topo sort, SCC, coloring, min-cut, matching, RCM, I/O, transforms |
+| **engine** | 8 | 1,483 | Bridges (graph→space, coloring→groups), instantiation, segmentation DP |
+| **space** | 2 | 1,320 | Descriptor-based search spaces, feature bridge encoding |
+| **bench** | 9 | 1,826 | Measurement kernel, perf counters, distribution fitting, environment |
+| **calibrator** | 35 | 7,598 | Calibration harness, FIX parser domain, plans, wisdom, provenance |
+| **domain** | 1 | 616 | SpMV graph pipeline |
 
-**Dependency flow:** `graph → solver → core`, `algebra` (standalone, `ct_dp::algebra` namespace)
+**150 headers, 63 test files, 28 examples, ~63K lines total.**
 
-## Core Library (`include/ctdp/core/`)
+### Dependency flow (CMake targets)
 
-| Header | Purpose |
-|--------|---------|
-| `constexpr_vector.h` | Fixed-capacity dynamic array (std::array + size) |
-| `constexpr_sort.h` | Heap sort, merge sort, unique — all constexpr |
-| `constexpr_map.h` | Sorted associative map with binary search |
-| `concepts.h` | `cost_value`, `cost_function`, `search_space`, `candidate` |
-| `ct_limits.h` | Compile-time resource budgets with policy override |
+```
+graph → core          engine → graph + solver       domain → engine + graph + solver
+solver → core         space → solver                calibrator → bench
+algebra (standalone)  bench (standalone)
+```
 
-## Solver Library (`include/ctdp/solver/`)
-
-| Header | Purpose |
-|--------|---------|
-| `plan.h` | Central output type: candidate + cost + stats |
-| `plan_compose.h` | Additive, max, custom plan composition |
-| `plan_set.h` | Bounded Pareto frontier of non-dominated plans |
-| `plan_traversal.h` | Generic iteration over plan assignments |
-| `solve_stats.h` | Solver metrics (subproblems, cache hits, pruning) |
-| `candidate_traits.h` | Extension point for candidate types |
+All tiers are `INTERFACE` libraries; the framework is header-only.
 
 ## Algebra Library (`include/ct_dp/algebra/`)
 
-P3666R2 tuple algebra for variadic single-pass reductions.
-
-| Header | Purpose |
-|--------|---------|
-| `algebra.h` | Convenience header — includes all algebra components |
-| `operations.h` | Typed ops: `identity_t`, `power_t<N>`, `plus_fn`, `min_fn`, `max_fn` |
-| `elementwise.h` | `elementwise_binary_op`, `elementwise_unary_op` — per-lane combine |
-| `fan_out.h` | `fan_out_unary_op` — scalar to tuple (moments pattern) |
-| `tuple_select.h` | Lane projection: extract subset of tuple lanes |
-| `tuple_fold.h` | Horizontal fold: reduce tuple to scalar |
-| `make_reduction.h` | `reduction_lane`, `make_reduction` — assembles full pipeline |
+P3666R2 tuple algebra for variadic single-pass reductions (7 headers).
 
 ## Graph Library (`include/ctdp/graph/`)
 
-18 headers across 7 layers: Representation → Construction → Algorithms →
-Annotation → Fusion → Engine Bridge → SpMV Demo.
+41 headers covering CSR representation, construction, 8 algorithm families
+(topological sort, SCC, connected components, coloring, shortest path,
+min-cut, bipartite matching, RCM bandwidth reduction), I/O (text, DOT),
+transforms (contract, subgraph, transpose), weighted views, and merge rules.
 See `docs/graph_library_reference.docx`.
 
-## Tests
+## Space Library (`include/ctdp/space/`)
 
-| Suite | Runtime Tests | Static Asserts |
-|-------|-------------:|---------------:|
-| Core | 58 | 155 |
-| Solver | 50 | 99 |
-| Algebra | 54 | 166 |
-| Graph | 172 | 494 |
-| **Total** | **334** | **914** |
+Descriptor-based compile-time search spaces. Each dimension is a typed
+descriptor (positive_int, power_2, int_set, bool_flag, enum_vals).
+`descriptor_space` provides enumeration, cardinality, per-dimension access,
+and feature encoding via `feature_bridge` / `default_bridge(space)`.
+
+## Calibrator Library (`include/ctdp/calibrator/`)
+
+Runtime calibration pipeline: Scenario → calibration_harness → profile →
+cost_model → plan → wisdom. Includes a complete FIX protocol parser
+domain (15 headers) with expression-template instantiation, hardware
+counter measurement, and SVR-based cost prediction.
 
 ## Requirements
 
@@ -81,4 +71,8 @@ See `docs/graph_library_reference.docx`.
 ## Documentation
 
 - `docs/architecture.docx` — Framework design and data flow
-- `docs/graph_library_reference.docx` — Graph API reference (18 headers)
+- `docs/ctdp_architecture.md` — Architecture overview
+- `docs/graph_library_reference.docx` — Graph API reference
+- `docs/ctdp_graph_user_guide.md` — Graph library user guide
+- `docs/design/epsilon_svr_design_note.md` — Epsilon-SVR implementation
+- `docs/calibrator/` — Calibrator design and FIX parser explainer
