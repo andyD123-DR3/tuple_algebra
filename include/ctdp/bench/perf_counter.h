@@ -3,20 +3,37 @@
 
 // ctdp::bench::perf_counter -- Hardware performance counter abstraction
 //
-// Two tiers:
-//   Tier 0: Always available -- RDTSC cycles + thread CPU time (clock_gettime)
+// Three tiers:
+//   Tier 0: Always available -- RDTSC cycles + thread CPU time
 //   Tier 1: Linux perf_event_open -- instructions, cache refs/misses,
-//           branches, branch misses, context switches
+//           branches, branch misses
+//           Windows: QueryThreadCycleTime (thread cycles) +
+//                    GetThreadTimes (kernel/user CPU time)
+//   Tier 2: Linux L1D/L1I/DTLB miss rates (separate counter group)
 //
-// counter_snapshot: 7 raw counters + 7 derived ratios
-// perf_counter_group: RAII group that manages perf_event file descriptors
+// Windows Tier 1 notes:
+//   QueryThreadCycleTime counts CPU cycles consumed by this thread only
+//   (excludes time the thread is descheduled). More stable than wall-clock
+//   RDTSC for latency measurement on a loaded system.
+//   Instructions and cache counters require VTune or a kernel driver on
+//   Windows -- not available here. IPC column will show 0.
+//
+// counter_snapshot: raw counters + derived ratios
+// perf_counter_group: RAII group managing OS counter handles
 
 #include <cstdint>
 #include <cstring>
 #include <string>
 #include <array>
 
-#if defined(_MSC_VER)
+#if defined(_MSC_VER) || defined(_WIN32)
+#ifndef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
+#endif
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
+#include <windows.h>
 #include <intrin.h>   // __rdtsc
 #endif
 
@@ -132,14 +149,40 @@ struct counter_snapshot {
 
 // --- Thread CPU time ------------------------------------------------
 
-/// Get thread CPU time in nanoseconds
+/// Get thread CPU time in nanoseconds.
+/// Linux: CLOCK_THREAD_CPUTIME_ID (nanosecond resolution).
+/// Windows: GetThreadTimes (100ns resolution, kernel+user).
 [[nodiscard]] inline double thread_cpu_time_ns() noexcept {
 #ifdef __linux__
     struct timespec ts;
     clock_gettime(CLOCK_THREAD_CPUTIME_ID, &ts);
     return static_cast<double>(ts.tv_sec) * 1e9 + static_cast<double>(ts.tv_nsec);
+#elif defined(_WIN32)
+    FILETIME creation, exit, kernel, user;
+    if (GetThreadTimes(GetCurrentThread(), &creation, &exit, &kernel, &user)) {
+        // FILETIME is in 100ns units
+        ULARGE_INTEGER k, u;
+        k.LowPart  = kernel.dwLowDateTime;  k.HighPart = kernel.dwHighDateTime;
+        u.LowPart  = user.dwLowDateTime;    u.HighPart = user.dwHighDateTime;
+        return static_cast<double>(k.QuadPart + u.QuadPart) * 100.0;
+    }
+    return 0.0;
 #else
     return 0.0;
+#endif
+}
+
+/// Get thread cycle count (Windows only: QueryThreadCycleTime).
+/// More stable than wall-clock RDTSC on a loaded system because it
+/// excludes cycles consumed while the thread is descheduled.
+/// Returns 0 on non-Windows platforms (use RDTSC there).
+[[nodiscard]] inline std::uint64_t thread_cycle_count() noexcept {
+#if defined(_WIN32)
+    ULONG64 cycles = 0;
+    QueryThreadCycleTime(GetCurrentThread(), &cycles);
+    return static_cast<std::uint64_t>(cycles);
+#else
+    return 0;
 #endif
 }
 
@@ -177,7 +220,9 @@ public:
         // Tier 0
         start_cpu_ns_ = thread_cpu_time_ns();
         start_tsc_    = rdtsc_start();
-
+#if defined(_WIN32)
+        start_thread_cycles_ = thread_cycle_count();
+#endif
 #ifdef __linux__
         if (tier1_ok_) {
             // Reset and enable the group leader
@@ -192,7 +237,9 @@ public:
         // Tier 0
         end_tsc_    = rdtsc_end();
         end_cpu_ns_ = thread_cpu_time_ns();
-
+#if defined(_WIN32)
+        end_thread_cycles_ = thread_cycle_count();
+#endif
 #ifdef __linux__
         if (tier1_ok_) {
             ioctl(fds_[0], PERF_EVENT_IOC_DISABLE, PERF_IOC_FLAG_GROUP);
@@ -206,6 +253,15 @@ public:
         counter_snapshot snap;
         snap.tsc_cycles    = end_tsc_ - start_tsc_;
         snap.thread_cpu_ns = end_cpu_ns_ - start_cpu_ns_;
+
+#if defined(_WIN32)
+        // Windows Tier 1: thread cycles (excludes descheduled time)
+        // Use as tsc_cycles override — more accurate for per-thread latency.
+        if (end_thread_cycles_ > start_thread_cycles_) {
+            snap.tsc_cycles = end_thread_cycles_ - start_thread_cycles_;
+        }
+        // tier1_ok_ stays false — instructions/cache not available
+#endif
 
         if (tier1_ok_) {
             snap.instructions     = values_[0];
@@ -222,6 +278,10 @@ private:
     // Tier 0 state
     std::uint64_t start_tsc_ = 0, end_tsc_ = 0;
     double start_cpu_ns_ = 0.0, end_cpu_ns_ = 0.0;
+
+#if defined(_WIN32)
+    std::uint64_t start_thread_cycles_ = 0, end_thread_cycles_ = 0;
+#endif
 
     // Tier 1 state
     bool tier1_ok_ = false;
