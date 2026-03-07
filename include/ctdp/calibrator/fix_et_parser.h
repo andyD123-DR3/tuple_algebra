@@ -50,23 +50,16 @@
 #include <string_view>
 #include <vector>
 
+// Strategy enum and calibrator data types are canonical in data_point.h.
+#include <ctdp/calibrator/fix/data_point.h>
+
 namespace ctdp::calibrator::fix {
 
 // ===================================================================
 // Strategy enum and calibrator data types are canonical in data_point.h.
-#include <ctdp/calibrator/fix/data_point.h>
 
 
 /// Strategy from character label
-[[nodiscard]] constexpr Strategy strategy_from_char(char c) noexcept {
-    switch (c) {
-        case 'U': return Strategy::Unrolled;
-        case 'S': return Strategy::SWAR;
-        case 'L': return Strategy::Loop;
-        case 'G': return Strategy::Generic;
-        default:  return Strategy::Generic;
-    }
-}
 
 /// Number of integer fields in a FIX MarketData message.
 inline constexpr int num_fields = 12;
