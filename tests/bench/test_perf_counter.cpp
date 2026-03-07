@@ -75,6 +75,14 @@ TEST(PerfCounterTier0, ThreadCpuTimeNsNonNegative) {
 }
 
 TEST(PerfCounterTier0, ThreadCpuTimeNsAdvances) {
+#if defined(_WIN32)
+    // GetThreadTimes on Windows has ~15ms granularity (FILETIME 100ns units,
+    // but the scheduler only updates at timer resolution ~15ms).
+    // A short busy loop will not advance it reliably -- skip on Windows.
+    // Use the QueryThreadCycleTime tests below for Windows cycle accuracy.
+    GTEST_SKIP() << "GetThreadTimes has ~15ms granularity on Windows; "
+                    "use ThreadCycleCount tests instead";
+#else
     double t0 = bench::thread_cpu_time_ns();
     volatile std::uint64_t sink = 0;
     for (int i = 0; i < 100'000; ++i) sink += static_cast<std::uint64_t>(i);
@@ -83,6 +91,7 @@ TEST(PerfCounterTier0, ThreadCpuTimeNsAdvances) {
     EXPECT_GT(t1, t0)
         << "thread_cpu_time_ns() did not advance after busy work "
            "(t0=" << t0 << " t1=" << t1 << ")";
+#endif
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
