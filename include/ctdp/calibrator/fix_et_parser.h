@@ -630,24 +630,31 @@ template<fix_config Config>
         bench::perf_counter_group tier1;
         result.tier1_available = tier1.tier1_available();
 
+        // Always start/stop: tsc_cycles (Tier 0) is valid on all platforms.
+        // ITT brackets tell VTune to collect only during the parse loop.
+        bench::itt_scope itt;
+        tier1.start();
+        itt.resume();
+        for (std::size_t i = 0; i < counter_iters; ++i) {
+            auto tok = fix_et_parser<Config>::parse(
+                messages[i % pool_size].data(), offsets);
+            bench::DoNotOptimize(tok.value);
+        }
+        itt.pause();
+        tier1.stop();
+
+        auto snap = tier1.snapshot();
+        double n = static_cast<double>(counter_iters);
+
+        // cycles always valid (RDTSC on Linux, QueryThreadCycleTime on Windows)
+        result.cycles = static_cast<double>(snap.tsc_cycles) / n;
+
         if (result.tier1_available) {
-            tier1.start();
-            for (std::size_t i = 0; i < counter_iters; ++i) {
-                auto tok = fix_et_parser<Config>::parse(
-                    messages[i % pool_size].data(), offsets);
-                bench::DoNotOptimize(tok.value);
-            }
-            tier1.stop();
-
-            auto snap = tier1.snapshot();
-            double n = static_cast<double>(counter_iters);
-
             result.ipc = (snap.tsc_cycles > 0)
                 ? static_cast<double>(snap.instructions) /
                   static_cast<double>(snap.tsc_cycles)
                 : 0.0;
             result.instructions = static_cast<double>(snap.instructions) / n;
-            result.cycles = static_cast<double>(snap.tsc_cycles) / n;
             result.cache_miss_rate = (snap.cache_references > 0)
                 ? static_cast<double>(snap.cache_misses) /
                   static_cast<double>(snap.cache_references)
