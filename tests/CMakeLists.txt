@@ -137,6 +137,14 @@ target_compile_features(test_percentile PRIVATE cxx_std_20)
 set_target_properties(test_percentile PROPERTIES EXCLUDE_FROM_ALL TRUE)
 # gtest_discover_tests omitted: EXCLUDE_FROM_ALL targets register as NOT_BUILT in CTest
 
+# test_perf_counter: diagnostic tests for RDTSC / QueryThreadCycleTime /
+# perf_counter_group.  Included in CTest so CI catches zero-cycles regressions.
+# On Windows Tier 1 tests are skipped automatically (no perf_event_open).
+add_executable(test_perf_counter bench/test_perf_counter.cpp)
+target_link_libraries(test_perf_counter PRIVATE ctdp_all GTest::gtest GTest::gtest_main)
+target_compile_features(test_perf_counter PRIVATE cxx_std_20)
+add_test(NAME test_perf_counter COMMAND test_perf_counter)
+
 # ── Aggregate target ─────────────────────────────────────────────────────────
 add_custom_target(check
     COMMAND ${CMAKE_CTEST_COMMAND} --output-on-failure
