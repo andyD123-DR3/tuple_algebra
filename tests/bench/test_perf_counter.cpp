@@ -179,6 +179,68 @@ TEST(PerfCounterGroup, MultipleStartStopGiveConsistentResults) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+//  End-to-end: measure_config_with_counters cycles field
+//
+//  This is the critical integration test: it exercises exactly the path
+//  fix_counter_profile uses and verifies that config_metrics.cycles is
+//  populated.  Zero here means RDTSC/QueryThreadCycleTime isn't reaching
+//  config_metrics even though perf_counter_group itself works.
+// ─────────────────────────────────────────────────────────────────────────────
+
+#include <ctdp/calibrator/fix_et_parser.h>
+#include <ctdp/calibrator/fix/fix_schema.h>
+
+namespace fix = ctdp::calibrator::fix;
+
+// Use the simplest possible config: all-Unrolled, 4-field trivial schema
+static constexpr fix::fix_config kTestConfig = [] {
+    fix::fix_config c{};
+    c[0] = fix::Strategy::Unrolled;
+    c[1] = fix::Strategy::Unrolled;
+    c[2] = fix::Strategy::Unrolled;
+    c[3] = fix::Strategy::Unrolled;
+    return c;
+}();
+
+TEST(MeasureConfigWithCounters, CyclesNonZero) {
+    // Generate a tiny message pool
+    auto msgs = fix::generate_message_pool(32);
+
+    fix::measurement_config mcfg;
+    mcfg.samples       = 500;   // small — just enough to get a valid measurement
+    mcfg.warmup_parses = 64;
+    mcfg.batch_size    = 1;
+    mcfg.cycles_per_ns = fix::calibrate_tsc();
+
+    auto result = fix::measure_config_with_counters<kTestConfig>(msgs, mcfg);
+
+    EXPECT_GT(result.cycles, 0.0)
+        << "config_metrics.cycles == 0 after measure_config_with_counters -- "
+           "RDTSC/QueryThreadCycleTime result not reaching config_metrics";
+    EXPECT_GT(result.cycles, 10.0)
+        << "config_metrics.cycles=" << result.cycles
+        << " suspiciously small (expected >10 cycles/parse)";
+    EXPECT_LT(result.cycles, 100000.0)
+        << "config_metrics.cycles=" << result.cycles << " suspiciously large";
+}
+
+TEST(MeasureConfigWithCounters, FittedP99NonZero) {
+    auto msgs = fix::generate_message_pool(32);
+    fix::measurement_config mcfg;
+    mcfg.samples       = 500;
+    mcfg.warmup_parses = 64;
+    mcfg.batch_size    = 1;
+    mcfg.cycles_per_ns = fix::calibrate_tsc();
+
+    auto result = fix::measure_config_with_counters<kTestConfig>(msgs, mcfg);
+
+    EXPECT_GT(result.fitted_p99, 0.0)
+        << "fitted_p99 == 0 -- distribution fit failed";
+    EXPECT_GT(result.timing.p99, 0.0)
+        << "empirical p99 == 0 -- timing measurement failed";
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 //  Tier 1 availability (informational — not a failure if unavailable)
 // ─────────────────────────────────────────────────────────────────────────────
 
