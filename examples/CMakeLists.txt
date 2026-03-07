@@ -213,3 +213,35 @@ elseif(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
         target_compile_options(${tgt} PRIVATE /O2 /W4)
     endforeach()
 endif()
+# ── Phase 3: Trivial-tier live calibration driver ────────────────────────────
+# Hardware tool — measures all 64 N=4 plans via A1/A2/B and prints ranked table.
+# EXCLUDE_FROM_ALL: not built by default; build explicitly:
+#   cmake --build . --target fix_calibrate_trivial
+# Or in CLion: select target from the run-configuration dropdown.
+add_executable(fix_calibrate_trivial EXCLUDE_FROM_ALL fix_calibrate_trivial.cpp)
+target_link_libraries(fix_calibrate_trivial PRIVATE ctdp::calibrator)
+target_include_directories(fix_calibrate_trivial PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR
+   CMAKE_CXX_COMPILER_ID STREQUAL "Clang" OR
+   CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
+    target_compile_options(fix_calibrate_trivial PRIVATE -O3 -march=native -Wall -Wextra)
+elseif(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
+    target_compile_options(fix_calibrate_trivial PRIVATE $<$<CONFIG:Release>:/O2> /W4)
+endif()
+
+# ── Hardware counter profile: p99 + instructions/IPC/L1D/branch per plan ──
+# Shows WHY one plan is faster via perf_event counters alongside p99.
+# EXCLUDE_FROM_ALL: hardware tool, build explicitly:
+#   cmake --build . --target fix_counter_profile
+# Requires: sudo sysctl -w kernel.perf_event_paranoid=1  (for Tier 1 counters)
+add_executable(fix_counter_profile EXCLUDE_FROM_ALL fix_counter_profile.cpp)
+target_link_libraries(fix_counter_profile PRIVATE ctdp::calibrator)
+target_include_directories(fix_counter_profile PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR
+   CMAKE_CXX_COMPILER_ID STREQUAL "Clang" OR
+   CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
+    target_compile_options(fix_counter_profile PRIVATE -O3 -march=native -Wall -Wextra)
+elseif(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
+    target_compile_options(fix_counter_profile PRIVATE $<$<CONFIG:Release>:/O2> /W4)
+endif()
+
