@@ -182,7 +182,11 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR
    CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
     target_compile_options(fix_calibrate_trivial PRIVATE -O3 -march=native -Wall -Wextra)
 elseif(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
-    target_compile_options(fix_calibrate_trivial PRIVATE $<$<CONFIG:Release>:/O2> /W4)
+    target_compile_options(fix_calibrate_trivial PRIVATE /O2 /W4)
+endif()
+if(CTDP_VTUNE AND TARGET ITT::ittnotify)
+    target_link_libraries(fix_calibrate_trivial PRIVATE ITT::ittnotify)
+    target_compile_definitions(fix_calibrate_trivial PRIVATE CTDP_VTUNE)
 endif()
 
 # ── Hardware counter profile: p99 + instructions/IPC/L1D/branch per plan ──
@@ -190,6 +194,7 @@ endif()
 # EXCLUDE_FROM_ALL: hardware tool, build explicitly:
 #   cmake --build . --target fix_counter_profile
 # Requires: sudo sysctl -w kernel.perf_event_paranoid=1  (for Tier 1 counters)
+# With VTune: cmake -DCTDP_VTUNE=ON .. then run under vtune -collect
 add_executable(fix_counter_profile EXCLUDE_FROM_ALL fix_counter_profile.cpp)
 target_link_libraries(fix_counter_profile PRIVATE ctdp::calibrator)
 target_include_directories(fix_counter_profile PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
@@ -198,7 +203,11 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR
    CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
     target_compile_options(fix_counter_profile PRIVATE -O3 -march=native -Wall -Wextra)
 elseif(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
-    target_compile_options(fix_counter_profile PRIVATE $<$<CONFIG:Release>:/O2> /W4)
+    target_compile_options(fix_counter_profile PRIVATE /O2 /W4)
+endif()
+if(CTDP_VTUNE AND TARGET ITT::ittnotify)
+    target_link_libraries(fix_counter_profile PRIVATE ITT::ittnotify)
+    target_compile_definitions(fix_counter_profile PRIVATE CTDP_VTUNE)
 endif()
 
 # Compiler options for calibration examples

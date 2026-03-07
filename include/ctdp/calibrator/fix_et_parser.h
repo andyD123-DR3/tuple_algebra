@@ -50,15 +50,39 @@
 #include <string_view>
 #include <vector>
 
-// Strategy enum and calibrator data types are canonical in data_point.h.
-// fix_et_parser.h pulls them in to avoid ODR violations when both headers
-// are included in the same translation unit.
-#include <ctdp/calibrator/fix/data_point.h>
-
 namespace ctdp::calibrator::fix {
 
-// num_strategies alias for any legacy callers
-inline constexpr int num_strategies = NUM_STRATEGIES;
+// ===================================================================
+// Strategy enum and configuration
+// ===================================================================
+
+/// Parsing strategy for a single integer field.
+enum class Strategy : std::uint8_t {
+    Unrolled = 0,   // U: fully unrolled, no branches
+    SWAR     = 1,   // S: SWAR 4-at-a-time
+    Loop     = 2,   // L: simple counted loop
+    Generic  = 3    // G: loop with bounds checking
+};
+
+/// Number of strategies
+inline constexpr int num_strategies = 4;
+
+/// Short label for each strategy
+[[nodiscard]] constexpr char strategy_char(Strategy s) noexcept {
+    constexpr char labels[] = {'U', 'S', 'L', 'G'};
+    return labels[static_cast<int>(s)];
+}
+
+/// Strategy from character label
+[[nodiscard]] constexpr Strategy strategy_from_char(char c) noexcept {
+    switch (c) {
+        case 'U': return Strategy::Unrolled;
+        case 'S': return Strategy::SWAR;
+        case 'L': return Strategy::Loop;
+        case 'G': return Strategy::Generic;
+        default:  return Strategy::Generic;
+    }
+}
 
 /// Number of integer fields in a FIX MarketData message.
 inline constexpr int num_fields = 12;
@@ -90,12 +114,11 @@ inline constexpr int total_digits = [] {
     return s;
 }
 
-/// String -> config (unknown chars default to Generic)
+/// String -> config
 [[nodiscard]] inline fix_config config_from_string(std::string_view s) {
     fix_config cfg{};
     for (int i = 0; i < num_fields && i < static_cast<int>(s.size()); ++i) {
-        auto st = strategy_from_char(s[static_cast<std::size_t>(i)]);
-        cfg[static_cast<std::size_t>(i)] = st.value_or(Strategy::Generic);
+        cfg[static_cast<std::size_t>(i)] = strategy_from_char(s[static_cast<std::size_t>(i)]);
     }
     return cfg;
 }
@@ -630,28 +653,24 @@ template<fix_config Config>
         bench::perf_counter_group tier1;
         result.tier1_available = tier1.tier1_available();
 
-        // Always run start/stop: tsc_cycles is valid on all platforms
-        // (RDTSC on Linux, QueryThreadCycleTime on Windows).
-        tier1.start();
-        for (std::size_t i = 0; i < counter_iters; ++i) {
-            auto tok = fix_et_parser<Config>::parse(
-                messages[i % pool_size].data(), offsets);
-            bench::DoNotOptimize(tok.value);
-        }
-        tier1.stop();
-
-        auto snap = tier1.snapshot();
-        double n = static_cast<double>(counter_iters);
-
-        // cycles always valid (Tier 0)
-        result.cycles = static_cast<double>(snap.tsc_cycles) / n;
-
         if (result.tier1_available) {
+            tier1.start();
+            for (std::size_t i = 0; i < counter_iters; ++i) {
+                auto tok = fix_et_parser<Config>::parse(
+                    messages[i % pool_size].data(), offsets);
+                bench::DoNotOptimize(tok.value);
+            }
+            tier1.stop();
+
+            auto snap = tier1.snapshot();
+            double n = static_cast<double>(counter_iters);
+
             result.ipc = (snap.tsc_cycles > 0)
                 ? static_cast<double>(snap.instructions) /
                   static_cast<double>(snap.tsc_cycles)
                 : 0.0;
             result.instructions = static_cast<double>(snap.instructions) / n;
+            result.cycles = static_cast<double>(snap.tsc_cycles) / n;
             result.cache_miss_rate = (snap.cache_references > 0)
                 ? static_cast<double>(snap.cache_misses) /
                   static_cast<double>(snap.cache_references)
