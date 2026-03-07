@@ -29,6 +29,7 @@
 
 #include <ctdp/bench/compiler_barrier.h>
 #include <ctdp/bench/perf_counter.h>
+#include <ctdp/bench/itt_scope.h>
 #include <ctdp/bench/percentile.h>
 #include <ctdp/bench/distribution_fit.h>
 
