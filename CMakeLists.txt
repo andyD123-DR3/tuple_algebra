@@ -18,6 +18,16 @@ option(CTDP_ASAN           "Enable AddressSanitizer"      OFF)
 option(CTDP_SKIP_HW_TIMING_TESTS
     "Skip timing-accuracy assertions that require stable hardware (set OFF to enable tight validation locally)"
     ON)
+option(CTDP_VTUNE
+    "Enable Intel VTune ITT instrumentation (requires Intel oneAPI VTune SDK)"
+    OFF)
+
+if(CTDP_VTUNE)
+    list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
+    find_package(ITT REQUIRED)
+    message(STATUS "CTDP_VTUNE enabled -- ITT include: ${ITT_INCLUDE_DIR}")
+    add_compile_definitions(CTDP_VTUNE)
+endif()
 
 # ── Compiler-specific settings ───────────────────────────────────────────────
 # Raise constexpr evaluation limits (compile-time DP needs this)
