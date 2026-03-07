@@ -137,21 +137,22 @@ struct ProfileRow {
 
 static void print_header_table() {
     std::printf("\n");
-    std::printf("  %-14s  %8s  %8s  %12s  %6s  %9s  %9s  %9s\n",
-        "Plan", "p99(ns)", "fit-p99", "instr/parse",
+    std::printf("  %-14s  %8s  %8s  %12s  %12s  %6s  %9s  %9s  %9s\n",
+        "Plan", "p99(ns)", "fit-p99", "instr/parse", "cyc/parse",
         "IPC", "L1D-miss%", "br-miss%", "LL-miss%");
-    std::printf("  %-14s  %8s  %8s  %12s  %6s  %9s  %9s  %9s\n",
-        "--------------", "--------", "--------", "------------",
+    std::printf("  %-14s  %8s  %8s  %12s  %12s  %6s  %9s  %9s  %9s\n",
+        "--------------", "--------", "--------", "------------", "------------",
         "------", "---------", "--------", "--------");
 }
 
 static void print_row(const ProfileRow& r) {
     const auto& m = r.m;
-    std::printf("  %-14s  %8.2f  %8.2f  %12.1f  %6.3f  %8.3f%%  %7.3f%%  %7.3f%%\n",
+    std::printf("  %-14s  %8.2f  %8.2f  %12.1f  %12.1f  %6.3f  %8.3f%%  %7.3f%%  %7.3f%%\n",
         r.name,
         m.timing.p99,
         m.fitted_p99,
         m.instructions,
+        m.cycles,
         m.ipc,
         m.l1d_miss_rate   * 100.0,
         m.branch_miss_rate * 100.0,
@@ -213,8 +214,19 @@ static void print_analysis(const std::vector<ProfileRow>& rows) {
         std::printf("    Branch miss rate:    %.3f%%  vs  %.3f%%\n",
             best.m.branch_miss_rate * 100.0, worst.m.branch_miss_rate * 100.0);
     } else {
-        std::printf("\n  [NO HW COUNTERS] — counter columns are zero.\n");
-        std::printf("  Enable with:  sudo sysctl -w kernel.perf_event_paranoid=1\n");
+        // cycles/parse comes from QueryThreadCycleTime on Windows (Tier 0),
+        // or RDTSC on Linux when perf_event is unavailable.
+        std::printf("\n  Cycle insights (best vs worst):\n");
+        std::printf("    Cycles/parse:        %.1f  vs  %.1f  (%.2fx)\n",
+            best.m.cycles, worst.m.cycles,
+            worst.m.cycles > 0 ? worst.m.cycles / best.m.cycles : 0.0);
+        std::printf("\n  Note: instructions/cache/branch counters unavailable.\n");
+#ifdef _WIN32
+        std::printf("  Windows: cycles from QueryThreadCycleTime (thread-only, stable).\n");
+        std::printf("  For full counters: use Intel VTune or run on Linux.\n");
+#else
+        std::printf("  Linux: enable with: sudo sysctl -w kernel.perf_event_paranoid=1\n");
+#endif
     }
 
     std::printf("\n  Ranked by fitted p99:\n");
@@ -303,8 +315,10 @@ int main(int argc, char** argv) {
     if (!opts.csv && opts.verbose) print_header_table();
 
     for (std::size_t i = 0; i < probe_set.size(); ++i) {
-        if (opts.verbose && !opts.csv)
-            std::printf("  [%zu/%zu] %s\r", i+1, probe_set.size(), probe_set[i].name);
+        if (opts.verbose && !opts.csv) {
+            std::printf("  [%zu/%zu] %s\n", i+1, probe_set.size(), probe_set[i].name);
+            std::fflush(stdout);
+        }
 
         auto m = probe_fns[i](messages, mcfg);
         ProfileRow row{ probe_set[i].name, m };

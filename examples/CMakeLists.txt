@@ -182,7 +182,7 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR
    CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
     target_compile_options(fix_calibrate_trivial PRIVATE -O3 -march=native -Wall -Wextra)
 elseif(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
-    target_compile_options(fix_calibrate_trivial PRIVATE /O2 /W4)
+    target_compile_options(fix_calibrate_trivial PRIVATE $<$<CONFIG:Release>:/O2> /W4)
 endif()
 
 # ── Hardware counter profile: p99 + instructions/IPC/L1D/branch per plan ──
@@ -198,7 +198,7 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR
    CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
     target_compile_options(fix_counter_profile PRIVATE -O3 -march=native -Wall -Wextra)
 elseif(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
-    target_compile_options(fix_counter_profile PRIVATE /O2 /W4)
+    target_compile_options(fix_counter_profile PRIVATE $<$<CONFIG:Release>:/O2> /W4)
 endif()
 
 # Compiler options for calibration examples
