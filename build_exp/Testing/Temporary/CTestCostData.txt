@@ -1,0 +1,126 @@
+core_test_NOT_BUILT 0 0
+test_io_lexer_NOT_BUILT 0 0
+solver_test_NOT_BUILT 0 0
+test_cost_table_io_NOT_BUILT 0 0
+test_solver_concepts_NOT_BUILT 0 0
+test_per_element_space_NOT_BUILT 0 0
+test_interval_split_space_NOT_BUILT 0 0
+test_other_spaces_NOT_BUILT 0 0
+test_cost_models_NOT_BUILT 0 0
+test_per_element_argmin_NOT_BUILT 0 0
+test_interval_dp_NOT_BUILT 0 0
+test_exhaustive_search_NOT_BUILT 0 0
+test_select_and_run_NOT_BUILT 0 0
+test_memo_NOT_BUILT 0 0
+test_space_parameterised_NOT_BUILT 0 0
+test_candidate_traversal_NOT_BUILT 0 0
+test_heterogeneous_space_NOT_BUILT 0 0
+test_constrained_search_NOT_BUILT 0 0
+test_constraints_NOT_BUILT 0 0
+algebra_test_NOT_BUILT 0 0
+graph_step1_test_NOT_BUILT 0 0
+graph_step2_test_NOT_BUILT 0 0
+graph_step3_test_NOT_BUILT 0 0
+test_graph_io_NOT_BUILT 0 0
+test_capacity_policy_NOT_BUILT 0 0
+test_deduction_aliases_NOT_BUILT 0 0
+test_io_layering_NOT_BUILT 0 0
+graph_step5_test_NOT_BUILT 0 0
+graph_step6_test_NOT_BUILT 0 0
+graph_step7_test_NOT_BUILT 0 0
+graph_hardening_test_NOT_BUILT 0 0
+test_symmetric_graph_NOT_BUILT 0 0
+test_graph_hardening_v2_NOT_BUILT 0 0
+test_graph_coloring_NOT_BUILT 0 0
+test_weighted_view_NOT_BUILT 0 0
+test_transforms_NOT_BUILT 0 0
+test_merge_rules_NOT_BUILT 0 0
+test_segmentation_dp_NOT_BUILT 0 0
+test_graph_umbrella_NOT_BUILT 0 0
+test_bipartite_matching_NOT_BUILT 0 0
+test_instantiation_NOT_BUILT 0 0
+test_space_v072_NOT_BUILT 0 0
+test_performance_models 0 0
+test_perf_counter 0 0
+test_fix_bench 0 0
+test_fix_dp_search 0 0
+test_phase2_strategies 0 0
+test_phase3_fix_calibration 0 0
+ctdp_calibration_test 0 0
+ctdp_phase3_test 0 0
+ctdp_phase6_test 0 0
+OnehotExtractor.CorrectDimension 1 0.101736
+OnehotExtractor.AllUnrolled 1 0.104026
+OnehotExtractor.AllGeneric 1 0.103985
+OnehotExtractor.AllSWAR 1 0.107692
+OnehotExtractor.MixedConfig 1 0.103147
+OnehotExtractor.PerPositionBlockSumsToZeroOrOne 1 0.105565
+OnehotExtractor.ViaFixPoint 1 0.0994548
+OnehotExtractor.FeatureName 1 0.0988824
+CountExtractor.CorrectDimension 1 0.101212
+CountExtractor.CountsSumToTwelve 1 0.0997065
+CountExtractor.AllUnrolledCounts 1 0.100359
+CountExtractor.MixedCounts 1 0.100616
+CountExtractor.OnehotPrefixUnchanged 1 0.105031
+CountExtractor.FeatureName 1 0.100898
+TransitionExtractor.CorrectDimension 1 0.0961689
+TransitionExtractor.TransitionsSumToEleven 1 0.0960621
+TransitionExtractor.AllUnrolledTransitions 1 0.102261
+TransitionExtractor.AlternatingConfig 1 0.0981484
+TransitionExtractor.KnownConfigTransitions 1 0.103408
+TransitionExtractor.CountPrefixUnchanged 1 0.102845
+TransitionExtractor.FeatureName 1 0.0991283
+Extractors.DimensionsAreConsistent 1 0.0994816
+Extractors.AllExtractorsProduceCorrectDimsOnSameConfig 1 0.0984725
+---
+core_test_NOT_BUILT
+test_io_lexer_NOT_BUILT
+solver_test_NOT_BUILT
+test_cost_table_io_NOT_BUILT
+test_solver_concepts_NOT_BUILT
+test_per_element_space_NOT_BUILT
+test_interval_split_space_NOT_BUILT
+test_other_spaces_NOT_BUILT
+test_cost_models_NOT_BUILT
+test_per_element_argmin_NOT_BUILT
+test_interval_dp_NOT_BUILT
+test_exhaustive_search_NOT_BUILT
+test_select_and_run_NOT_BUILT
+test_memo_NOT_BUILT
+test_space_parameterised_NOT_BUILT
+test_candidate_traversal_NOT_BUILT
+test_heterogeneous_space_NOT_BUILT
+test_constrained_search_NOT_BUILT
+test_constraints_NOT_BUILT
+algebra_test_NOT_BUILT
+graph_step1_test_NOT_BUILT
+graph_step2_test_NOT_BUILT
+graph_step3_test_NOT_BUILT
+test_graph_io_NOT_BUILT
+test_capacity_policy_NOT_BUILT
+test_deduction_aliases_NOT_BUILT
+test_io_layering_NOT_BUILT
+graph_step5_test_NOT_BUILT
+graph_step6_test_NOT_BUILT
+graph_step7_test_NOT_BUILT
+graph_hardening_test_NOT_BUILT
+test_symmetric_graph_NOT_BUILT
+test_graph_hardening_v2_NOT_BUILT
+test_graph_coloring_NOT_BUILT
+test_weighted_view_NOT_BUILT
+test_transforms_NOT_BUILT
+test_merge_rules_NOT_BUILT
+test_segmentation_dp_NOT_BUILT
+test_graph_umbrella_NOT_BUILT
+test_bipartite_matching_NOT_BUILT
+test_instantiation_NOT_BUILT
+test_space_v072_NOT_BUILT
+test_performance_models
+test_perf_counter
+test_fix_bench
+test_fix_dp_search
+test_phase2_strategies
+test_phase3_fix_calibration
+ctdp_calibration_test
+ctdp_phase3_test
+ctdp_phase6_test

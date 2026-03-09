@@ -1,0 +1,1440 @@
+Start testing: Mar 09 13:10 GMT Standard Time
+----------------------------------------------------------
+Unable to find executable: core_test_NOT_BUILT
+1/74 Testing: core_test_NOT_BUILT
+1/74 Test: core_test_NOT_BUILT
+Command: ""
+Directory: D:/tuple/build_exp/tests
+"core_test_NOT_BUILT" start time: 
+Output:
+----------------------------------------------------------
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"core_test_NOT_BUILT" end time: Mar 09 13:10 GMT Standard Time
+"core_test_NOT_BUILT" time elapsed: 00:00:00
+----------------------------------------------------------
+
+Unable to find executable: test_io_lexer_NOT_BUILT
+2/74 Testing: test_io_lexer_NOT_BUILT
+2/74 Test: test_io_lexer_NOT_BUILT
+Command: ""
+Directory: D:/tuple/build_exp/tests
+"test_io_lexer_NOT_BUILT" start time: 
+Output:
+----------------------------------------------------------
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"test_io_lexer_NOT_BUILT" end time: Mar 09 13:10 GMT Standard Time
+"test_io_lexer_NOT_BUILT" time elapsed: 00:00:00
+----------------------------------------------------------
+
+Unable to find executable: solver_test_NOT_BUILT
+3/74 Testing: solver_test_NOT_BUILT
+3/74 Test: solver_test_NOT_BUILT
+Command: ""
+Directory: D:/tuple/build_exp/tests
+"solver_test_NOT_BUILT" start time: 
+Output:
+----------------------------------------------------------
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"solver_test_NOT_BUILT" end time: Mar 09 13:10 GMT Standard Time
+"solver_test_NOT_BUILT" time elapsed: 00:00:00
+----------------------------------------------------------
+
+Unable to find executable: test_cost_table_io_NOT_BUILT
+4/74 Testing: test_cost_table_io_NOT_BUILT
+4/74 Test: test_cost_table_io_NOT_BUILT
+Command: ""
+Directory: D:/tuple/build_exp/tests
+"test_cost_table_io_NOT_BUILT" start time: 
+Output:
+----------------------------------------------------------
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"test_cost_table_io_NOT_BUILT" end time: Mar 09 13:10 GMT Standard Time
+"test_cost_table_io_NOT_BUILT" time elapsed: 00:00:00
+----------------------------------------------------------
+
+Unable to find executable: test_solver_concepts_NOT_BUILT
+5/74 Testing: test_solver_concepts_NOT_BUILT
+5/74 Test: test_solver_concepts_NOT_BUILT
+Command: ""
+Directory: D:/tuple/build_exp/tests
+"test_solver_concepts_NOT_BUILT" start time: 
+Output:
+----------------------------------------------------------
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"test_solver_concepts_NOT_BUILT" end time: Mar 09 13:10 GMT Standard Time
+"test_solver_concepts_NOT_BUILT" time elapsed: 00:00:00
+----------------------------------------------------------
+
+Unable to find executable: test_per_element_space_NOT_BUILT
+6/74 Testing: test_per_element_space_NOT_BUILT
+6/74 Test: test_per_element_space_NOT_BUILT
+Command: ""
+Directory: D:/tuple/build_exp/tests
+"test_per_element_space_NOT_BUILT" start time: 
+Output:
+----------------------------------------------------------
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"test_per_element_space_NOT_BUILT" end time: Mar 09 13:10 GMT Standard Time
+"test_per_element_space_NOT_BUILT" time elapsed: 00:00:00
+----------------------------------------------------------
+
+Unable to find executable: test_interval_split_space_NOT_BUILT
+7/74 Testing: test_interval_split_space_NOT_BUILT
+7/74 Test: test_interval_split_space_NOT_BUILT
+Command: ""
+Directory: D:/tuple/build_exp/tests
+"test_interval_split_space_NOT_BUILT" start time: 
+Output:
+----------------------------------------------------------
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"test_interval_split_space_NOT_BUILT" end time: Mar 09 13:10 GMT Standard Time
+"test_interval_split_space_NOT_BUILT" time elapsed: 00:00:00
+----------------------------------------------------------
+
+Unable to find executable: test_other_spaces_NOT_BUILT
+8/74 Testing: test_other_spaces_NOT_BUILT
+8/74 Test: test_other_spaces_NOT_BUILT
+Command: ""
+Directory: D:/tuple/build_exp/tests
+"test_other_spaces_NOT_BUILT" start time: 
+Output:
+----------------------------------------------------------
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"test_other_spaces_NOT_BUILT" end time: Mar 09 13:10 GMT Standard Time
+"test_other_spaces_NOT_BUILT" time elapsed: 00:00:00
+----------------------------------------------------------
+
+Unable to find executable: test_cost_models_NOT_BUILT
+9/74 Testing: test_cost_models_NOT_BUILT
+9/74 Test: test_cost_models_NOT_BUILT
+Command: ""
+Directory: D:/tuple/build_exp/tests
+"test_cost_models_NOT_BUILT" start time: 
+Output:
+----------------------------------------------------------
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"test_cost_models_NOT_BUILT" end time: Mar 09 13:10 GMT Standard Time
+"test_cost_models_NOT_BUILT" time elapsed: 00:00:00
+----------------------------------------------------------
+
+Unable to find executable: test_per_element_argmin_NOT_BUILT
+10/74 Testing: test_per_element_argmin_NOT_BUILT
+10/74 Test: test_per_element_argmin_NOT_BUILT
+Command: ""
+Directory: D:/tuple/build_exp/tests
+"test_per_element_argmin_NOT_BUILT" start time: 
+Output:
+----------------------------------------------------------
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"test_per_element_argmin_NOT_BUILT" end time: Mar 09 13:10 GMT Standard Time
+"test_per_element_argmin_NOT_BUILT" time elapsed: 00:00:00
+----------------------------------------------------------
+
+Unable to find executable: test_interval_dp_NOT_BUILT
+11/74 Testing: test_interval_dp_NOT_BUILT
+11/74 Test: test_interval_dp_NOT_BUILT
+Command: ""
+Directory: D:/tuple/build_exp/tests
+"test_interval_dp_NOT_BUILT" start time: 
+Output:
+----------------------------------------------------------
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"test_interval_dp_NOT_BUILT" end time: Mar 09 13:10 GMT Standard Time
+"test_interval_dp_NOT_BUILT" time elapsed: 00:00:00
+----------------------------------------------------------
+
+Unable to find executable: test_exhaustive_search_NOT_BUILT
+12/74 Testing: test_exhaustive_search_NOT_BUILT
+12/74 Test: test_exhaustive_search_NOT_BUILT
+Command: ""
+Directory: D:/tuple/build_exp/tests
+"test_exhaustive_search_NOT_BUILT" start time: 
+Output:
+----------------------------------------------------------
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"test_exhaustive_search_NOT_BUILT" end time: Mar 09 13:10 GMT Standard Time
+"test_exhaustive_search_NOT_BUILT" time elapsed: 00:00:00
+----------------------------------------------------------
+
+Unable to find executable: test_select_and_run_NOT_BUILT
+13/74 Testing: test_select_and_run_NOT_BUILT
+13/74 Test: test_select_and_run_NOT_BUILT
+Command: ""
+Directory: D:/tuple/build_exp/tests
+"test_select_and_run_NOT_BUILT" start time: 
+Output:
+----------------------------------------------------------
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"test_select_and_run_NOT_BUILT" end time: Mar 09 13:10 GMT Standard Time
+"test_select_and_run_NOT_BUILT" time elapsed: 00:00:00
+----------------------------------------------------------
+
+Unable to find executable: test_memo_NOT_BUILT
+14/74 Testing: test_memo_NOT_BUILT
+14/74 Test: test_memo_NOT_BUILT
+Command: ""
+Directory: D:/tuple/build_exp/tests
+"test_memo_NOT_BUILT" start time: 
+Output:
+----------------------------------------------------------
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"test_memo_NOT_BUILT" end time: Mar 09 13:10 GMT Standard Time
+"test_memo_NOT_BUILT" time elapsed: 00:00:00
+----------------------------------------------------------
+
+Unable to find executable: test_space_parameterised_NOT_BUILT
+15/74 Testing: test_space_parameterised_NOT_BUILT
+15/74 Test: test_space_parameterised_NOT_BUILT
+Command: ""
+Directory: D:/tuple/build_exp/tests
+"test_space_parameterised_NOT_BUILT" start time: 
+Output:
+----------------------------------------------------------
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"test_space_parameterised_NOT_BUILT" end time: Mar 09 13:10 GMT Standard Time
+"test_space_parameterised_NOT_BUILT" time elapsed: 00:00:00
+----------------------------------------------------------
+
+Unable to find executable: test_candidate_traversal_NOT_BUILT
+16/74 Testing: test_candidate_traversal_NOT_BUILT
+16/74 Test: test_candidate_traversal_NOT_BUILT
+Command: ""
+Directory: D:/tuple/build_exp/tests
+"test_candidate_traversal_NOT_BUILT" start time: 
+Output:
+----------------------------------------------------------
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"test_candidate_traversal_NOT_BUILT" end time: Mar 09 13:10 GMT Standard Time
+"test_candidate_traversal_NOT_BUILT" time elapsed: 00:00:00
+----------------------------------------------------------
+
+Unable to find executable: test_heterogeneous_space_NOT_BUILT
+17/74 Testing: test_heterogeneous_space_NOT_BUILT
+17/74 Test: test_heterogeneous_space_NOT_BUILT
+Command: ""
+Directory: D:/tuple/build_exp/tests
+"test_heterogeneous_space_NOT_BUILT" start time: 
+Output:
+----------------------------------------------------------
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"test_heterogeneous_space_NOT_BUILT" end time: Mar 09 13:10 GMT Standard Time
+"test_heterogeneous_space_NOT_BUILT" time elapsed: 00:00:00
+----------------------------------------------------------
+
+Unable to find executable: test_constrained_search_NOT_BUILT
+18/74 Testing: test_constrained_search_NOT_BUILT
+18/74 Test: test_constrained_search_NOT_BUILT
+Command: ""
+Directory: D:/tuple/build_exp/tests
+"test_constrained_search_NOT_BUILT" start time: 
+Output:
+----------------------------------------------------------
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"test_constrained_search_NOT_BUILT" end time: Mar 09 13:10 GMT Standard Time
+"test_constrained_search_NOT_BUILT" time elapsed: 00:00:00
+----------------------------------------------------------
+
+Unable to find executable: test_constraints_NOT_BUILT
+19/74 Testing: test_constraints_NOT_BUILT
+19/74 Test: test_constraints_NOT_BUILT
+Command: ""
+Directory: D:/tuple/build_exp/tests
+"test_constraints_NOT_BUILT" start time: 
+Output:
+----------------------------------------------------------
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"test_constraints_NOT_BUILT" end time: Mar 09 13:10 GMT Standard Time
+"test_constraints_NOT_BUILT" time elapsed: 00:00:00
+----------------------------------------------------------
+
+Unable to find executable: algebra_test_NOT_BUILT
+20/74 Testing: algebra_test_NOT_BUILT
+20/74 Test: algebra_test_NOT_BUILT
+Command: ""
+Directory: D:/tuple/build_exp/tests
+"algebra_test_NOT_BUILT" start time: 
+Output:
+----------------------------------------------------------
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"algebra_test_NOT_BUILT" end time: Mar 09 13:10 GMT Standard Time
+"algebra_test_NOT_BUILT" time elapsed: 00:00:00
+----------------------------------------------------------
+
+Unable to find executable: graph_step1_test_NOT_BUILT
+21/74 Testing: graph_step1_test_NOT_BUILT
+21/74 Test: graph_step1_test_NOT_BUILT
+Command: ""
+Directory: D:/tuple/build_exp/tests
+"graph_step1_test_NOT_BUILT" start time: 
+Output:
+----------------------------------------------------------
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"graph_step1_test_NOT_BUILT" end time: Mar 09 13:10 GMT Standard Time
+"graph_step1_test_NOT_BUILT" time elapsed: 00:00:00
+----------------------------------------------------------
+
+Unable to find executable: graph_step2_test_NOT_BUILT
+22/74 Testing: graph_step2_test_NOT_BUILT
+22/74 Test: graph_step2_test_NOT_BUILT
+Command: ""
+Directory: D:/tuple/build_exp/tests
+"graph_step2_test_NOT_BUILT" start time: 
+Output:
+----------------------------------------------------------
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"graph_step2_test_NOT_BUILT" end time: Mar 09 13:10 GMT Standard Time
+"graph_step2_test_NOT_BUILT" time elapsed: 00:00:00
+----------------------------------------------------------
+
+Unable to find executable: graph_step3_test_NOT_BUILT
+23/74 Testing: graph_step3_test_NOT_BUILT
+23/74 Test: graph_step3_test_NOT_BUILT
+Command: ""
+Directory: D:/tuple/build_exp/tests
+"graph_step3_test_NOT_BUILT" start time: 
+Output:
+----------------------------------------------------------
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"graph_step3_test_NOT_BUILT" end time: Mar 09 13:10 GMT Standard Time
+"graph_step3_test_NOT_BUILT" time elapsed: 00:00:00
+----------------------------------------------------------
+
+Unable to find executable: test_graph_io_NOT_BUILT
+24/74 Testing: test_graph_io_NOT_BUILT
+24/74 Test: test_graph_io_NOT_BUILT
+Command: ""
+Directory: D:/tuple/build_exp/tests
+"test_graph_io_NOT_BUILT" start time: 
+Output:
+----------------------------------------------------------
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"test_graph_io_NOT_BUILT" end time: Mar 09 13:10 GMT Standard Time
+"test_graph_io_NOT_BUILT" time elapsed: 00:00:00
+----------------------------------------------------------
+
+Unable to find executable: test_capacity_policy_NOT_BUILT
+25/74 Testing: test_capacity_policy_NOT_BUILT
+25/74 Test: test_capacity_policy_NOT_BUILT
+Command: ""
+Directory: D:/tuple/build_exp/tests
+"test_capacity_policy_NOT_BUILT" start time: 
+Output:
+----------------------------------------------------------
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"test_capacity_policy_NOT_BUILT" end time: Mar 09 13:10 GMT Standard Time
+"test_capacity_policy_NOT_BUILT" time elapsed: 00:00:00
+----------------------------------------------------------
+
+Unable to find executable: test_deduction_aliases_NOT_BUILT
+26/74 Testing: test_deduction_aliases_NOT_BUILT
+26/74 Test: test_deduction_aliases_NOT_BUILT
+Command: ""
+Directory: D:/tuple/build_exp/tests
+"test_deduction_aliases_NOT_BUILT" start time: 
+Output:
+----------------------------------------------------------
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"test_deduction_aliases_NOT_BUILT" end time: Mar 09 13:10 GMT Standard Time
+"test_deduction_aliases_NOT_BUILT" time elapsed: 00:00:00
+----------------------------------------------------------
+
+Unable to find executable: test_io_layering_NOT_BUILT
+27/74 Testing: test_io_layering_NOT_BUILT
+27/74 Test: test_io_layering_NOT_BUILT
+Command: ""
+Directory: D:/tuple/build_exp/tests
+"test_io_layering_NOT_BUILT" start time: 
+Output:
+----------------------------------------------------------
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"test_io_layering_NOT_BUILT" end time: Mar 09 13:10 GMT Standard Time
+"test_io_layering_NOT_BUILT" time elapsed: 00:00:00
+----------------------------------------------------------
+
+Unable to find executable: graph_step5_test_NOT_BUILT
+28/74 Testing: graph_step5_test_NOT_BUILT
+28/74 Test: graph_step5_test_NOT_BUILT
+Command: ""
+Directory: D:/tuple/build_exp/tests
+"graph_step5_test_NOT_BUILT" start time: 
+Output:
+----------------------------------------------------------
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"graph_step5_test_NOT_BUILT" end time: Mar 09 13:10 GMT Standard Time
+"graph_step5_test_NOT_BUILT" time elapsed: 00:00:00
+----------------------------------------------------------
+
+Unable to find executable: graph_step6_test_NOT_BUILT
+29/74 Testing: graph_step6_test_NOT_BUILT
+29/74 Test: graph_step6_test_NOT_BUILT
+Command: ""
+Directory: D:/tuple/build_exp/tests
+"graph_step6_test_NOT_BUILT" start time: 
+Output:
+----------------------------------------------------------
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"graph_step6_test_NOT_BUILT" end time: Mar 09 13:10 GMT Standard Time
+"graph_step6_test_NOT_BUILT" time elapsed: 00:00:00
+----------------------------------------------------------
+
+Unable to find executable: graph_step7_test_NOT_BUILT
+30/74 Testing: graph_step7_test_NOT_BUILT
+30/74 Test: graph_step7_test_NOT_BUILT
+Command: ""
+Directory: D:/tuple/build_exp/tests
+"graph_step7_test_NOT_BUILT" start time: 
+Output:
+----------------------------------------------------------
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"graph_step7_test_NOT_BUILT" end time: Mar 09 13:10 GMT Standard Time
+"graph_step7_test_NOT_BUILT" time elapsed: 00:00:00
+----------------------------------------------------------
+
+Unable to find executable: graph_hardening_test_NOT_BUILT
+31/74 Testing: graph_hardening_test_NOT_BUILT
+31/74 Test: graph_hardening_test_NOT_BUILT
+Command: ""
+Directory: D:/tuple/build_exp/tests
+"graph_hardening_test_NOT_BUILT" start time: 
+Output:
+----------------------------------------------------------
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"graph_hardening_test_NOT_BUILT" end time: Mar 09 13:10 GMT Standard Time
+"graph_hardening_test_NOT_BUILT" time elapsed: 00:00:00
+----------------------------------------------------------
+
+Unable to find executable: test_symmetric_graph_NOT_BUILT
+32/74 Testing: test_symmetric_graph_NOT_BUILT
+32/74 Test: test_symmetric_graph_NOT_BUILT
+Command: ""
+Directory: D:/tuple/build_exp/tests
+"test_symmetric_graph_NOT_BUILT" start time: 
+Output:
+----------------------------------------------------------
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"test_symmetric_graph_NOT_BUILT" end time: Mar 09 13:10 GMT Standard Time
+"test_symmetric_graph_NOT_BUILT" time elapsed: 00:00:00
+----------------------------------------------------------
+
+Unable to find executable: test_graph_hardening_v2_NOT_BUILT
+33/74 Testing: test_graph_hardening_v2_NOT_BUILT
+33/74 Test: test_graph_hardening_v2_NOT_BUILT
+Command: ""
+Directory: D:/tuple/build_exp/tests
+"test_graph_hardening_v2_NOT_BUILT" start time: 
+Output:
+----------------------------------------------------------
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"test_graph_hardening_v2_NOT_BUILT" end time: Mar 09 13:10 GMT Standard Time
+"test_graph_hardening_v2_NOT_BUILT" time elapsed: 00:00:00
+----------------------------------------------------------
+
+Unable to find executable: test_graph_coloring_NOT_BUILT
+34/74 Testing: test_graph_coloring_NOT_BUILT
+34/74 Test: test_graph_coloring_NOT_BUILT
+Command: ""
+Directory: D:/tuple/build_exp/tests
+"test_graph_coloring_NOT_BUILT" start time: 
+Output:
+----------------------------------------------------------
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"test_graph_coloring_NOT_BUILT" end time: Mar 09 13:10 GMT Standard Time
+"test_graph_coloring_NOT_BUILT" time elapsed: 00:00:00
+----------------------------------------------------------
+
+Unable to find executable: test_weighted_view_NOT_BUILT
+35/74 Testing: test_weighted_view_NOT_BUILT
+35/74 Test: test_weighted_view_NOT_BUILT
+Command: ""
+Directory: D:/tuple/build_exp/tests
+"test_weighted_view_NOT_BUILT" start time: 
+Output:
+----------------------------------------------------------
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"test_weighted_view_NOT_BUILT" end time: Mar 09 13:10 GMT Standard Time
+"test_weighted_view_NOT_BUILT" time elapsed: 00:00:00
+----------------------------------------------------------
+
+Unable to find executable: test_transforms_NOT_BUILT
+36/74 Testing: test_transforms_NOT_BUILT
+36/74 Test: test_transforms_NOT_BUILT
+Command: ""
+Directory: D:/tuple/build_exp/tests
+"test_transforms_NOT_BUILT" start time: 
+Output:
+----------------------------------------------------------
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"test_transforms_NOT_BUILT" end time: Mar 09 13:10 GMT Standard Time
+"test_transforms_NOT_BUILT" time elapsed: 00:00:00
+----------------------------------------------------------
+
+Unable to find executable: test_merge_rules_NOT_BUILT
+37/74 Testing: test_merge_rules_NOT_BUILT
+37/74 Test: test_merge_rules_NOT_BUILT
+Command: ""
+Directory: D:/tuple/build_exp/tests
+"test_merge_rules_NOT_BUILT" start time: 
+Output:
+----------------------------------------------------------
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"test_merge_rules_NOT_BUILT" end time: Mar 09 13:10 GMT Standard Time
+"test_merge_rules_NOT_BUILT" time elapsed: 00:00:00
+----------------------------------------------------------
+
+Unable to find executable: test_segmentation_dp_NOT_BUILT
+38/74 Testing: test_segmentation_dp_NOT_BUILT
+38/74 Test: test_segmentation_dp_NOT_BUILT
+Command: ""
+Directory: D:/tuple/build_exp/tests
+"test_segmentation_dp_NOT_BUILT" start time: 
+Output:
+----------------------------------------------------------
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"test_segmentation_dp_NOT_BUILT" end time: Mar 09 13:10 GMT Standard Time
+"test_segmentation_dp_NOT_BUILT" time elapsed: 00:00:00
+----------------------------------------------------------
+
+Unable to find executable: test_graph_umbrella_NOT_BUILT
+39/74 Testing: test_graph_umbrella_NOT_BUILT
+39/74 Test: test_graph_umbrella_NOT_BUILT
+Command: ""
+Directory: D:/tuple/build_exp/tests
+"test_graph_umbrella_NOT_BUILT" start time: 
+Output:
+----------------------------------------------------------
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"test_graph_umbrella_NOT_BUILT" end time: Mar 09 13:10 GMT Standard Time
+"test_graph_umbrella_NOT_BUILT" time elapsed: 00:00:00
+----------------------------------------------------------
+
+Unable to find executable: test_bipartite_matching_NOT_BUILT
+40/74 Testing: test_bipartite_matching_NOT_BUILT
+40/74 Test: test_bipartite_matching_NOT_BUILT
+Command: ""
+Directory: D:/tuple/build_exp/tests
+"test_bipartite_matching_NOT_BUILT" start time: 
+Output:
+----------------------------------------------------------
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"test_bipartite_matching_NOT_BUILT" end time: Mar 09 13:10 GMT Standard Time
+"test_bipartite_matching_NOT_BUILT" time elapsed: 00:00:00
+----------------------------------------------------------
+
+Unable to find executable: test_instantiation_NOT_BUILT
+41/74 Testing: test_instantiation_NOT_BUILT
+41/74 Test: test_instantiation_NOT_BUILT
+Command: ""
+Directory: D:/tuple/build_exp/tests
+"test_instantiation_NOT_BUILT" start time: 
+Output:
+----------------------------------------------------------
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"test_instantiation_NOT_BUILT" end time: Mar 09 13:10 GMT Standard Time
+"test_instantiation_NOT_BUILT" time elapsed: 00:00:00
+----------------------------------------------------------
+
+Unable to find executable: test_space_v072_NOT_BUILT
+42/74 Testing: test_space_v072_NOT_BUILT
+42/74 Test: test_space_v072_NOT_BUILT
+Command: ""
+Directory: D:/tuple/build_exp/tests
+"test_space_v072_NOT_BUILT" start time: 
+Output:
+----------------------------------------------------------
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"test_space_v072_NOT_BUILT" end time: Mar 09 13:10 GMT Standard Time
+"test_space_v072_NOT_BUILT" time elapsed: 00:00:00
+----------------------------------------------------------
+
+Unable to find executable: D:/tuple/build_exp/tests/Release/test_performance_models.exe
+43/74 Testing: test_performance_models
+43/74 Test: test_performance_models
+Command: ""
+Directory: D:/tuple/build_exp/tests
+"test_performance_models" start time: 
+Output:
+----------------------------------------------------------
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"test_performance_models" end time: Mar 09 13:10 GMT Standard Time
+"test_performance_models" time elapsed: 00:00:00
+----------------------------------------------------------
+
+Unable to find executable: D:/tuple/build_exp/tests/Release/test_perf_counter.exe
+44/74 Testing: test_perf_counter
+44/74 Test: test_perf_counter
+Command: ""
+Directory: D:/tuple/build_exp/tests
+"test_perf_counter" start time: 
+Output:
+----------------------------------------------------------
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"test_perf_counter" end time: Mar 09 13:10 GMT Standard Time
+"test_perf_counter" time elapsed: 00:00:00
+----------------------------------------------------------
+
+Unable to find executable: D:/tuple/build_exp/tests/Release/test_fix_bench.exe
+45/74 Testing: test_fix_bench
+45/74 Test: test_fix_bench
+Command: ""
+Directory: D:/tuple/build_exp/tests
+"test_fix_bench" start time: 
+Output:
+----------------------------------------------------------
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"test_fix_bench" end time: Mar 09 13:10 GMT Standard Time
+"test_fix_bench" time elapsed: 00:00:00
+----------------------------------------------------------
+
+Unable to find executable: D:/tuple/build_exp/tests/Release/test_fix_dp_search.exe
+46/74 Testing: test_fix_dp_search
+46/74 Test: test_fix_dp_search
+Command: ""
+Directory: D:/tuple/build_exp/tests
+"test_fix_dp_search" start time: 
+Output:
+----------------------------------------------------------
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"test_fix_dp_search" end time: Mar 09 13:10 GMT Standard Time
+"test_fix_dp_search" time elapsed: 00:00:00
+----------------------------------------------------------
+
+Unable to find executable: D:/tuple/build_exp/tests/Release/test_phase2_strategies.exe
+47/74 Testing: test_phase2_strategies
+47/74 Test: test_phase2_strategies
+Command: ""
+Directory: D:/tuple/build_exp/tests
+"test_phase2_strategies" start time: 
+Output:
+----------------------------------------------------------
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"test_phase2_strategies" end time: Mar 09 13:10 GMT Standard Time
+"test_phase2_strategies" time elapsed: 00:00:00
+----------------------------------------------------------
+
+Unable to find executable: D:/tuple/build_exp/tests/Release/test_phase3_fix_calibration.exe
+48/74 Testing: test_phase3_fix_calibration
+48/74 Test: test_phase3_fix_calibration
+Command: ""
+Directory: D:/tuple/build_exp/tests
+"test_phase3_fix_calibration" start time: 
+Output:
+----------------------------------------------------------
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"test_phase3_fix_calibration" end time: Mar 09 13:10 GMT Standard Time
+"test_phase3_fix_calibration" time elapsed: 00:00:00
+----------------------------------------------------------
+
+Unable to find executable: D:/tuple/build_exp/tests/Release/ctdp_calibration_test.exe
+49/74 Testing: ctdp_calibration_test
+49/74 Test: ctdp_calibration_test
+Command: ""
+Directory: D:/tuple/build_exp/tests
+"ctdp_calibration_test" start time: 
+Output:
+----------------------------------------------------------
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"ctdp_calibration_test" end time: Mar 09 13:10 GMT Standard Time
+"ctdp_calibration_test" time elapsed: 00:00:00
+----------------------------------------------------------
+
+Unable to find executable: D:/tuple/build_exp/tests/Release/ctdp_phase3_test.exe
+50/74 Testing: ctdp_phase3_test
+50/74 Test: ctdp_phase3_test
+Command: ""
+Directory: D:/tuple/build_exp/tests
+"ctdp_phase3_test" start time: 
+Output:
+----------------------------------------------------------
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"ctdp_phase3_test" end time: Mar 09 13:10 GMT Standard Time
+"ctdp_phase3_test" time elapsed: 00:00:00
+----------------------------------------------------------
+
+Unable to find executable: D:/tuple/build_exp/tests/Release/ctdp_phase6_test.exe
+51/74 Testing: ctdp_phase6_test
+51/74 Test: ctdp_phase6_test
+Command: ""
+Directory: D:/tuple/build_exp/tests
+"ctdp_phase6_test" start time: 
+Output:
+----------------------------------------------------------
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"ctdp_phase6_test" end time: Mar 09 13:10 GMT Standard Time
+"ctdp_phase6_test" time elapsed: 00:00:00
+----------------------------------------------------------
+
+52/74 Testing: OnehotExtractor.CorrectDimension
+52/74 Test: OnehotExtractor.CorrectDimension
+Command: "D:/tuple/build_exp/experiments/fix_calibration/Release/fix_experiment_test_extractors.exe" "--gtest_filter=OnehotExtractor.CorrectDimension" "--gtest_also_run_disabled_tests"
+Directory: D:/tuple/build_exp/experiments/fix_calibration
+"OnehotExtractor.CorrectDimension" start time: Mar 09 13:10 GMT Standard Time
+Output:
+----------------------------------------------------------
+Running main() from D:\tuple\build_exp\_deps\googletest-src\googletest\src\gtest_main.cc
+Note: Google Test filter = OnehotExtractor.CorrectDimension
+[==========] Running 1 test from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 1 test from OnehotExtractor
+[ RUN      ] OnehotExtractor.CorrectDimension
+[       OK ] OnehotExtractor.CorrectDimension (0 ms)
+[----------] 1 test from OnehotExtractor (0 ms total)
+
+[----------] Global test environment tear-down
+[==========] 1 test from 1 test suite ran. (0 ms total)
+[  PASSED  ] 1 test.
+<end of output>
+Test time =   0.10 sec
+----------------------------------------------------------
+Test Passed.
+"OnehotExtractor.CorrectDimension" end time: Mar 09 13:10 GMT Standard Time
+"OnehotExtractor.CorrectDimension" time elapsed: 00:00:00
+----------------------------------------------------------
+
+53/74 Testing: OnehotExtractor.AllUnrolled
+53/74 Test: OnehotExtractor.AllUnrolled
+Command: "D:/tuple/build_exp/experiments/fix_calibration/Release/fix_experiment_test_extractors.exe" "--gtest_filter=OnehotExtractor.AllUnrolled" "--gtest_also_run_disabled_tests"
+Directory: D:/tuple/build_exp/experiments/fix_calibration
+"OnehotExtractor.AllUnrolled" start time: Mar 09 13:10 GMT Standard Time
+Output:
+----------------------------------------------------------
+Running main() from D:\tuple\build_exp\_deps\googletest-src\googletest\src\gtest_main.cc
+Note: Google Test filter = OnehotExtractor.AllUnrolled
+[==========] Running 1 test from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 1 test from OnehotExtractor
+[ RUN      ] OnehotExtractor.AllUnrolled
+[       OK ] OnehotExtractor.AllUnrolled (0 ms)
+[----------] 1 test from OnehotExtractor (0 ms total)
+
+[----------] Global test environment tear-down
+[==========] 1 test from 1 test suite ran. (0 ms total)
+[  PASSED  ] 1 test.
+<end of output>
+Test time =   0.10 sec
+----------------------------------------------------------
+Test Passed.
+"OnehotExtractor.AllUnrolled" end time: Mar 09 13:10 GMT Standard Time
+"OnehotExtractor.AllUnrolled" time elapsed: 00:00:00
+----------------------------------------------------------
+
+54/74 Testing: OnehotExtractor.AllGeneric
+54/74 Test: OnehotExtractor.AllGeneric
+Command: "D:/tuple/build_exp/experiments/fix_calibration/Release/fix_experiment_test_extractors.exe" "--gtest_filter=OnehotExtractor.AllGeneric" "--gtest_also_run_disabled_tests"
+Directory: D:/tuple/build_exp/experiments/fix_calibration
+"OnehotExtractor.AllGeneric" start time: Mar 09 13:10 GMT Standard Time
+Output:
+----------------------------------------------------------
+Running main() from D:\tuple\build_exp\_deps\googletest-src\googletest\src\gtest_main.cc
+Note: Google Test filter = OnehotExtractor.AllGeneric
+[==========] Running 1 test from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 1 test from OnehotExtractor
+[ RUN      ] OnehotExtractor.AllGeneric
+[       OK ] OnehotExtractor.AllGeneric (0 ms)
+[----------] 1 test from OnehotExtractor (0 ms total)
+
+[----------] Global test environment tear-down
+[==========] 1 test from 1 test suite ran. (0 ms total)
+[  PASSED  ] 1 test.
+<end of output>
+Test time =   0.10 sec
+----------------------------------------------------------
+Test Passed.
+"OnehotExtractor.AllGeneric" end time: Mar 09 13:10 GMT Standard Time
+"OnehotExtractor.AllGeneric" time elapsed: 00:00:00
+----------------------------------------------------------
+
+55/74 Testing: OnehotExtractor.AllSWAR
+55/74 Test: OnehotExtractor.AllSWAR
+Command: "D:/tuple/build_exp/experiments/fix_calibration/Release/fix_experiment_test_extractors.exe" "--gtest_filter=OnehotExtractor.AllSWAR" "--gtest_also_run_disabled_tests"
+Directory: D:/tuple/build_exp/experiments/fix_calibration
+"OnehotExtractor.AllSWAR" start time: Mar 09 13:10 GMT Standard Time
+Output:
+----------------------------------------------------------
+Running main() from D:\tuple\build_exp\_deps\googletest-src\googletest\src\gtest_main.cc
+Note: Google Test filter = OnehotExtractor.AllSWAR
+[==========] Running 1 test from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 1 test from OnehotExtractor
+[ RUN      ] OnehotExtractor.AllSWAR
+[       OK ] OnehotExtractor.AllSWAR (0 ms)
+[----------] 1 test from OnehotExtractor (0 ms total)
+
+[----------] Global test environment tear-down
+[==========] 1 test from 1 test suite ran. (0 ms total)
+[  PASSED  ] 1 test.
+<end of output>
+Test time =   0.11 sec
+----------------------------------------------------------
+Test Passed.
+"OnehotExtractor.AllSWAR" end time: Mar 09 13:10 GMT Standard Time
+"OnehotExtractor.AllSWAR" time elapsed: 00:00:00
+----------------------------------------------------------
+
+56/74 Testing: OnehotExtractor.MixedConfig
+56/74 Test: OnehotExtractor.MixedConfig
+Command: "D:/tuple/build_exp/experiments/fix_calibration/Release/fix_experiment_test_extractors.exe" "--gtest_filter=OnehotExtractor.MixedConfig" "--gtest_also_run_disabled_tests"
+Directory: D:/tuple/build_exp/experiments/fix_calibration
+"OnehotExtractor.MixedConfig" start time: Mar 09 13:10 GMT Standard Time
+Output:
+----------------------------------------------------------
+Running main() from D:\tuple\build_exp\_deps\googletest-src\googletest\src\gtest_main.cc
+Note: Google Test filter = OnehotExtractor.MixedConfig
+[==========] Running 1 test from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 1 test from OnehotExtractor
+[ RUN      ] OnehotExtractor.MixedConfig
+[       OK ] OnehotExtractor.MixedConfig (0 ms)
+[----------] 1 test from OnehotExtractor (0 ms total)
+
+[----------] Global test environment tear-down
+[==========] 1 test from 1 test suite ran. (0 ms total)
+[  PASSED  ] 1 test.
+<end of output>
+Test time =   0.10 sec
+----------------------------------------------------------
+Test Passed.
+"OnehotExtractor.MixedConfig" end time: Mar 09 13:10 GMT Standard Time
+"OnehotExtractor.MixedConfig" time elapsed: 00:00:00
+----------------------------------------------------------
+
+57/74 Testing: OnehotExtractor.PerPositionBlockSumsToZeroOrOne
+57/74 Test: OnehotExtractor.PerPositionBlockSumsToZeroOrOne
+Command: "D:/tuple/build_exp/experiments/fix_calibration/Release/fix_experiment_test_extractors.exe" "--gtest_filter=OnehotExtractor.PerPositionBlockSumsToZeroOrOne" "--gtest_also_run_disabled_tests"
+Directory: D:/tuple/build_exp/experiments/fix_calibration
+"OnehotExtractor.PerPositionBlockSumsToZeroOrOne" start time: Mar 09 13:10 GMT Standard Time
+Output:
+----------------------------------------------------------
+Running main() from D:\tuple\build_exp\_deps\googletest-src\googletest\src\gtest_main.cc
+Note: Google Test filter = OnehotExtractor.PerPositionBlockSumsToZeroOrOne
+[==========] Running 1 test from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 1 test from OnehotExtractor
+[ RUN      ] OnehotExtractor.PerPositionBlockSumsToZeroOrOne
+[       OK ] OnehotExtractor.PerPositionBlockSumsToZeroOrOne (0 ms)
+[----------] 1 test from OnehotExtractor (0 ms total)
+
+[----------] Global test environment tear-down
+[==========] 1 test from 1 test suite ran. (0 ms total)
+[  PASSED  ] 1 test.
+<end of output>
+Test time =   0.11 sec
+----------------------------------------------------------
+Test Passed.
+"OnehotExtractor.PerPositionBlockSumsToZeroOrOne" end time: Mar 09 13:10 GMT Standard Time
+"OnehotExtractor.PerPositionBlockSumsToZeroOrOne" time elapsed: 00:00:00
+----------------------------------------------------------
+
+58/74 Testing: OnehotExtractor.ViaFixPoint
+58/74 Test: OnehotExtractor.ViaFixPoint
+Command: "D:/tuple/build_exp/experiments/fix_calibration/Release/fix_experiment_test_extractors.exe" "--gtest_filter=OnehotExtractor.ViaFixPoint" "--gtest_also_run_disabled_tests"
+Directory: D:/tuple/build_exp/experiments/fix_calibration
+"OnehotExtractor.ViaFixPoint" start time: Mar 09 13:10 GMT Standard Time
+Output:
+----------------------------------------------------------
+Running main() from D:\tuple\build_exp\_deps\googletest-src\googletest\src\gtest_main.cc
+Note: Google Test filter = OnehotExtractor.ViaFixPoint
+[==========] Running 1 test from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 1 test from OnehotExtractor
+[ RUN      ] OnehotExtractor.ViaFixPoint
+[       OK ] OnehotExtractor.ViaFixPoint (0 ms)
+[----------] 1 test from OnehotExtractor (0 ms total)
+
+[----------] Global test environment tear-down
+[==========] 1 test from 1 test suite ran. (0 ms total)
+[  PASSED  ] 1 test.
+<end of output>
+Test time =   0.10 sec
+----------------------------------------------------------
+Test Passed.
+"OnehotExtractor.ViaFixPoint" end time: Mar 09 13:10 GMT Standard Time
+"OnehotExtractor.ViaFixPoint" time elapsed: 00:00:00
+----------------------------------------------------------
+
+59/74 Testing: OnehotExtractor.FeatureName
+59/74 Test: OnehotExtractor.FeatureName
+Command: "D:/tuple/build_exp/experiments/fix_calibration/Release/fix_experiment_test_extractors.exe" "--gtest_filter=OnehotExtractor.FeatureName" "--gtest_also_run_disabled_tests"
+Directory: D:/tuple/build_exp/experiments/fix_calibration
+"OnehotExtractor.FeatureName" start time: Mar 09 13:10 GMT Standard Time
+Output:
+----------------------------------------------------------
+Running main() from D:\tuple\build_exp\_deps\googletest-src\googletest\src\gtest_main.cc
+Note: Google Test filter = OnehotExtractor.FeatureName
+[==========] Running 1 test from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 1 test from OnehotExtractor
+[ RUN      ] OnehotExtractor.FeatureName
+[       OK ] OnehotExtractor.FeatureName (0 ms)
+[----------] 1 test from OnehotExtractor (0 ms total)
+
+[----------] Global test environment tear-down
+[==========] 1 test from 1 test suite ran. (0 ms total)
+[  PASSED  ] 1 test.
+<end of output>
+Test time =   0.10 sec
+----------------------------------------------------------
+Test Passed.
+"OnehotExtractor.FeatureName" end time: Mar 09 13:10 GMT Standard Time
+"OnehotExtractor.FeatureName" time elapsed: 00:00:00
+----------------------------------------------------------
+
+60/74 Testing: CountExtractor.CorrectDimension
+60/74 Test: CountExtractor.CorrectDimension
+Command: "D:/tuple/build_exp/experiments/fix_calibration/Release/fix_experiment_test_extractors.exe" "--gtest_filter=CountExtractor.CorrectDimension" "--gtest_also_run_disabled_tests"
+Directory: D:/tuple/build_exp/experiments/fix_calibration
+"CountExtractor.CorrectDimension" start time: Mar 09 13:10 GMT Standard Time
+Output:
+----------------------------------------------------------
+Running main() from D:\tuple\build_exp\_deps\googletest-src\googletest\src\gtest_main.cc
+Note: Google Test filter = CountExtractor.CorrectDimension
+[==========] Running 1 test from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 1 test from CountExtractor
+[ RUN      ] CountExtractor.CorrectDimension
+[       OK ] CountExtractor.CorrectDimension (0 ms)
+[----------] 1 test from CountExtractor (0 ms total)
+
+[----------] Global test environment tear-down
+[==========] 1 test from 1 test suite ran. (0 ms total)
+[  PASSED  ] 1 test.
+<end of output>
+Test time =   0.10 sec
+----------------------------------------------------------
+Test Passed.
+"CountExtractor.CorrectDimension" end time: Mar 09 13:10 GMT Standard Time
+"CountExtractor.CorrectDimension" time elapsed: 00:00:00
+----------------------------------------------------------
+
+61/74 Testing: CountExtractor.CountsSumToTwelve
+61/74 Test: CountExtractor.CountsSumToTwelve
+Command: "D:/tuple/build_exp/experiments/fix_calibration/Release/fix_experiment_test_extractors.exe" "--gtest_filter=CountExtractor.CountsSumToTwelve" "--gtest_also_run_disabled_tests"
+Directory: D:/tuple/build_exp/experiments/fix_calibration
+"CountExtractor.CountsSumToTwelve" start time: Mar 09 13:10 GMT Standard Time
+Output:
+----------------------------------------------------------
+Running main() from D:\tuple\build_exp\_deps\googletest-src\googletest\src\gtest_main.cc
+Note: Google Test filter = CountExtractor.CountsSumToTwelve
+[==========] Running 1 test from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 1 test from CountExtractor
+[ RUN      ] CountExtractor.CountsSumToTwelve
+[       OK ] CountExtractor.CountsSumToTwelve (0 ms)
+[----------] 1 test from CountExtractor (0 ms total)
+
+[----------] Global test environment tear-down
+[==========] 1 test from 1 test suite ran. (0 ms total)
+[  PASSED  ] 1 test.
+<end of output>
+Test time =   0.10 sec
+----------------------------------------------------------
+Test Passed.
+"CountExtractor.CountsSumToTwelve" end time: Mar 09 13:10 GMT Standard Time
+"CountExtractor.CountsSumToTwelve" time elapsed: 00:00:00
+----------------------------------------------------------
+
+62/74 Testing: CountExtractor.AllUnrolledCounts
+62/74 Test: CountExtractor.AllUnrolledCounts
+Command: "D:/tuple/build_exp/experiments/fix_calibration/Release/fix_experiment_test_extractors.exe" "--gtest_filter=CountExtractor.AllUnrolledCounts" "--gtest_also_run_disabled_tests"
+Directory: D:/tuple/build_exp/experiments/fix_calibration
+"CountExtractor.AllUnrolledCounts" start time: Mar 09 13:10 GMT Standard Time
+Output:
+----------------------------------------------------------
+Running main() from D:\tuple\build_exp\_deps\googletest-src\googletest\src\gtest_main.cc
+Note: Google Test filter = CountExtractor.AllUnrolledCounts
+[==========] Running 1 test from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 1 test from CountExtractor
+[ RUN      ] CountExtractor.AllUnrolledCounts
+[       OK ] CountExtractor.AllUnrolledCounts (0 ms)
+[----------] 1 test from CountExtractor (0 ms total)
+
+[----------] Global test environment tear-down
+[==========] 1 test from 1 test suite ran. (0 ms total)
+[  PASSED  ] 1 test.
+<end of output>
+Test time =   0.10 sec
+----------------------------------------------------------
+Test Passed.
+"CountExtractor.AllUnrolledCounts" end time: Mar 09 13:10 GMT Standard Time
+"CountExtractor.AllUnrolledCounts" time elapsed: 00:00:00
+----------------------------------------------------------
+
+63/74 Testing: CountExtractor.MixedCounts
+63/74 Test: CountExtractor.MixedCounts
+Command: "D:/tuple/build_exp/experiments/fix_calibration/Release/fix_experiment_test_extractors.exe" "--gtest_filter=CountExtractor.MixedCounts" "--gtest_also_run_disabled_tests"
+Directory: D:/tuple/build_exp/experiments/fix_calibration
+"CountExtractor.MixedCounts" start time: Mar 09 13:10 GMT Standard Time
+Output:
+----------------------------------------------------------
+Running main() from D:\tuple\build_exp\_deps\googletest-src\googletest\src\gtest_main.cc
+Note: Google Test filter = CountExtractor.MixedCounts
+[==========] Running 1 test from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 1 test from CountExtractor
+[ RUN      ] CountExtractor.MixedCounts
+[       OK ] CountExtractor.MixedCounts (0 ms)
+[----------] 1 test from CountExtractor (0 ms total)
+
+[----------] Global test environment tear-down
+[==========] 1 test from 1 test suite ran. (0 ms total)
+[  PASSED  ] 1 test.
+<end of output>
+Test time =   0.10 sec
+----------------------------------------------------------
+Test Passed.
+"CountExtractor.MixedCounts" end time: Mar 09 13:10 GMT Standard Time
+"CountExtractor.MixedCounts" time elapsed: 00:00:00
+----------------------------------------------------------
+
+64/74 Testing: CountExtractor.OnehotPrefixUnchanged
+64/74 Test: CountExtractor.OnehotPrefixUnchanged
+Command: "D:/tuple/build_exp/experiments/fix_calibration/Release/fix_experiment_test_extractors.exe" "--gtest_filter=CountExtractor.OnehotPrefixUnchanged" "--gtest_also_run_disabled_tests"
+Directory: D:/tuple/build_exp/experiments/fix_calibration
+"CountExtractor.OnehotPrefixUnchanged" start time: Mar 09 13:10 GMT Standard Time
+Output:
+----------------------------------------------------------
+Running main() from D:\tuple\build_exp\_deps\googletest-src\googletest\src\gtest_main.cc
+Note: Google Test filter = CountExtractor.OnehotPrefixUnchanged
+[==========] Running 1 test from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 1 test from CountExtractor
+[ RUN      ] CountExtractor.OnehotPrefixUnchanged
+[       OK ] CountExtractor.OnehotPrefixUnchanged (0 ms)
+[----------] 1 test from CountExtractor (0 ms total)
+
+[----------] Global test environment tear-down
+[==========] 1 test from 1 test suite ran. (0 ms total)
+[  PASSED  ] 1 test.
+<end of output>
+Test time =   0.11 sec
+----------------------------------------------------------
+Test Passed.
+"CountExtractor.OnehotPrefixUnchanged" end time: Mar 09 13:10 GMT Standard Time
+"CountExtractor.OnehotPrefixUnchanged" time elapsed: 00:00:00
+----------------------------------------------------------
+
+65/74 Testing: CountExtractor.FeatureName
+65/74 Test: CountExtractor.FeatureName
+Command: "D:/tuple/build_exp/experiments/fix_calibration/Release/fix_experiment_test_extractors.exe" "--gtest_filter=CountExtractor.FeatureName" "--gtest_also_run_disabled_tests"
+Directory: D:/tuple/build_exp/experiments/fix_calibration
+"CountExtractor.FeatureName" start time: Mar 09 13:10 GMT Standard Time
+Output:
+----------------------------------------------------------
+Running main() from D:\tuple\build_exp\_deps\googletest-src\googletest\src\gtest_main.cc
+Note: Google Test filter = CountExtractor.FeatureName
+[==========] Running 1 test from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 1 test from CountExtractor
+[ RUN      ] CountExtractor.FeatureName
+[       OK ] CountExtractor.FeatureName (0 ms)
+[----------] 1 test from CountExtractor (0 ms total)
+
+[----------] Global test environment tear-down
+[==========] 1 test from 1 test suite ran. (0 ms total)
+[  PASSED  ] 1 test.
+<end of output>
+Test time =   0.10 sec
+----------------------------------------------------------
+Test Passed.
+"CountExtractor.FeatureName" end time: Mar 09 13:10 GMT Standard Time
+"CountExtractor.FeatureName" time elapsed: 00:00:00
+----------------------------------------------------------
+
+66/74 Testing: TransitionExtractor.CorrectDimension
+66/74 Test: TransitionExtractor.CorrectDimension
+Command: "D:/tuple/build_exp/experiments/fix_calibration/Release/fix_experiment_test_extractors.exe" "--gtest_filter=TransitionExtractor.CorrectDimension" "--gtest_also_run_disabled_tests"
+Directory: D:/tuple/build_exp/experiments/fix_calibration
+"TransitionExtractor.CorrectDimension" start time: Mar 09 13:10 GMT Standard Time
+Output:
+----------------------------------------------------------
+Running main() from D:\tuple\build_exp\_deps\googletest-src\googletest\src\gtest_main.cc
+Note: Google Test filter = TransitionExtractor.CorrectDimension
+[==========] Running 1 test from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 1 test from TransitionExtractor
+[ RUN      ] TransitionExtractor.CorrectDimension
+[       OK ] TransitionExtractor.CorrectDimension (0 ms)
+[----------] 1 test from TransitionExtractor (0 ms total)
+
+[----------] Global test environment tear-down
+[==========] 1 test from 1 test suite ran. (0 ms total)
+[  PASSED  ] 1 test.
+<end of output>
+Test time =   0.10 sec
+----------------------------------------------------------
+Test Passed.
+"TransitionExtractor.CorrectDimension" end time: Mar 09 13:10 GMT Standard Time
+"TransitionExtractor.CorrectDimension" time elapsed: 00:00:00
+----------------------------------------------------------
+
+67/74 Testing: TransitionExtractor.TransitionsSumToEleven
+67/74 Test: TransitionExtractor.TransitionsSumToEleven
+Command: "D:/tuple/build_exp/experiments/fix_calibration/Release/fix_experiment_test_extractors.exe" "--gtest_filter=TransitionExtractor.TransitionsSumToEleven" "--gtest_also_run_disabled_tests"
+Directory: D:/tuple/build_exp/experiments/fix_calibration
+"TransitionExtractor.TransitionsSumToEleven" start time: Mar 09 13:10 GMT Standard Time
+Output:
+----------------------------------------------------------
+Running main() from D:\tuple\build_exp\_deps\googletest-src\googletest\src\gtest_main.cc
+Note: Google Test filter = TransitionExtractor.TransitionsSumToEleven
+[==========] Running 1 test from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 1 test from TransitionExtractor
+[ RUN      ] TransitionExtractor.TransitionsSumToEleven
+[       OK ] TransitionExtractor.TransitionsSumToEleven (0 ms)
+[----------] 1 test from TransitionExtractor (0 ms total)
+
+[----------] Global test environment tear-down
+[==========] 1 test from 1 test suite ran. (0 ms total)
+[  PASSED  ] 1 test.
+<end of output>
+Test time =   0.10 sec
+----------------------------------------------------------
+Test Passed.
+"TransitionExtractor.TransitionsSumToEleven" end time: Mar 09 13:10 GMT Standard Time
+"TransitionExtractor.TransitionsSumToEleven" time elapsed: 00:00:00
+----------------------------------------------------------
+
+68/74 Testing: TransitionExtractor.AllUnrolledTransitions
+68/74 Test: TransitionExtractor.AllUnrolledTransitions
+Command: "D:/tuple/build_exp/experiments/fix_calibration/Release/fix_experiment_test_extractors.exe" "--gtest_filter=TransitionExtractor.AllUnrolledTransitions" "--gtest_also_run_disabled_tests"
+Directory: D:/tuple/build_exp/experiments/fix_calibration
+"TransitionExtractor.AllUnrolledTransitions" start time: Mar 09 13:10 GMT Standard Time
+Output:
+----------------------------------------------------------
+Running main() from D:\tuple\build_exp\_deps\googletest-src\googletest\src\gtest_main.cc
+Note: Google Test filter = TransitionExtractor.AllUnrolledTransitions
+[==========] Running 1 test from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 1 test from TransitionExtractor
+[ RUN      ] TransitionExtractor.AllUnrolledTransitions
+[       OK ] TransitionExtractor.AllUnrolledTransitions (0 ms)
+[----------] 1 test from TransitionExtractor (0 ms total)
+
+[----------] Global test environment tear-down
+[==========] 1 test from 1 test suite ran. (0 ms total)
+[  PASSED  ] 1 test.
+<end of output>
+Test time =   0.10 sec
+----------------------------------------------------------
+Test Passed.
+"TransitionExtractor.AllUnrolledTransitions" end time: Mar 09 13:10 GMT Standard Time
+"TransitionExtractor.AllUnrolledTransitions" time elapsed: 00:00:00
+----------------------------------------------------------
+
+69/74 Testing: TransitionExtractor.AlternatingConfig
+69/74 Test: TransitionExtractor.AlternatingConfig
+Command: "D:/tuple/build_exp/experiments/fix_calibration/Release/fix_experiment_test_extractors.exe" "--gtest_filter=TransitionExtractor.AlternatingConfig" "--gtest_also_run_disabled_tests"
+Directory: D:/tuple/build_exp/experiments/fix_calibration
+"TransitionExtractor.AlternatingConfig" start time: Mar 09 13:10 GMT Standard Time
+Output:
+----------------------------------------------------------
+Running main() from D:\tuple\build_exp\_deps\googletest-src\googletest\src\gtest_main.cc
+Note: Google Test filter = TransitionExtractor.AlternatingConfig
+[==========] Running 1 test from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 1 test from TransitionExtractor
+[ RUN      ] TransitionExtractor.AlternatingConfig
+[       OK ] TransitionExtractor.AlternatingConfig (0 ms)
+[----------] 1 test from TransitionExtractor (0 ms total)
+
+[----------] Global test environment tear-down
+[==========] 1 test from 1 test suite ran. (0 ms total)
+[  PASSED  ] 1 test.
+<end of output>
+Test time =   0.10 sec
+----------------------------------------------------------
+Test Passed.
+"TransitionExtractor.AlternatingConfig" end time: Mar 09 13:10 GMT Standard Time
+"TransitionExtractor.AlternatingConfig" time elapsed: 00:00:00
+----------------------------------------------------------
+
+70/74 Testing: TransitionExtractor.KnownConfigTransitions
+70/74 Test: TransitionExtractor.KnownConfigTransitions
+Command: "D:/tuple/build_exp/experiments/fix_calibration/Release/fix_experiment_test_extractors.exe" "--gtest_filter=TransitionExtractor.KnownConfigTransitions" "--gtest_also_run_disabled_tests"
+Directory: D:/tuple/build_exp/experiments/fix_calibration
+"TransitionExtractor.KnownConfigTransitions" start time: Mar 09 13:10 GMT Standard Time
+Output:
+----------------------------------------------------------
+Running main() from D:\tuple\build_exp\_deps\googletest-src\googletest\src\gtest_main.cc
+Note: Google Test filter = TransitionExtractor.KnownConfigTransitions
+[==========] Running 1 test from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 1 test from TransitionExtractor
+[ RUN      ] TransitionExtractor.KnownConfigTransitions
+[       OK ] TransitionExtractor.KnownConfigTransitions (0 ms)
+[----------] 1 test from TransitionExtractor (0 ms total)
+
+[----------] Global test environment tear-down
+[==========] 1 test from 1 test suite ran. (0 ms total)
+[  PASSED  ] 1 test.
+<end of output>
+Test time =   0.10 sec
+----------------------------------------------------------
+Test Passed.
+"TransitionExtractor.KnownConfigTransitions" end time: Mar 09 13:10 GMT Standard Time
+"TransitionExtractor.KnownConfigTransitions" time elapsed: 00:00:00
+----------------------------------------------------------
+
+71/74 Testing: TransitionExtractor.CountPrefixUnchanged
+71/74 Test: TransitionExtractor.CountPrefixUnchanged
+Command: "D:/tuple/build_exp/experiments/fix_calibration/Release/fix_experiment_test_extractors.exe" "--gtest_filter=TransitionExtractor.CountPrefixUnchanged" "--gtest_also_run_disabled_tests"
+Directory: D:/tuple/build_exp/experiments/fix_calibration
+"TransitionExtractor.CountPrefixUnchanged" start time: Mar 09 13:10 GMT Standard Time
+Output:
+----------------------------------------------------------
+Running main() from D:\tuple\build_exp\_deps\googletest-src\googletest\src\gtest_main.cc
+Note: Google Test filter = TransitionExtractor.CountPrefixUnchanged
+[==========] Running 1 test from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 1 test from TransitionExtractor
+[ RUN      ] TransitionExtractor.CountPrefixUnchanged
+[       OK ] TransitionExtractor.CountPrefixUnchanged (0 ms)
+[----------] 1 test from TransitionExtractor (0 ms total)
+
+[----------] Global test environment tear-down
+[==========] 1 test from 1 test suite ran. (0 ms total)
+[  PASSED  ] 1 test.
+<end of output>
+Test time =   0.10 sec
+----------------------------------------------------------
+Test Passed.
+"TransitionExtractor.CountPrefixUnchanged" end time: Mar 09 13:10 GMT Standard Time
+"TransitionExtractor.CountPrefixUnchanged" time elapsed: 00:00:00
+----------------------------------------------------------
+
+72/74 Testing: TransitionExtractor.FeatureName
+72/74 Test: TransitionExtractor.FeatureName
+Command: "D:/tuple/build_exp/experiments/fix_calibration/Release/fix_experiment_test_extractors.exe" "--gtest_filter=TransitionExtractor.FeatureName" "--gtest_also_run_disabled_tests"
+Directory: D:/tuple/build_exp/experiments/fix_calibration
+"TransitionExtractor.FeatureName" start time: Mar 09 13:10 GMT Standard Time
+Output:
+----------------------------------------------------------
+Running main() from D:\tuple\build_exp\_deps\googletest-src\googletest\src\gtest_main.cc
+Note: Google Test filter = TransitionExtractor.FeatureName
+[==========] Running 1 test from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 1 test from TransitionExtractor
+[ RUN      ] TransitionExtractor.FeatureName
+[       OK ] TransitionExtractor.FeatureName (0 ms)
+[----------] 1 test from TransitionExtractor (0 ms total)
+
+[----------] Global test environment tear-down
+[==========] 1 test from 1 test suite ran. (0 ms total)
+[  PASSED  ] 1 test.
+<end of output>
+Test time =   0.10 sec
+----------------------------------------------------------
+Test Passed.
+"TransitionExtractor.FeatureName" end time: Mar 09 13:10 GMT Standard Time
+"TransitionExtractor.FeatureName" time elapsed: 00:00:00
+----------------------------------------------------------
+
+73/74 Testing: Extractors.DimensionsAreConsistent
+73/74 Test: Extractors.DimensionsAreConsistent
+Command: "D:/tuple/build_exp/experiments/fix_calibration/Release/fix_experiment_test_extractors.exe" "--gtest_filter=Extractors.DimensionsAreConsistent" "--gtest_also_run_disabled_tests"
+Directory: D:/tuple/build_exp/experiments/fix_calibration
+"Extractors.DimensionsAreConsistent" start time: Mar 09 13:10 GMT Standard Time
+Output:
+----------------------------------------------------------
+Running main() from D:\tuple\build_exp\_deps\googletest-src\googletest\src\gtest_main.cc
+Note: Google Test filter = Extractors.DimensionsAreConsistent
+[==========] Running 1 test from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 1 test from Extractors
+[ RUN      ] Extractors.DimensionsAreConsistent
+[       OK ] Extractors.DimensionsAreConsistent (0 ms)
+[----------] 1 test from Extractors (0 ms total)
+
+[----------] Global test environment tear-down
+[==========] 1 test from 1 test suite ran. (0 ms total)
+[  PASSED  ] 1 test.
+<end of output>
+Test time =   0.10 sec
+----------------------------------------------------------
+Test Passed.
+"Extractors.DimensionsAreConsistent" end time: Mar 09 13:10 GMT Standard Time
+"Extractors.DimensionsAreConsistent" time elapsed: 00:00:00
+----------------------------------------------------------
+
+74/74 Testing: Extractors.AllExtractorsProduceCorrectDimsOnSameConfig
+74/74 Test: Extractors.AllExtractorsProduceCorrectDimsOnSameConfig
+Command: "D:/tuple/build_exp/experiments/fix_calibration/Release/fix_experiment_test_extractors.exe" "--gtest_filter=Extractors.AllExtractorsProduceCorrectDimsOnSameConfig" "--gtest_also_run_disabled_tests"
+Directory: D:/tuple/build_exp/experiments/fix_calibration
+"Extractors.AllExtractorsProduceCorrectDimsOnSameConfig" start time: Mar 09 13:10 GMT Standard Time
+Output:
+----------------------------------------------------------
+Running main() from D:\tuple\build_exp\_deps\googletest-src\googletest\src\gtest_main.cc
+Note: Google Test filter = Extractors.AllExtractorsProduceCorrectDimsOnSameConfig
+[==========] Running 1 test from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 1 test from Extractors
+[ RUN      ] Extractors.AllExtractorsProduceCorrectDimsOnSameConfig
+[       OK ] Extractors.AllExtractorsProduceCorrectDimsOnSameConfig (0 ms)
+[----------] 1 test from Extractors (0 ms total)
+
+[----------] Global test environment tear-down
+[==========] 1 test from 1 test suite ran. (0 ms total)
+[  PASSED  ] 1 test.
+<end of output>
+Test time =   0.10 sec
+----------------------------------------------------------
+Test Passed.
+"Extractors.AllExtractorsProduceCorrectDimsOnSameConfig" end time: Mar 09 13:10 GMT Standard Time
+"Extractors.AllExtractorsProduceCorrectDimsOnSameConfig" time elapsed: 00:00:00
+----------------------------------------------------------
+
+End testing: Mar 09 13:10 GMT Standard Time

@@ -63,8 +63,8 @@ template<int N>
 schema_to_fix_config(const std::array<Strategy, N>& plan) noexcept {
     fix_config cfg{};
     cfg.fill(Strategy::Generic);            // default: Generic for unused fields
-    for (int i = 0; i < N && i < num_fields; ++i)
-        cfg[static_cast<std::size_t>(i)] = plan[i];
+    for (std::size_t i = 0; i < static_cast<std::size_t>(N) && i < num_fields; ++i)
+        cfg[i] = plan[i];
     return cfg;
 }
 
@@ -76,8 +76,8 @@ template<int N>
 [[nodiscard]] constexpr std::array<Strategy, N>
 fix_config_to_plan(const fix_config& cfg) noexcept {
     std::array<Strategy, N> plan{};
-    for (int i = 0; i < N && i < num_fields; ++i)
-        plan[i] = cfg[static_cast<std::size_t>(i)];
+    for (std::size_t i = 0; i < static_cast<std::size_t>(N) && i < static_cast<std::size_t>(num_fields); ++i)
+        plan[i] = cfg[i];
     return plan;
 }
 
@@ -94,12 +94,12 @@ fix_config_to_plan(const fix_config& cfg) noexcept {
 template<int N>
 void validate_schema_vs_parser(const Schema<N>& schema) {
     auto dc = schema.digit_counts();
-    for (int i = 0; i < N && i < num_fields; ++i) {
-        if (dc[i] != field_digits[static_cast<std::size_t>(i)]) {
+    for (std::size_t i = 0; i < static_cast<std::size_t>(N) && i < static_cast<std::size_t>(num_fields); ++i) {
+        if (dc[i] != field_digits[i]) {
             throw std::logic_error(
                 "fix_schema: digit_count mismatch at field " + std::to_string(i) +
                 ": schema says " + std::to_string(dc[i]) +
-                ", parser expects " + std::to_string(field_digits[static_cast<std::size_t>(i)]));
+                ", parser expects " + std::to_string(field_digits[i]));
         }
     }
 }
@@ -112,7 +112,7 @@ void validate_schema_vs_parser(const Schema<N>& schema) {
 template<int N>
 [[nodiscard]] std::string plan_string(const std::array<Strategy, N>& plan) noexcept {
     std::string s;
-    s.reserve(N);
+    s.reserve(static_cast<std::size_t>(N));
     for (auto st : plan) s += strategy_char(st);
     return s;
 }

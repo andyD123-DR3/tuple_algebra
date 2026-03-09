@@ -1,0 +1,5 @@
+if(EXISTS "D:/tuple/build_exp/tests/test_solver_concepts[1]_tests.cmake")
+  include("D:/tuple/build_exp/tests/test_solver_concepts[1]_tests.cmake")
+else()
+  add_test(test_solver_concepts_NOT_BUILT test_solver_concepts_NOT_BUILT)
+endif()

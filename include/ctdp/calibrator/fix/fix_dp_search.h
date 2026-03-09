@@ -172,8 +172,8 @@ beam_dp(const CostTable<N, double>& cost_table,
     // Build seed: one candidate per strategy allowed at field 0,
     // all other fields filled with the first allowed strategy for that field
     std::array<Strategy, N> default_plan{};
-    for (int fi = 0; fi < N; ++fi)
-        default_plan[fi] = idx.local_to_strategy(fi, 0);
+    for (std::size_t fi = 0; fi < static_cast<std::size_t>(N); ++fi)
+        default_plan[fi] = idx.local_to_strategy(static_cast<int>(fi), 0);
 
     for (int si = 0; si < idx.n_allowed(0); ++si) {
         Candidate c;
@@ -188,15 +188,16 @@ beam_dp(const CostTable<N, double>& cost_table,
     int n_evaluated = static_cast<int>(beam.size());
 
     // Expand field by field
-    for (int fi = 1; fi < N; ++fi) {
+    for (std::size_t fi = 1; fi < static_cast<std::size_t>(N); ++fi) {
         std::vector<Candidate> next;
         next.reserve(static_cast<std::size_t>(beam_width));
+        int fi_int = static_cast<int>(fi);
 
         for (const auto& parent : beam) {
-            for (int si = 0; si < idx.n_allowed(fi); ++si) {
+            for (int si = 0; si < idx.n_allowed(fi_int); ++si) {
                 Candidate c;
                 c.plan     = parent.plan;
-                c.plan[fi] = idx.local_to_strategy(fi, si);
+                c.plan[fi] = idx.local_to_strategy(fi_int, si);
                 c.dense_id = idx.encode(c.plan);
                 c.cost     = (c.dense_id >= 0) ? cost_table[c.dense_id] : 0.0;
                 if (c.cost <= 0.0) c.cost = std::numeric_limits<double>::infinity();
@@ -322,8 +323,8 @@ public:
 
         // Seed
         std::array<Strategy, N> default_plan{};
-        for (int fi = 0; fi < N; ++fi)
-            default_plan[fi] = idx.local_to_strategy(fi, 0);
+        for (std::size_t fi = 0; fi < static_cast<std::size_t>(N); ++fi)
+            default_plan[fi] = idx.local_to_strategy(static_cast<int>(fi), 0);
 
         std::vector<Candidate> beam;
         beam.reserve(static_cast<std::size_t>(beam_width_));
@@ -338,7 +339,8 @@ public:
         int n_evaluated = static_cast<int>(beam.size());
 
         // Staged expansion
-        for (int fi = 1; fi < N; ++fi) {
+        for (std::size_t fi = 1; fi < static_cast<std::size_t>(N); ++fi) {
+            int fi_int = static_cast<int>(fi);
             // Prune beam first
             if (static_cast<int>(beam.size()) > beam_width_) {
                 std::partial_sort(beam.begin(),
@@ -351,14 +353,14 @@ public:
             }
 
             std::vector<Candidate> next;
-            next.reserve(static_cast<std::size_t>(
-                beam.size() * static_cast<std::size_t>(idx.n_allowed(fi))));
+            next.reserve(
+                beam.size() * static_cast<std::size_t>(idx.n_allowed(fi_int)));
 
             for (const auto& parent : beam) {
-                for (int si = 0; si < idx.n_allowed(fi); ++si) {
+                for (int si = 0; si < idx.n_allowed(fi_int); ++si) {
                     Candidate c;
                     c.plan     = parent.plan;
-                    c.plan[fi] = idx.local_to_strategy(fi, si);
+                    c.plan[fi] = idx.local_to_strategy(fi_int, si);
                     measure_and_store(c);
                     next.push_back(c);
                     ++n_evaluated;

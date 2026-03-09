@@ -123,7 +123,7 @@ struct Schema {
     // digit_count array — matches the layout expected by fix_et_parser.h
     [[nodiscard]] constexpr std::array<int, N> digit_counts() const noexcept {
         std::array<int, N> dc{};
-        for (int i = 0; i < N; ++i) dc[i] = fields[i].digit_count;
+        for (std::size_t i = 0; i < static_cast<std::size_t>(N); ++i) dc[i] = fields[i].digit_count;
         return dc;
     }
 
@@ -142,7 +142,7 @@ struct Schema {
     [[nodiscard]] constexpr bool is_valid_plan(
         const std::array<Strategy, N>& plan) const noexcept
     {
-        for (int i = 0; i < N; ++i)
+        for (std::size_t i = 0; i < static_cast<std::size_t>(N); ++i)
             if (!fields[i].allows(plan[i])) return false;
         return true;
     }
@@ -150,13 +150,13 @@ struct Schema {
 private:
     void enumerate_impl(std::vector<std::array<Strategy, N>>& out,
                         std::array<Strategy, N>&               current,
-                        int                                    field_idx) const
+                        std::size_t                            field_idx) const
     {
-        if (field_idx == N) {
+        if (field_idx == static_cast<std::size_t>(N)) {
             out.push_back(current);
             return;
         }
-        for (int si = 0; si < NUM_STRATEGIES; ++si) {
+        for (std::size_t si = 0; si < static_cast<std::size_t>(NUM_STRATEGIES); ++si) {
             auto s = static_cast<Strategy>(si);
             if (fields[field_idx].allows(s)) {
                 current[field_idx] = s;

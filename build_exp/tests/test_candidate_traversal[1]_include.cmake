@@ -1,0 +1,5 @@
+if(EXISTS "D:/tuple/build_exp/tests/test_candidate_traversal[1]_tests.cmake")
+  include("D:/tuple/build_exp/tests/test_candidate_traversal[1]_tests.cmake")
+else()
+  add_test(test_candidate_traversal_NOT_BUILT test_candidate_traversal_NOT_BUILT)
+endif()
