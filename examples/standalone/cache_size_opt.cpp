@@ -6,6 +6,7 @@
 // Teaches: cost-as-simulation, and why analytical models ≠ runtime reality.
 
 #include <array>
+#include <cassert>
 #include <chrono>
 #include <cstddef>
 #include <cstdint>
@@ -153,35 +154,86 @@ static double compute_function(int func_id, double input) {
 
 template<std::size_t CacheSize>
 struct cached_executor {
+    static_assert(CacheSize > 0, "cached_executor requires CacheSize > 0");
     struct cache_entry { int func_id; double result; };
     lru_cache<CacheSize> lru{};
     std::array<cache_entry, CacheSize> data{};
 
     double execute(int func_id, double input) {
-        // Check cache via LRU
-        // Simple linear scan (matches the LRU structure)
-        for (std::size_t i = 0; i < lru.count; ++i) {
+        // Check cache — scan bounded by both lru.count and CacheSize
+        // so the compiler can prove data[i] is always in bounds.
+        std::size_t n = std::min(lru.count, CacheSize);
+        for (std::size_t i = 0; i < n; ++i) {
             if (lru.entries[i] == func_id) {
-                // Hit: move to front in LRU, return cached
+                // Hit: promote in both LRU and data[] to stay aligned.
                 lru.lookup(func_id);
-                return data[i].result;
+                cache_entry hit = data[i];
+                for (std::size_t j = i; j > 0; --j) data[j] = data[j-1];
+                data[0] = hit;
+                return hit.result;
             }
         }
         // Miss
         double result = compute_function(func_id, input);
         lru.lookup(func_id);
-        // Store at front
-        for (std::size_t j = lru.count - 1; j > 0; --j) data[j] = data[j-1];
+        // Store at front — shift existing entries right
+        n = std::min(lru.count, CacheSize);
+        if (n > 1) {
+            for (std::size_t j = n - 1; j > 0; --j) data[j] = data[j-1];
+        }
         data[0] = {func_id, result};
         return result;
     }
 };
 
 // ============================================================================
-// 6. Benchmark
+// 6. Regression tests for cached_executor
+// ============================================================================
+
+static void test_cache_data_lru_sync() {
+    // Case A: hit promotion keeps data[] and LRU aligned.
+    // Fill cache with 3 entries, hit a non-front entry, verify values.
+    cached_executor<4> c{};
+    c.execute(10, 1.0);  // miss -> cache: [10]
+    c.execute(20, 2.0);  // miss -> cache: [20, 10]
+    c.execute(30, 3.0);  // miss -> cache: [30, 20, 10]
+
+    // Hit func 10 (at back) — should promote to front
+    double r = c.execute(10, 999.0);  // hit, input ignored
+    // Must return the ORIGINAL cached value, not recompute
+    assert(r == c.execute(10, 999.0));  // second hit, same value
+
+    // Hit func 20 (now at position 1 or 2) — must still return its value
+    double r2 = c.execute(20, 999.0);
+    (void)r; (void)r2;
+
+    // After all hits, a fresh miss should still work
+    double r3 = c.execute(40, 4.0);  // miss -> evict oldest
+    (void)r3;
+}
+
+static void test_cache_size_1() {
+    // Case B: CacheSize == 1 — hit/miss on single-entry cache.
+    cached_executor<1> c{};
+    double v1 = c.execute(10, 1.0);  // miss, fills the one slot
+    double v2 = c.execute(10, 999.0); // hit, returns cached v1
+    assert(v1 == v2);
+
+    double v3 = c.execute(20, 2.0);  // miss, evicts 10
+    double v4 = c.execute(20, 999.0); // hit, returns cached v3
+    assert(v3 == v4);
+    (void)v1; (void)v2; (void)v3; (void)v4;
+}
+
+// ============================================================================
+// 7. Benchmark
 // ============================================================================
 
 int main() {
+    // Run regression tests first
+    test_cache_data_lru_sync();
+    test_cache_size_1();
+
     constexpr int ITERS = 50;
 
     auto bench = [](auto& executor, auto const& pattern, const char* label) {

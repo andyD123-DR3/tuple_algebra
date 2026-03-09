@@ -58,12 +58,12 @@ namespace ctdp::calibrator::fix {
 //  compiler eliminates; only fields [0..N) contribute to parse time.
 // ─────────────────────────────────────────────────────────────────────────────
 
-template<int N>
+template<std::size_t N>
 [[nodiscard]] constexpr fix_config
 schema_to_fix_config(const std::array<Strategy, N>& plan) noexcept {
     fix_config cfg{};
     cfg.fill(Strategy::Generic);            // default: Generic for unused fields
-    for (std::size_t i = 0; i < static_cast<std::size_t>(N) && i < num_fields; ++i)
+    for (std::size_t i = 0; i < N && i < num_fields; ++i)
         cfg[i] = plan[i];
     return cfg;
 }
@@ -72,11 +72,11 @@ schema_to_fix_config(const std::array<Strategy, N>& plan) noexcept {
 //  fix_config_to_plan — extract first N fields from a fix_config
 // ─────────────────────────────────────────────────────────────────────────────
 
-template<int N>
+template<std::size_t N>
 [[nodiscard]] constexpr std::array<Strategy, N>
 fix_config_to_plan(const fix_config& cfg) noexcept {
     std::array<Strategy, N> plan{};
-    for (std::size_t i = 0; i < static_cast<std::size_t>(N) && i < static_cast<std::size_t>(num_fields); ++i)
+    for (std::size_t i = 0; i < N && i < static_cast<std::size_t>(num_fields); ++i)
         plan[i] = cfg[i];
     return plan;
 }
@@ -91,10 +91,10 @@ fix_config_to_plan(const fix_config& cfg) noexcept {
 //  Throws std::logic_error describing the first mismatch found.
 // ─────────────────────────────────────────────────────────────────────────────
 
-template<int N>
+template<std::size_t N>
 void validate_schema_vs_parser(const Schema<N>& schema) {
     auto dc = schema.digit_counts();
-    for (std::size_t i = 0; i < static_cast<std::size_t>(N) && i < static_cast<std::size_t>(num_fields); ++i) {
+    for (std::size_t i = 0; i < N && i < static_cast<std::size_t>(num_fields); ++i) {
         if (dc[i] != field_digits[i]) {
             throw std::logic_error(
                 "fix_schema: digit_count mismatch at field " + std::to_string(i) +
@@ -109,10 +109,10 @@ void validate_schema_vs_parser(const Schema<N>& schema) {
 //  Convenience wrapper over strategy_char; avoids spelling out the loop.
 // ─────────────────────────────────────────────────────────────────────────────
 
-template<int N>
+template<std::size_t N>
 [[nodiscard]] std::string plan_string(const std::array<Strategy, N>& plan) noexcept {
     std::string s;
-    s.reserve(static_cast<std::size_t>(N));
+    s.reserve(N);
     for (auto st : plan) s += strategy_char(st);
     return s;
 }

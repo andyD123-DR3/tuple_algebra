@@ -108,7 +108,7 @@ struct FieldDescriptor {
 //  Schema<N> — array of N FieldDescriptors + plan-enumeration helpers
 // ─────────────────────────────────────────────────────────────────────────────
 
-template<int N>
+template<std::size_t N>
     requires (N >= 1 && N <= 16)
 struct Schema {
     std::array<FieldDescriptor, N> fields;
@@ -123,7 +123,7 @@ struct Schema {
     // digit_count array — matches the layout expected by fix_et_parser.h
     [[nodiscard]] constexpr std::array<int, N> digit_counts() const noexcept {
         std::array<int, N> dc{};
-        for (std::size_t i = 0; i < static_cast<std::size_t>(N); ++i) dc[i] = fields[i].digit_count;
+        for (std::size_t i = 0; i < N; ++i) dc[i] = fields[i].digit_count;
         return dc;
     }
 
@@ -142,7 +142,7 @@ struct Schema {
     [[nodiscard]] constexpr bool is_valid_plan(
         const std::array<Strategy, N>& plan) const noexcept
     {
-        for (std::size_t i = 0; i < static_cast<std::size_t>(N); ++i)
+        for (std::size_t i = 0; i < N; ++i)
             if (!fields[i].allows(plan[i])) return false;
         return true;
     }
@@ -152,7 +152,7 @@ private:
                         std::array<Strategy, N>&               current,
                         std::size_t                            field_idx) const
     {
-        if (field_idx == static_cast<std::size_t>(N)) {
+        if (field_idx == N) {
             out.push_back(current);
             return;
         }
@@ -225,7 +225,7 @@ inline constexpr Schema<12> full_schema = {{
 //  assign_folds() should be called after all measurements are populated.
 // ─────────────────────────────────────────────────────────────────────────────
 
-template<int N>
+template<std::size_t N>
 [[nodiscard]] std::vector<DataPoint<N>>
 make_data_points_from_schema(const Schema<N>& schema) {
     auto plans = schema.enumerate_plans();

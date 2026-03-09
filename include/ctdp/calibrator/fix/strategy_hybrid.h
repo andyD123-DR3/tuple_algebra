@@ -42,7 +42,7 @@ namespace ctdp::calibrator::fix {
 
 namespace detail {
     // Raise 10 to a compile-time power
-    template<int N>
+    template<std::size_t N>
     inline constexpr std::uint64_t pow10_ct =
         (N == 0) ? 1ULL : 10ULL * pow10_ct<N-1>;
 

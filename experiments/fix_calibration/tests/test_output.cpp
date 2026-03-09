@@ -142,7 +142,6 @@ TEST(JsonReport, WriteToTempDir) {
     // Clean up (ignore errors — antivirus/indexer may hold locks briefly)
     std::filesystem::remove_all(tmp, ec);
 }
-git
 // ── Console output content checks ────────────────────────────────────
 
 TEST(OutputTable, ContainsKeyFields) {

@@ -66,7 +66,7 @@ namespace ctdp::calibrator::fix {
 //  DpResult<N>
 // ─────────────────────────────────────────────────────────────────────────────
 
-template<int N>
+template<std::size_t N>
 struct DpResult {
     std::array<Strategy, N> optimal_plan{};
     double   optimal_cost   {0.0};   // p99 ns of the optimal plan
@@ -96,7 +96,7 @@ struct DpResult {
 //  Optimal for small N (trivial_schema: 64 plans, sub-microsecond).
 // ─────────────────────────────────────────────────────────────────────────────
 
-template<int N>
+template<std::size_t N>
 [[nodiscard]] DpResult<N>
 exhaustive_search(const CostTable<N, double>& cost_table)
 {
@@ -152,7 +152,7 @@ exhaustive_search(const CostTable<N, double>& cost_table)
 //  Plans with cost == 0.0 (unmeasured) are treated as +∞ and skipped.
 // ─────────────────────────────────────────────────────────────────────────────
 
-template<int N>
+template<std::size_t N>
 [[nodiscard]] DpResult<N>
 beam_dp(const CostTable<N, double>& cost_table,
         int                          beam_width = 4)
@@ -172,7 +172,7 @@ beam_dp(const CostTable<N, double>& cost_table,
     // Build seed: one candidate per strategy allowed at field 0,
     // all other fields filled with the first allowed strategy for that field
     std::array<Strategy, N> default_plan{};
-    for (std::size_t fi = 0; fi < static_cast<std::size_t>(N); ++fi)
+    for (std::size_t fi = 0; fi < N; ++fi)
         default_plan[fi] = idx.local_to_strategy(static_cast<int>(fi), 0);
 
     for (int si = 0; si < idx.n_allowed(0); ++si) {
@@ -188,7 +188,7 @@ beam_dp(const CostTable<N, double>& cost_table,
     int n_evaluated = static_cast<int>(beam.size());
 
     // Expand field by field
-    for (std::size_t fi = 1; fi < static_cast<std::size_t>(N); ++fi) {
+    for (std::size_t fi = 1; fi < N; ++fi) {
         std::vector<Candidate> next;
         next.reserve(static_cast<std::size_t>(beam_width));
         int fi_int = static_cast<int>(fi);
@@ -273,7 +273,7 @@ beam_dp(const CostTable<N, double>& cost_table,
 //  measurement failed; that candidate is treated as +∞.
 // ─────────────────────────────────────────────────────────────────────────────
 
-template<int N>
+template<std::size_t N>
 class BeamDpOnline {
 public:
     using MeasureFn = std::function<double(const std::array<Strategy, N>&)>;
@@ -300,8 +300,8 @@ public:
         };
 
         // Estimate total measurements for progress: N stages × beam_width × 4
-        const int est_total = N * beam_width_ * NUM_STRATEGIES;
-        int done = 0;
+        const std::size_t est_total = N * static_cast<std::size_t>(beam_width_) * static_cast<std::size_t>(NUM_STRATEGIES);
+        std::size_t done = 0;
 
         auto measure_and_store = [&](Candidate& c) {
             int32_t id = idx.encode(c.plan);
@@ -318,12 +318,12 @@ public:
             double ns = measure_fn(c.plan);
             if (ns > 0.0) cost_table[id] = ns;
             c.cost = (ns > 0.0) ? ns : std::numeric_limits<double>::infinity();
-            if (progress_cb_) progress_cb_(++done, est_total);
+            if (progress_cb_) progress_cb_(static_cast<int>(++done), static_cast<int>(est_total));
         };
 
         // Seed
         std::array<Strategy, N> default_plan{};
-        for (std::size_t fi = 0; fi < static_cast<std::size_t>(N); ++fi)
+        for (std::size_t fi = 0; fi < N; ++fi)
             default_plan[fi] = idx.local_to_strategy(static_cast<int>(fi), 0);
 
         std::vector<Candidate> beam;
@@ -339,7 +339,7 @@ public:
         int n_evaluated = static_cast<int>(beam.size());
 
         // Staged expansion
-        for (std::size_t fi = 1; fi < static_cast<std::size_t>(N); ++fi) {
+        for (std::size_t fi = 1; fi < N; ++fi) {
             int fi_int = static_cast<int>(fi);
             // Prune beam first
             if (static_cast<int>(beam.size()) > beam_width_) {
@@ -420,7 +420,7 @@ private:
 //  Only valid when the cost_table is fully populated.
 // ─────────────────────────────────────────────────────────────────────────────
 
-template<int N>
+template<std::size_t N>
 [[nodiscard]] bool
 verify_beam_matches_exhaustive(const CostTable<N, double>& cost_table,
                                 int                         beam_width)

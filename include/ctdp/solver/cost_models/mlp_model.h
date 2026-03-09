@@ -143,7 +143,7 @@ public:
             y[i] = (y_raw[i] - y_mean) / y_std;
 
         // Init layers
-        std::mt19937 rng(seed_);
+        std::mt19937 rng(static_cast<std::mt19937::result_type>(seed_));
         mlp_layer l1(nf, h1_size_);       l1.xavier_init(rng);
         mlp_layer l2(h1_size_, h2_size_);  l2.xavier_init(rng);
         mlp_layer l3(h2_size_, 1);         l3.xavier_init(rng);

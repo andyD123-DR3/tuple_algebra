@@ -57,7 +57,7 @@ namespace ctdp::calibrator::fix {
 //  MessageResult<N>
 // ─────────────────────────────────────────────────────────────────────────────
 
-template<int N>
+template<std::size_t N>
 struct MessageResult {
     std::array<std::uint64_t, static_cast<std::size_t>(N)> values{};
     std::array<int,           static_cast<std::size_t>(N)> lengths{};
@@ -92,7 +92,7 @@ struct Field {
 
 template<typename... FieldPolicies>
 struct CompositeParser {
-    static constexpr int num_fields = static_cast<int>(sizeof...(FieldPolicies));
+    static constexpr std::size_t num_fields = sizeof...(FieldPolicies);
 
     [[nodiscard]] CTDP_STRATEGY_INLINE
     static MessageResult<num_fields> parse_message(const char* msg) noexcept

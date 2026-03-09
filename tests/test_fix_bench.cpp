@@ -77,8 +77,9 @@ static void fill_corpus_synthetic(std::span<DataPoint<4>> corpus,
 // T1: dispatch table has exactly 64 entries, all non-null
 static void t01_dispatch_table_size_and_nonnull() {
     static_assert(detail::trivial_dispatch_table.size() == 64);
-    for (auto fn : detail::trivial_dispatch_table)
+    for ([[maybe_unused]] auto fn : detail::trivial_dispatch_table) {
         assert(fn != nullptr);
+    }
     std::cout << "T01 PASS: dispatch table – 64 non-null entries\n";
 }
 
@@ -86,7 +87,7 @@ static void t01_dispatch_table_size_and_nonnull() {
 // (each dense_id instantiates a different template specialisation)
 static void t02_dispatch_table_all_distinct() {
     std::unordered_set<void*> ptrs;
-    for (auto fn : detail::trivial_dispatch_table)
+    for (auto fn : detail::trivial_dispatch_table) {
         ptrs.insert(reinterpret_cast<void*>(fn));
     assert(static_cast<int>(ptrs.size()) == 64);
     std::cout << "T02 PASS: dispatch table – all 64 pointers distinct\n";
@@ -115,7 +116,7 @@ static void t04_bench_config_defaults() {
 // T5: metrics_to_perf_sample — use_fitted = true uses fitted_p99
 static void t05_adapter_uses_fitted_p99() {
     auto m = make_metrics(42.5, /*emp*/ 99.9);
-    auto s = metrics_to_perf_sample(m, true);
+    [[maybe_unused]] auto s = metrics_to_perf_sample(m, true);
     assert(s.p99_ns == 42.5);
     std::cout << "T05 PASS: adapter selects fitted_p99 when use_fitted=true\n";
 }
@@ -123,7 +124,7 @@ static void t05_adapter_uses_fitted_p99() {
 // T6: metrics_to_perf_sample — use_fitted = false uses empirical p99
 static void t06_adapter_uses_empirical_p99() {
     auto m = make_metrics(42.5, /*emp*/ 38.0);
-    auto s = metrics_to_perf_sample(m, false);
+    [[maybe_unused]] auto s = metrics_to_perf_sample(m, false);
     assert(s.p99_ns == 38.0);
     std::cout << "T06 PASS: adapter selects empirical p99 when use_fitted=false\n";
 }
@@ -136,7 +137,7 @@ static void t06_adapter_uses_empirical_p99() {
 static void t07_adapter_fallback_on_zero_fitted() {
     auto m = make_metrics(0.0, /*emp*/ 55.0);
     m.fitted_p99 = 0.0;
-    auto s = metrics_to_perf_sample(m, true);
+    [[maybe_unused]] auto s = metrics_to_perf_sample(m, true);
     assert(s.p99_ns == 55.0);
     std::cout << "T07 PASS: adapter falls back to empirical when fitted_p99=0\n";
 }
@@ -151,7 +152,7 @@ static void t08_adapter_all_counter_slots() {
     m.l1d_misses       = 4.0;
     m.branch_miss_rate = 5.0;
     m.cache_miss_rate  = 6.0;
-    auto s = metrics_to_perf_sample(m, true);
+    [[maybe_unused]] auto s = metrics_to_perf_sample(m, true);
     assert(s.counters[0] == 1.0);
     assert(s.counters[1] == 2.0);
     assert(s.counters[2] == 3.0);
@@ -193,7 +194,7 @@ static void t10_run_triple_mean_accessors() {
     rt.b  = make_sample(99.0);  // B excluded from mean
 
     assert(rt.mean_ab_p99_ns() == 41.0);
-    auto cf = rt.mean_ab_counters();
+    [[maybe_unused]] auto cf = rt.mean_ab_counters();
     assert(cf[0] == 110.0);  // (100+120)/2
     assert(cf[1] ==  88.0);  // (80+96)/2
     assert(cf[3] ==   3.0);  // (2+4)/2
@@ -320,6 +321,7 @@ static void t15_cost_table_from_corpus() {
     auto [best_id, best_val] = cost_table.best();
     assert(best_id == min_id);
     assert(std::abs(best_val - 40.1) < 1e-9);  // latency_estimate = mean(a1,a2) = 40+0.1
+    (void)min_id; (void)best_id; (void)best_val;
     std::cout << "T15 PASS: CostTable populated from corpus; best() finds minimum plan\n";
 }
 

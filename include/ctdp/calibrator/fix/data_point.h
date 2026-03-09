@@ -200,7 +200,7 @@ inline constexpr double HARD_THRESH = 0.20;  // 20% — hard-delete boundary
 //    iterates over folds using fold_id as the hold-out selector.
 // ─────────────────────────────────────────────────────────────────────────────
 
-template<int N>
+template<std::size_t N>
     requires (N >= 1 && N <= 16)
 struct DataPoint {
     // ── Identity ──────────────────────────────────────────────────────────────
@@ -218,7 +218,7 @@ struct DataPoint {
     constexpr void update_plan_id() noexcept {
         uint32_t id = 0;
         uint32_t base = 1;
-        for (std::size_t i = 0; i < static_cast<std::size_t>(N); ++i) {
+        for (std::size_t i = 0; i < N; ++i) {
             id += static_cast<uint32_t>(plan[i]) * base;
             base *= 4;
         }
@@ -250,11 +250,11 @@ struct DataPoint {
     //    std::array<float, 4*N> feats;
     //    dp.write_strategy_features(feats);
 
-    static constexpr int STRATEGY_FEATURE_DIM = N * NUM_STRATEGIES;
+    static constexpr std::size_t STRATEGY_FEATURE_DIM = N * static_cast<std::size_t>(NUM_STRATEGIES);
 
     void write_strategy_features(std::span<float> out) const noexcept {
-        assert(static_cast<int>(out.size()) >= STRATEGY_FEATURE_DIM);
-        for (std::size_t fi = 0; fi < static_cast<std::size_t>(N); ++fi) {
+        assert(out.size() >= STRATEGY_FEATURE_DIM);
+        for (std::size_t fi = 0; fi < N; ++fi) {
             const std::size_t base = fi * static_cast<std::size_t>(NUM_STRATEGIES);
             for (std::size_t si = 0; si < static_cast<std::size_t>(NUM_STRATEGIES); ++si) {
                 out[base + si] = (static_cast<std::size_t>(plan[fi]) == si) ? 1.0f : 0.0f;
@@ -282,8 +282,8 @@ struct DataPoint {
 
     [[nodiscard]] std::string plan_string() const {
         std::string s;
-        s.reserve(static_cast<std::size_t>(N));
-        for (std::size_t i = 0; i < static_cast<std::size_t>(N); ++i) s += strategy_char(plan[i]);
+        s.reserve(N);
+        for (std::size_t i = 0; i < N; ++i) s += strategy_char(plan[i]);
         return s;
     }
 };
@@ -302,12 +302,12 @@ using FullDataPoint    = DataPoint<12>;  // NewOrderSingle (12 required fields)
 //  Returns nullopt if the string is invalid length or contains unknown chars.
 // ─────────────────────────────────────────────────────────────────────────────
 
-template<int N>
+template<std::size_t N>
 [[nodiscard]] std::optional<DataPoint<N>>
 make_data_point(std::string_view plan_str, uint8_t fold_id = 0) noexcept {
     if (static_cast<int>(plan_str.size()) != N) return std::nullopt;
     DataPoint<N> dp{};
-    for (std::size_t i = 0; i < static_cast<std::size_t>(N); ++i) {
+    for (std::size_t i = 0; i < N; ++i) {
         auto s = strategy_from_char(plan_str[i]);
         if (!s) return std::nullopt;
         dp.plan[i] = *s;
@@ -322,11 +322,11 @@ make_data_point(std::string_view plan_str, uint8_t fold_id = 0) noexcept {
 //  from a packed plan_id for a given N.
 // ─────────────────────────────────────────────────────────────────────────────
 
-template<int N>
+template<std::size_t N>
 [[nodiscard]] constexpr std::array<Strategy, N>
 plan_id_to_plan(uint32_t id) noexcept {
     std::array<Strategy, N> plan{};
-    for (std::size_t i = 0; i < static_cast<std::size_t>(N); ++i) {
+    for (std::size_t i = 0; i < N; ++i) {
         plan[i] = static_cast<Strategy>(id % 4);
         id /= 4;
     }

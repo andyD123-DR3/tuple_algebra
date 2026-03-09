@@ -54,7 +54,7 @@ static void t01_corpus_has_64_plans() {
 static void t02_all_plans_have_valid_dense_ids() {
     auto r = make_flat();
     for (const auto& dp : r.corpus) {
-        int32_t id = trivial_index.encode(dp.plan);
+        [[maybe_unused]] int32_t id = trivial_index.encode(dp.plan);
         assert(id >= 0 && id < 64);
     }
     std::printf("  [02] all_plans_have_valid_dense_ids               PASS\n");
@@ -99,7 +99,7 @@ static void t06_cost_value_equals_mean_ab() {
     auto r = mock_calibration_result(
         [](int32_t) { return 60.0; }, /*jitter=*/0.5);
     for (int32_t id = 0; id < 64; ++id) {
-        double cost = r.cost_table[id];
+        [[maybe_unused]] double cost = r.cost_table[id];
         assert(std::abs(cost - 60.25) < 0.01);
     }
     std::printf("  [06] cost_value_equals_mean_ab                   PASS\n");

@@ -227,7 +227,7 @@ static void t14_online_calls_measure_once_per_plan() {
 
     // No plan should have been measured twice
     std::sort(measured_plans.begin(), measured_plans.end());
-    auto dup = std::adjacent_find(measured_plans.begin(), measured_plans.end());
+    [[maybe_unused]] auto dup = std::adjacent_find(measured_plans.begin(), measured_plans.end());
     assert(dup == measured_plans.end());
 
     assert(r.found());

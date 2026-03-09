@@ -117,7 +117,7 @@ struct StrategyLocalMap {
 //  SchemaIndex<N> — dense mixed-radix encode/decode for a Schema<N>
 // ─────────────────────────────────────────────────────────────────────────────
 
-template<int N>
+template<std::size_t N>
     requires (N >= 1 && N <= 16)
 struct SchemaIndex {
     std::array<StrategyLocalMap, N> local_maps{};
@@ -128,12 +128,12 @@ struct SchemaIndex {
 
     explicit constexpr SchemaIndex(const Schema<N>& schema) noexcept {
         // Build per-field local maps
-        for (std::size_t i = 0; i < static_cast<std::size_t>(N); ++i)
+        for (std::size_t i = 0; i < N; ++i)
             local_maps[i].build(schema.fields[i].allowed_mask);
 
         // Compute mixed-radix strides: stride[0]=1, stride[i]=stride[i-1]*n_allowed[i-1]
         strides[0] = 1;
-        for (std::size_t i = 1; i < static_cast<std::size_t>(N); ++i)
+        for (std::size_t i = 1; i < N; ++i)
             strides[i] = strides[i-1] * local_maps[i-1].n_allowed;
 
         total = strides[static_cast<std::size_t>(N-1)] * local_maps[static_cast<std::size_t>(N-1)].n_allowed;
@@ -147,7 +147,7 @@ struct SchemaIndex {
         const std::array<Strategy, N>& plan) const noexcept
     {
         int32_t id = 0;
-        for (std::size_t i = 0; i < static_cast<std::size_t>(N); ++i) {
+        for (std::size_t i = 0; i < N; ++i) {
             int local = local_maps[i].to(plan[i]);
             if (local < 0) return -1;  // disallowed strategy
             id += local * strides[i];
@@ -162,7 +162,7 @@ struct SchemaIndex {
         std::array<Strategy, N> plan{};
         int32_t rem = dense_id;
         // decode from highest field downward to avoid modular arithmetic
-        for (int i = N-1; i >= 0; --i) {
+        for (int i = static_cast<int>(N) - 1; i >= 0; --i) {
             auto ui = static_cast<std::size_t>(i);
             int local = static_cast<int>(rem / strides[ui]);
             rem       = rem % strides[ui];
@@ -181,19 +181,19 @@ struct SchemaIndex {
 
     // Local id of strategy s at field fi (-1 if not allowed)
     [[nodiscard]] constexpr int local_id(int fi, Strategy s) const noexcept {
-        assert(fi >= 0 && fi < N);
+        assert(fi >= 0 && static_cast<std::size_t>(fi) < N);
         return local_maps[static_cast<std::size_t>(fi)].to(s);
     }
 
     // Strategy at local position k for field fi
     [[nodiscard]] constexpr Strategy local_to_strategy(int fi, int k) const noexcept {
-        assert(fi >= 0 && fi < N);
+        assert(fi >= 0 && static_cast<std::size_t>(fi) < N);
         return local_maps[static_cast<std::size_t>(fi)].from(k);
     }
 
     // Number of allowed strategies at field fi
     [[nodiscard]] constexpr int n_allowed(int fi) const noexcept {
-        assert(fi >= 0 && fi < N);
+        assert(fi >= 0 && static_cast<std::size_t>(fi) < N);
         return local_maps[static_cast<std::size_t>(fi)].n_allowed;
     }
 
@@ -206,7 +206,7 @@ struct SchemaIndex {
     [[nodiscard]] std::vector<int32_t>
     field_neighbours(int32_t dense_id, int fi) const {
         assert(is_valid_id(dense_id));
-        assert(fi >= 0 && fi < N);
+        assert(fi >= 0 && static_cast<std::size_t>(fi) < N);
         std::vector<int32_t> result;
         result.reserve(static_cast<std::size_t>(n_allowed(fi)));
 
@@ -242,7 +242,7 @@ inline constexpr SchemaIndex<12> full_index   { full_schema    };
 //    std::optional<double> — sparse table (unmeasured = nullopt)
 // ─────────────────────────────────────────────────────────────────────────────
 
-template<int N, typename T>
+template<std::size_t N, typename T>
 class CostTable {
 public:
     explicit CostTable(const SchemaIndex<N>& idx, T fill = T{})

@@ -91,7 +91,7 @@ struct CounterStats {
 //           do NOT pass in hold-out rows).
 // ─────────────────────────────────────────────────────────────────────────────
 
-template<int N>
+template<std::size_t N>
 [[nodiscard]] CounterStats
 fit_counter_stats(std::span<const DataPoint<N>> corpus,
                   std::span<const int>          indices) {
@@ -147,7 +147,7 @@ fit_counter_stats(std::span<const DataPoint<N>> corpus,
 //    }
 // ─────────────────────────────────────────────────────────────────────────────
 
-template<int N>
+template<std::size_t N>
     requires (N >= 1 && N <= 16)
 class CounterPreprocessor {
 public:
@@ -328,7 +328,7 @@ private:
 //  CounterPreprocessor.
 // ─────────────────────────────────────────────────────────────────────────────
 
-template<int N>
+template<std::size_t N>
 void assign_folds(std::span<DataPoint<N>> corpus) noexcept {
     // Collect Ok indices sorted by plan_id for deterministic assignment.
     std::vector<int> ok_idx;
