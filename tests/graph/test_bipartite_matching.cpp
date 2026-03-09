@@ -20,6 +20,7 @@
 #include "ctdp/graph/bipartite_matching.h"
 #include "ctdp/graph/symmetric_graph.h"
 #include <gtest/gtest.h>
+#include <vector>
 
 using namespace ctdp::graph;
 

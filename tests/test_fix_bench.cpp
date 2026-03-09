@@ -18,6 +18,7 @@
 #include <cmath>
 #include <iostream>
 #include <unordered_set>
+#include <vector>
 
 using namespace ctdp::calibrator::fix;
 

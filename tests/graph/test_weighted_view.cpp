@@ -22,6 +22,7 @@
 #include "ctdp/graph/symmetric_graph.h"
 #include "ctdp/graph/constexpr_graph.h"
 #include <gtest/gtest.h>
+#include <vector>
 
 using namespace ctdp::graph;
 

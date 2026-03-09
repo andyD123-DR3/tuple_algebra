@@ -16,6 +16,7 @@
 #include <cmath>
 #include <cstdio>
 #include <stdexcept>
+#include <vector>
 
 using namespace ctdp::calibrator::fix;
 

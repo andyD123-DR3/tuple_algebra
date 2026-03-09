@@ -120,7 +120,12 @@ ctdp_add_test(test_bipartite_matching graph/test_bipartite_matching.cpp)
 # Instantiation tier: strategy_map, dispatch_table, plan_executor
 ctdp_add_test(test_instantiation test_instantiation.cc)
 
-ctdp_add_test(test_performance_models test_performance_models.cpp)
+# test_performance_models uses its own lightweight assert framework, not GTest.
+# Register with add_test() directly — gtest_discover_tests() would time out
+# because it runs the full binary (SVR training) during discovery.
+add_executable(test_performance_models test_performance_models.cpp)
+target_link_libraries(test_performance_models PRIVATE ctdp_all)
+add_test(NAME test_performance_models COMMAND test_performance_models)
 
 # ── Space layer v0.7.2 tests (descriptor_space, valid_view, tiers) ───────
 ctdp_add_test(test_space_v072 test_space_v072.cpp)
