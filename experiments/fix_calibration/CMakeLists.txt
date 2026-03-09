@@ -60,4 +60,16 @@ if(CTDP_BUILD_TESTS)
     target_link_libraries(fix_experiment_test_output PRIVATE
         ctdp_fix_experiment_common GTest::gtest GTest::gtest_main)
     gtest_discover_tests(fix_experiment_test_output)
+
+    # Integration tests: full mock pipeline (experiment_runner + mock_measurer)
+    add_executable(fix_experiment_test_mock_pipeline tests/test_mock_pipeline.cpp)
+    target_link_libraries(fix_experiment_test_mock_pipeline PRIVATE
+        ctdp_fix_experiment_common GTest::gtest GTest::gtest_main)
+    gtest_discover_tests(fix_experiment_test_mock_pipeline)
+
+    # Unit tests: compiled_measurer dispatch table
+    add_executable(fix_experiment_test_compiled_measurer tests/test_compiled_measurer.cpp)
+    target_link_libraries(fix_experiment_test_compiled_measurer PRIVATE
+        ctdp_fix_experiment_common GTest::gtest GTest::gtest_main)
+    gtest_discover_tests(fix_experiment_test_compiled_measurer)
 endif()

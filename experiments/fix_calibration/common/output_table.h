@@ -105,6 +105,26 @@ inline void print_candidate_table(std::ostream& os,
     os << "\n";
 }
 
+inline void print_baseline_table(std::ostream& os,
+                                 const std::vector<BaselineResult>& baselines) {
+    if (baselines.empty()) return;
+    os << "  Baselines:\n";
+    os << "  " << std::left
+       << std::setw(18) << "Name"
+       << std::setw(12) << "Meas p50"
+       << std::setw(12) << "Meas p99"
+       << "Config\n";
+    os << "  " << std::string(56, '-') << "\n";
+    for (const auto& b : baselines) {
+        os << "  " << std::left << std::setw(18) << b.name
+           << std::right << std::fixed
+           << std::setw(11) << std::setprecision(2) << b.measured_p50_ns << " "
+           << std::setw(11) << std::setprecision(2) << b.measured_p99_ns << " "
+           << std::left << b.config_label << "\n";
+    }
+    os << "\n";
+}
+
 inline void print_summary_block(std::ostream& os,
                                 const ExperimentReport& r) {
     if (r.candidates.empty()) {
@@ -141,6 +161,7 @@ inline void print_report_to(std::ostream& os,
 
     detail::print_header_block(os, report);
     detail::print_model_block(os, report.model);
+    detail::print_baseline_table(os, report.baselines);
     detail::print_candidate_table(os, report.candidates,
                                   report.best_measured_index);
     detail::print_summary_block(os, report);

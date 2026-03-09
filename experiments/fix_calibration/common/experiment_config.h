@@ -10,6 +10,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <ctdp/calibrator/fix/data_point.h>
+#include <ctdp/calibrator/fix_et_parser.h>
 
 namespace ctdp::fix_experiment {
 
@@ -25,6 +26,12 @@ inline constexpr std::uint64_t EVAL_POOL_SEED = 99;    // verification messages
 inline constexpr std::size_t N_TRAIN    = 200;
 inline constexpr std::size_t BEAM_WIDTH = 20;
 inline constexpr std::size_t N_BEAM     = 20;
+
+// -- Canonical training pool (single definition) -----------------
+// Both experiment_runner and compiled_measurer dispatch tables must
+// use this exact array.  Do not re-derive from seed + generator.
+inline constexpr auto training_pool =
+    ctdp::calibrator::fix::generate_random_configs<N_TRAIN>(TRAIN_SEED);
 
 // -- Measurement parameters --------------------------------------
 inline constexpr std::size_t SAMPLES    = 50000;

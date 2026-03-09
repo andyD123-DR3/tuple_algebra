@@ -153,6 +153,15 @@ inline void serialise_candidate(JsonWriter& w, const CandidateResult& c) {
     w.end_object();
 }
 
+inline void serialise_baseline(JsonWriter& w, const BaselineResult& b) {
+    w.begin_object();
+    w.key("name");             w.value_string(b.name);
+    w.key("config_label");     w.value_string(b.config_label);
+    w.key("measured_p50_ns");  w.value_double(b.measured_p50_ns, 2);
+    w.key("measured_p99_ns");  w.value_double(b.measured_p99_ns, 2);
+    w.end_object();
+}
+
 } // namespace detail
 
 // ── Serialisation ────────────────────────────────────────────────────
@@ -174,6 +183,13 @@ inline std::string to_json(const ExperimentReport& r) {
 
     w.key("model");
     detail::serialise_model(w, r.model);
+
+    w.key("baselines");
+    w.begin_array();
+    for (const auto& b : r.baselines) {
+        detail::serialise_baseline(w, b);
+    }
+    w.end_array();
 
     w.key("candidates");
     w.begin_array();
