@@ -118,6 +118,11 @@ public:
         os_ << '"' << json_escape(v) << '"';
         need_comma_ = true;
     }
+    void value_bool(bool v) {
+        comma_if_needed();
+        os_ << (v ? "true" : "false");
+        need_comma_ = true;
+    }
     void value_double(double v, int precision = 4) {
         comma_if_needed();
         os_ << std::fixed << std::setprecision(precision) << v;
@@ -180,7 +185,7 @@ inline std::string to_json(const ExperimentReport& r) {
     w.key("target_units");       w.value_string(r.target_units);
     w.key("beam_width");         w.value_size(r.beam_width);
     w.key("beam_depth");         w.value_size(r.beam_depth);
-    w.key("exhaustive");         w.value_string(r.exhaustive ? "true" : "false");
+    w.key("exhaustive");         w.value_bool(r.exhaustive);
 
     if (!r.exhaustive) {
         w.key("model");
