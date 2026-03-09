@@ -39,6 +39,9 @@ inline constexpr std::size_t POOL_SIZE  = 5000;
 inline constexpr std::size_t BATCH_SIZE = 64;
 inline constexpr std::size_t WARMUP     = 4000;
 
+// -- Mock measurement parameters ---------------------------------
+inline constexpr double MOCK_NOISE_SIGMA = 0.5;  // ns, for mock_measurer
+
 // -- Consensus data (from beam search analysis) ------------------
 // Used by Program F for the exhaustive reduced-space sweep.
 // Each entry: (position, fixed strategy).

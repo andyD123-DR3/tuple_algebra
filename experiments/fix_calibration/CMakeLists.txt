@@ -1,16 +1,23 @@
 # experiments/fix_calibration/CMakeLists.txt
 #
 # Build system for the FIX parser optimisation experiments.
-# Currently: shared headers + unit tests for feature extractors.
-# Programs A-F will be added in subsequent PRs.
+# Shared headers, unit tests, and Program A.
 #
 # Options:
 #   CTDP_FIX_EXPERIMENT_MOCK   Build with mock measurement (no RDTSC needed)
 #
-# Usage:
-#   cmake -B build -DCTDP_BUILD_EXPERIMENTS=ON -DCTDP_BUILD_TESTS=ON
-#   cmake --build build
-#   ctest --test-dir build -R OnehotExtractor
+# Per-program targets (no global phase switch):
+#   fix_experiment_A          Phase 1 (discovery) or mock
+#   fix_experiment_A_verify   Phase 2 (verification, requires generated header)
+#
+# Usage (mock / CI):
+#   cmake -B build -DCTDP_BUILD_EXPERIMENTS=ON -DCTDP_FIX_EXPERIMENT_MOCK=ON
+#   cmake --build build --target fix_experiment_A
+#
+# Usage (real, two-phase):
+#   cmake -B build -DCTDP_BUILD_EXPERIMENTS=ON
+#   cmake --build build --target fix_experiment_A && ./build/.../fix_experiment_A
+#   cmake --build build --target fix_experiment_A_verify && ./build/.../fix_experiment_A_verify
 
 option(CTDP_FIX_EXPERIMENT_MOCK
     "Use deterministic mock measurement instead of real RDTSC" OFF)
@@ -19,12 +26,30 @@ option(CTDP_FIX_EXPERIMENT_MOCK
 add_library(ctdp_fix_experiment_common INTERFACE)
 target_include_directories(ctdp_fix_experiment_common INTERFACE
     ${CMAKE_CURRENT_SOURCE_DIR}/common
-    ${CMAKE_CURRENT_SOURCE_DIR}/generated)
+    ${CMAKE_CURRENT_SOURCE_DIR}/generated
+    ${CMAKE_CURRENT_SOURCE_DIR})
 target_link_libraries(ctdp_fix_experiment_common INTERFACE ctdp_all)
+
+# Canonical source-tree path for generated headers.
+# Programs use this to write Phase 1 output to the correct location.
+target_compile_definitions(ctdp_fix_experiment_common INTERFACE
+    CTDP_EXPERIMENT_GENERATED_DIR="${CMAKE_CURRENT_SOURCE_DIR}/generated")
 
 if(CTDP_FIX_EXPERIMENT_MOCK)
     target_compile_definitions(ctdp_fix_experiment_common INTERFACE
         CTDP_FIX_EXPERIMENT_MOCK)
+endif()
+
+# -- Program A: p50 baseline ------------------------------------------
+# Discovery target (mock or Phase 1 depending on CTDP_FIX_EXPERIMENT_MOCK)
+add_executable(fix_experiment_A programs/A_p50_baseline.cpp)
+target_link_libraries(fix_experiment_A PRIVATE ctdp_fix_experiment_common)
+
+# Verification target (Phase 2 — only if generated header exists)
+if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/generated/A_candidates.h")
+    add_executable(fix_experiment_A_verify programs/A_p50_baseline.cpp)
+    target_link_libraries(fix_experiment_A_verify PRIVATE ctdp_fix_experiment_common)
+    target_compile_definitions(fix_experiment_A_verify PRIVATE CTDP_PHASE2)
 endif()
 
 # -- Tests (only when CTDP_BUILD_TESTS is ON) -------------------------
