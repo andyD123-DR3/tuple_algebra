@@ -277,6 +277,37 @@ ExperimentReport run_verification(
 }
 
 // ─────────────────────────────────────────────────────────────────────
+//  verify_candidates_match — Phase 2 consistency check
+//
+//  Compares re-derived discovery candidates against a compiled
+//  candidate array.  Throws std::logic_error on mismatch.
+//  Call this in Phase 2 before run_verification().
+// ─────────────────────────────────────────────────────────────────────
+
+template<std::size_t N>
+void verify_candidates_match(
+    const discovery_result& discovery,
+    const std::array<fix::fix_config, N>& compiled)
+{
+    if (discovery.candidates.size() != N) {
+        throw std::logic_error(
+            "verify_candidates_match: discovery has "
+            + std::to_string(discovery.candidates.size())
+            + " candidates but compiled array has "
+            + std::to_string(N));
+    }
+    for (std::size_t i = 0; i < N; ++i) {
+        if (discovery.candidates[i] != compiled[i]) {
+            throw std::logic_error(
+                "verify_candidates_match: mismatch at index "
+                + std::to_string(i)
+                + ": discovery=" + fix::config_to_string(discovery.candidates[i])
+                + " compiled=" + fix::config_to_string(compiled[i]));
+        }
+    }
+}
+
+// ─────────────────────────────────────────────────────────────────────
 //  Convenience: run both phases in one call (for mock testing)
 // ─────────────────────────────────────────────────────────────────────
 
