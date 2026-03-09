@@ -73,8 +73,13 @@ struct ExperimentReport {
 
     // Index into candidates of the best result by *measured* p50.
     // May differ from index 0 (best predicted) — that is the mis-rank
-    // the experiment is designed to detect.
+    // the experiment is designed to detect.  For exhaustive programs
+    // (Program F), best_measured_index is always 0.
     std::size_t best_measured_index;  // index into candidates
+
+    // If true, this is an exhaustive sweep (no model, no predictions).
+    // Output layers adapt labels: "Measured" instead of "Predicted", etc.
+    bool exhaustive = false;
 };
 
 // ── Validation ────────────────────────────────────────────────────────

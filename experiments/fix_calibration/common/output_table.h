@@ -82,25 +82,43 @@ inline void print_model_block(std::ostream& os, const ModelMetrics& m) {
 
 inline void print_candidate_table(std::ostream& os,
                                   const std::vector<CandidateResult>& cands,
-                                  std::size_t best_idx) {
-    // Header
-    os << "  " << std::left
-       << std::setw(6)  << "Rank"
-       << std::setw(12) << "Predicted"
-       << std::setw(12) << "Meas p50"
-       << std::setw(12) << "Meas p99"
-       << "Config\n";
-    os << "  " << std::string(66, '-') << "\n";
-
-    for (std::size_t i = 0; i < cands.size(); ++i) {
-        const auto& c = cands[i];
-        const char* marker = (i == best_idx) ? " *" : "";
-        os << "  " << std::left << std::setw(6) << c.rank
-           << std::right << std::fixed
-           << std::setw(11) << std::setprecision(2) << c.predicted_target << " "
-           << std::setw(11) << std::setprecision(2) << c.measured_p50_ns << " "
-           << std::setw(11) << std::setprecision(2) << c.measured_p99_ns << " "
-           << std::left << c.config_label << marker << "\n";
+                                  std::size_t best_idx,
+                                  bool exhaustive) {
+    if (exhaustive) {
+        // Exhaustive: no prediction column — just rank, p50, p99, config
+        os << "  " << std::left
+           << std::setw(6)  << "Rank"
+           << std::setw(12) << "Meas p50"
+           << std::setw(12) << "Meas p99"
+           << "Config\n";
+        os << "  " << std::string(54, '-') << "\n";
+        for (std::size_t i = 0; i < cands.size(); ++i) {
+            const auto& c = cands[i];
+            const char* marker = (i == best_idx) ? " *" : "";
+            os << "  " << std::left << std::setw(6) << c.rank
+               << std::right << std::fixed
+               << std::setw(11) << std::setprecision(2) << c.measured_p50_ns << " "
+               << std::setw(11) << std::setprecision(2) << c.measured_p99_ns << " "
+               << std::left << c.config_label << marker << "\n";
+        }
+    } else {
+        os << "  " << std::left
+           << std::setw(6)  << "Rank"
+           << std::setw(12) << "Predicted"
+           << std::setw(12) << "Meas p50"
+           << std::setw(12) << "Meas p99"
+           << "Config\n";
+        os << "  " << std::string(66, '-') << "\n";
+        for (std::size_t i = 0; i < cands.size(); ++i) {
+            const auto& c = cands[i];
+            const char* marker = (i == best_idx) ? " *" : "";
+            os << "  " << std::left << std::setw(6) << c.rank
+               << std::right << std::fixed
+               << std::setw(11) << std::setprecision(2) << c.predicted_target << " "
+               << std::setw(11) << std::setprecision(2) << c.measured_p50_ns << " "
+               << std::setw(11) << std::setprecision(2) << c.measured_p99_ns << " "
+               << std::left << c.config_label << marker << "\n";
+        }
     }
     os << "\n";
 }
@@ -131,19 +149,26 @@ inline void print_summary_block(std::ostream& os,
         os << "  (no candidates)\n";
         return;
     }
-    const auto& best_pred = r.candidates.front();  // rank 1
-    const auto& best_meas = r.candidates[r.best_measured_index];
+    const auto& best = r.candidates.front();  // rank 1
 
-    os << "  Best predicted: rank " << best_pred.rank
-       << " -> p50=" << std::fixed << std::setprecision(2)
-       << best_pred.measured_p50_ns
-       << " ns, p99=" << best_pred.measured_p99_ns << " ns\n";
+    if (r.exhaustive) {
+        os << "  Best measured: rank " << best.rank
+           << " -> p50=" << std::fixed << std::setprecision(2)
+           << best.measured_p50_ns
+           << " ns, p99=" << best.measured_p99_ns << " ns\n";
+    } else {
+        os << "  Best predicted: rank " << best.rank
+           << " -> p50=" << std::fixed << std::setprecision(2)
+           << best.measured_p50_ns
+           << " ns, p99=" << best.measured_p99_ns << " ns\n";
 
-    if (r.best_measured_index != 0) {
-        os << "  Best measured:  rank " << best_meas.rank
-           << " -> p50=" << best_meas.measured_p50_ns
-           << " ns, p99=" << best_meas.measured_p99_ns << " ns"
-           << "  (model mis-rank)\n";
+        if (r.best_measured_index != 0) {
+            const auto& best_meas = r.candidates[r.best_measured_index];
+            os << "  Best measured:  rank " << best_meas.rank
+               << " -> p50=" << best_meas.measured_p50_ns
+               << " ns, p99=" << best_meas.measured_p99_ns << " ns"
+               << "  (model mis-rank)\n";
+        }
     }
     os << "\n";
 }
@@ -160,10 +185,12 @@ inline void print_report_to(std::ostream& os,
     detail::StreamStateGuard guard(os);
 
     detail::print_header_block(os, report);
-    detail::print_model_block(os, report.model);
+    if (!report.exhaustive)
+        detail::print_model_block(os, report.model);
     detail::print_baseline_table(os, report.baselines);
     detail::print_candidate_table(os, report.candidates,
-                                  report.best_measured_index);
+                                  report.best_measured_index,
+                                  report.exhaustive);
     detail::print_summary_block(os, report);
 }
 
