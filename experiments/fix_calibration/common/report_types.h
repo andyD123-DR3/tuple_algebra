@@ -28,6 +28,17 @@ struct CandidateResult {
     std::size_t rank;              // 1-based rank by predicted_target
 };
 
+// ── Baseline measurement result ──────────────────────────────────────
+
+/// Named baseline measurement (all_unrolled, all_swar, etc.)
+/// Structurally separate from CandidateResult: no prediction, no rank.
+struct BaselineResult {
+    std::string name;              // e.g. "all_unrolled", "phase10g_opt"
+    std::string config_label;      // e.g. "UUUUUUUUUUUU"
+    double      measured_p50_ns;   // wall-clock p50 in nanoseconds
+    double      measured_p99_ns;   // wall-clock p99 in nanoseconds
+};
+
 // ── Model quality metrics from cross-validation ──────────────────────
 
 /// Model quality metrics from cross-validation.
@@ -57,7 +68,8 @@ struct ExperimentReport {
     std::size_t beam_depth;
 
     ModelMetrics model;
-    std::vector<CandidateResult> candidates;  // sorted by rank
+    std::vector<BaselineResult>  baselines;    // named reference configs
+    std::vector<CandidateResult> candidates;   // sorted by rank
 
     // Index into candidates of the best result by *measured* p50.
     // May differ from index 0 (best predicted) — that is the mis-rank
