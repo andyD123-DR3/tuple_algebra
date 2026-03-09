@@ -17,8 +17,8 @@
 //   itt.pause();
 //
 // Running under VTune:
-//   vtune -collect hardware-event-based-sampling \
-//         -knob sampling-mode=hw                  \
+//   vtune -collect hardware-event-based-sampling
+//         -knob sampling-mode=hw
 //         -- fix_counter_profile.exe
 //
 // The ITT resume/pause tells VTune exactly which samples to attribute

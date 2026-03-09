@@ -69,7 +69,7 @@ struct CounterStats {
     // Normalise a raw counter vector in-place.
     void normalise(std::array<double, NUM_COUNTERS>& v) const noexcept {
         assert(fitted);
-        for (int i = 0; i < NUM_COUNTERS; ++i)
+        for (std::size_t i = 0; i < NUM_COUNTERS; ++i)
             v[i] = (v[i] - mean[i]) / std::max(std_dev[i], EPS_STD);
     }
 
@@ -77,8 +77,8 @@ struct CounterStats {
     void normalise_to_float(const std::array<double, NUM_COUNTERS>& raw,
                             std::span<float> out) const noexcept {
         assert(fitted);
-        assert(static_cast<int>(out.size()) >= NUM_COUNTERS);
-        for (int i = 0; i < NUM_COUNTERS; ++i)
+        assert(out.size() >= NUM_COUNTERS);
+        for (std::size_t i = 0; i < NUM_COUNTERS; ++i)
             out[i] = static_cast<float>(
                 (raw[i] - mean[i]) / std::max(std_dev[i], EPS_STD));
     }
@@ -103,22 +103,22 @@ fit_counter_stats(std::span<const DataPoint<N>> corpus,
     // Pass 1: mean
     for (int idx : indices) {
         const auto& cf = corpus[idx].counter_features();
-        for (int c = 0; c < NUM_COUNTERS; ++c)
+        for (std::size_t c = 0; c < NUM_COUNTERS; ++c)
             stats.mean[c] += cf[c];
     }
     const double n = static_cast<double>(indices.size());
-    for (int c = 0; c < NUM_COUNTERS; ++c)
+    for (std::size_t c = 0; c < NUM_COUNTERS; ++c)
         stats.mean[c] /= n;
 
     // Pass 2: variance → std
     for (int idx : indices) {
         const auto& cf = corpus[idx].counter_features();
-        for (int c = 0; c < NUM_COUNTERS; ++c) {
+        for (std::size_t c = 0; c < NUM_COUNTERS; ++c) {
             const double d = cf[c] - stats.mean[c];
             stats.std_dev[c] += d * d;
         }
     }
-    for (int c = 0; c < NUM_COUNTERS; ++c)
+    for (std::size_t c = 0; c < NUM_COUNTERS; ++c)
         stats.std_dev[c] = std::sqrt(stats.std_dev[c] / n);
 
     stats.fitted = true;
@@ -238,7 +238,7 @@ public:
         std::vector<float>  X;  // row-major [n_rows × NUM_COUNTERS]
         std::vector<double> y;  // [n_rows]
         int n_rows{0};
-        int n_cols{NUM_COUNTERS};
+        int n_cols{static_cast<int>(NUM_COUNTERS)};
 
         // Access row i, column j
         [[nodiscard]] float X_at(int i, int j) const noexcept {
@@ -260,7 +260,7 @@ public:
             stats.normalise_to_float(
                 dp.counter_features(),
                 std::span<float>{ fm.X.data() + row * NUM_COUNTERS,
-                                  static_cast<std::size_t>(NUM_COUNTERS) });
+                                  NUM_COUNTERS });
             fm.y[row] = dp.latency_estimate();
         }
         return fm;

@@ -288,7 +288,7 @@ private:
     // Tier 1 state
     bool tier1_ok_ = false;
 
-    static constexpr int kNumCounters = 5;
+    static constexpr std::size_t kNumCounters = 5;
     std::array<int, kNumCounters> fds_{};
     std::array<std::uint64_t, kNumCounters> values_{};
 
@@ -350,7 +350,7 @@ private:
         }
 
         // Open remaining counters in the group
-        for (int i = 1; i < kNumCounters; ++i) {
+        for (std::size_t i = 1; i < kNumCounters; ++i) {
             fds_[i] = static_cast<int>(
                 perf_event_open(&attrs[i], 0, -1, fds_[0], 0));
             if (fds_[i] < 0) {
@@ -374,13 +374,13 @@ private:
     }
 
     void read_counters() noexcept {
-        for (int i = 0; i < kNumCounters; ++i) {
+        for (std::size_t i = 0; i < kNumCounters; ++i) {
             std::uint64_t val = 0;
             if (fds_[i] >= 0) {
                 auto bytes = read(fds_[i], &val, sizeof(val));
                 (void)bytes;
             }
-            values_[static_cast<std::size_t>(i)] = val;
+            values_[i] = val;
         }
     }
 #else
@@ -462,7 +462,7 @@ public:
 
 private:
     bool ok_ = false;
-    static constexpr int kNumCounters = 6;
+    static constexpr std::size_t kNumCounters = 6;
     std::array<int, kNumCounters> fds_{};
     std::array<std::uint64_t, kNumCounters> values_{};
 
@@ -499,7 +499,7 @@ private:
             {PERF_COUNT_HW_CACHE_DTLB, PERF_COUNT_HW_CACHE_OP_READ, PERF_COUNT_HW_CACHE_RESULT_MISS},
         };
 
-        for (int i = 0; i < kNumCounters; ++i) {
+        for (std::size_t i = 0; i < kNumCounters; ++i) {
             struct perf_event_attr attr;
             std::memset(&attr, 0, sizeof(attr));
             attr.type           = PERF_TYPE_HW_CACHE;
@@ -538,13 +538,13 @@ private:
     }
 
     void read_counters() noexcept {
-        for (int i = 0; i < kNumCounters; ++i) {
+        for (std::size_t i = 0; i < kNumCounters; ++i) {
             std::uint64_t val = 0;
             if (fds_[i] >= 0) {
                 auto bytes = read(fds_[i], &val, sizeof(val));
                 (void)bytes;
             }
-            values_[static_cast<std::size_t>(i)] = val;
+            values_[i] = val;
         }
     }
 #else

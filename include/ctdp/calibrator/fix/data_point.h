@@ -97,7 +97,7 @@ constexpr std::optional<Strategy> strategy_from_char(char c) noexcept {
 //  A value of 0.0 indicates a measurement failure / not-yet-populated slot.
 // ─────────────────────────────────────────────────────────────────────────────
 
-inline constexpr int NUM_COUNTERS = 6;
+inline constexpr std::size_t NUM_COUNTERS = 6;
 
 // Counter slot assignment (aligns with config_metrics per-parse fields):
 //   [0] instructions     — instructions per parse
@@ -157,7 +157,7 @@ struct RunTriple {
     // Mean counter vector over A1+A2 — Stage 2 features.
     [[nodiscard]] std::array<double, NUM_COUNTERS> mean_ab_counters() const noexcept {
         std::array<double, NUM_COUNTERS> out{};
-        for (int i = 0; i < NUM_COUNTERS; ++i)
+        for (std::size_t i = 0; i < NUM_COUNTERS; ++i)
             out[i] = 0.5 * (a1.counters[i] + a2.counters[i]);
         return out;
     }
@@ -218,7 +218,7 @@ struct DataPoint {
     constexpr void update_plan_id() noexcept {
         uint32_t id = 0;
         uint32_t base = 1;
-        for (int i = 0; i < N; ++i) {
+        for (std::size_t i = 0; i < static_cast<std::size_t>(N); ++i) {
             id += static_cast<uint32_t>(plan[i]) * base;
             base *= 4;
         }
@@ -254,10 +254,10 @@ struct DataPoint {
 
     void write_strategy_features(std::span<float> out) const noexcept {
         assert(static_cast<int>(out.size()) >= STRATEGY_FEATURE_DIM);
-        for (int fi = 0; fi < N; ++fi) {
-            const int base = fi * NUM_STRATEGIES;
-            for (int si = 0; si < NUM_STRATEGIES; ++si) {
-                out[base + si] = (static_cast<int>(plan[fi]) == si) ? 1.0f : 0.0f;
+        for (std::size_t fi = 0; fi < static_cast<std::size_t>(N); ++fi) {
+            const std::size_t base = fi * static_cast<std::size_t>(NUM_STRATEGIES);
+            for (std::size_t si = 0; si < static_cast<std::size_t>(NUM_STRATEGIES); ++si) {
+                out[base + si] = (static_cast<std::size_t>(plan[fi]) == si) ? 1.0f : 0.0f;
             }
         }
     }
@@ -282,8 +282,8 @@ struct DataPoint {
 
     [[nodiscard]] std::string plan_string() const {
         std::string s;
-        s.reserve(N);
-        for (int i = 0; i < N; ++i) s += strategy_char(plan[i]);
+        s.reserve(static_cast<std::size_t>(N));
+        for (std::size_t i = 0; i < static_cast<std::size_t>(N); ++i) s += strategy_char(plan[i]);
         return s;
     }
 };
@@ -307,7 +307,7 @@ template<int N>
 make_data_point(std::string_view plan_str, uint8_t fold_id = 0) noexcept {
     if (static_cast<int>(plan_str.size()) != N) return std::nullopt;
     DataPoint<N> dp{};
-    for (int i = 0; i < N; ++i) {
+    for (std::size_t i = 0; i < static_cast<std::size_t>(N); ++i) {
         auto s = strategy_from_char(plan_str[i]);
         if (!s) return std::nullopt;
         dp.plan[i] = *s;
@@ -326,7 +326,7 @@ template<int N>
 [[nodiscard]] constexpr std::array<Strategy, N>
 plan_id_to_plan(uint32_t id) noexcept {
     std::array<Strategy, N> plan{};
-    for (int i = 0; i < N; ++i) {
+    for (std::size_t i = 0; i < static_cast<std::size_t>(N); ++i) {
         plan[i] = static_cast<Strategy>(id % 4);
         id /= 4;
     }

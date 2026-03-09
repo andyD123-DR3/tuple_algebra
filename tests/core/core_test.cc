@@ -492,7 +492,9 @@ TEST(ConstexprMap, InsertDuplicate) {
     constexpr auto m = []() constexpr {
         constexpr_map<int, double, 10> m;
         auto [it1, ok1] = m.insert(1, 1.0);
+        (void)it1; (void)ok1;
         auto [it2, ok2] = m.insert(1, 2.0);
+        (void)it2;
         return std::pair{m.size(), ok2};
     }();
 

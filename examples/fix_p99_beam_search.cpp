@@ -56,8 +56,8 @@ struct fix_point {
 
     std::array<double, fix::num_fields> dims() const {
         std::array<double, fix::num_fields> d{};
-        for (int i = 0; i < fix::num_fields; ++i)
-            d[i] = static_cast<double>(config[static_cast<std::size_t>(i)]);
+        for (std::size_t i = 0; i < static_cast<std::size_t>(fix::num_fields); ++i)
+            d[i] = static_cast<double>(config[i]);
         return d;
     }
 };
