@@ -1,7 +1,7 @@
 # experiments/fix_calibration/CMakeLists.txt
 #
 # Build system for the FIX parser optimisation experiments.
-# Shared headers, unit tests, and Program A.
+# Shared headers, unit tests, and Programs A–E.
 #
 # Options:
 #   CTDP_FIX_EXPERIMENT_MOCK   Build with mock measurement (no RDTSC needed)
@@ -40,17 +40,28 @@ if(CTDP_FIX_EXPERIMENT_MOCK)
         CTDP_FIX_EXPERIMENT_MOCK)
 endif()
 
-# -- Program A: p50 baseline ------------------------------------------
-# Discovery target (mock or Phase 1 depending on CTDP_FIX_EXPERIMENT_MOCK)
-add_executable(fix_experiment_A programs/A_p50_baseline.cpp)
-target_link_libraries(fix_experiment_A PRIVATE ctdp_fix_experiment_common)
+# -- Experiment program helper -----------------------------------------
+# add_fix_experiment(NAME source_file)
+# Creates two targets:
+#   fix_experiment_${NAME}         — mock or Phase 1 (discovery)
+#   fix_experiment_${NAME}_verify  — Phase 2 (verification)
+# Bootstrap candidate headers are committed, so _verify targets always exist.
+function(add_fix_experiment NAME SOURCE)
+    add_executable(fix_experiment_${NAME} ${SOURCE})
+    target_link_libraries(fix_experiment_${NAME} PRIVATE ctdp_fix_experiment_common)
 
-# Verification target (Phase 2 — only if generated header exists)
-if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/generated/A_candidates.h")
-    add_executable(fix_experiment_A_verify programs/A_p50_baseline.cpp)
-    target_link_libraries(fix_experiment_A_verify PRIVATE ctdp_fix_experiment_common)
-    target_compile_definitions(fix_experiment_A_verify PRIVATE CTDP_PHASE2)
-endif()
+    add_executable(fix_experiment_${NAME}_verify ${SOURCE})
+    target_link_libraries(fix_experiment_${NAME}_verify PRIVATE
+        ctdp_fix_experiment_common)
+    target_compile_definitions(fix_experiment_${NAME}_verify PRIVATE CTDP_PHASE2)
+endfunction()
+
+# -- Experiment programs -----------------------------------------------
+add_fix_experiment(A programs/A_p50_baseline.cpp)
+add_fix_experiment(B programs/B_p99_baseline.cpp)
+add_fix_experiment(C programs/C_p99_log_target.cpp)
+add_fix_experiment(D programs/D_p99_count_encoding.cpp)
+add_fix_experiment(E programs/E_p99_transition_encoding.cpp)
 
 # -- Tests (only when CTDP_BUILD_TESTS is ON) -------------------------
 if(CTDP_BUILD_TESTS)
