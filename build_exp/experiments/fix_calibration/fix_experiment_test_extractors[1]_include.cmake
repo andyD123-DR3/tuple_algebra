@@ -1,0 +1,5 @@
+if(EXISTS "D:/tuple/build_exp/experiments/fix_calibration/fix_experiment_test_extractors[1]_tests.cmake")
+  include("D:/tuple/build_exp/experiments/fix_calibration/fix_experiment_test_extractors[1]_tests.cmake")
+else()
+  add_test(fix_experiment_test_extractors_NOT_BUILT fix_experiment_test_extractors_NOT_BUILT)
+endif()

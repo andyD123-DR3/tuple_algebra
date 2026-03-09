@@ -14,6 +14,7 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 # ── Options ──────────────────────────────────────────────────────────────────
 option(CTDP_BUILD_TESTS    "Build unit tests"              ON)
 option(CTDP_BUILD_EXAMPLES "Build example programs"        ON)
+option(CTDP_BUILD_EXPERIMENTS "Build fix_calibration experiment programs" OFF)
 option(CTDP_ASAN           "Enable AddressSanitizer"      OFF)
 option(CTDP_SKIP_HW_TIMING_TESTS
     "Skip timing-accuracy assertions that require stable hardware (set OFF to enable tight validation locally)"
@@ -151,13 +152,20 @@ add_library(ctdp::bench      ALIAS ctdp_bench)
 add_library(ctdp::calibrator ALIAS ctdp_calibrator)
 
 # ── Subdirectories ───────────────────────────────────────────────────────────
-if(CTDP_BUILD_TESTS)
+if(CTDP_BUILD_TESTS OR CTDP_BUILD_EXPERIMENTS)
     enable_testing()
+endif()
+
+if(CTDP_BUILD_TESTS)
     add_subdirectory(tests)
 endif()
 
 if(CTDP_BUILD_EXAMPLES)
     add_subdirectory(examples)
+endif()
+
+if(CTDP_BUILD_EXPERIMENTS)
+    add_subdirectory(experiments/fix_calibration)
 endif()
 
 # ── Install ──────────────────────────────────────────────────────────────────

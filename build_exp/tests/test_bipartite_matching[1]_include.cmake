@@ -1,0 +1,5 @@
+if(EXISTS "D:/tuple/build_exp/tests/test_bipartite_matching[1]_tests.cmake")
+  include("D:/tuple/build_exp/tests/test_bipartite_matching[1]_tests.cmake")
+else()
+  add_test(test_bipartite_matching_NOT_BUILT test_bipartite_matching_NOT_BUILT)
+endif()

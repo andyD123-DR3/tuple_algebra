@@ -1,0 +1,5 @@
+if(EXISTS "D:/tuple/build_exp/tests/algebra_test[1]_tests.cmake")
+  include("D:/tuple/build_exp/tests/algebra_test[1]_tests.cmake")
+else()
+  add_test(algebra_test_NOT_BUILT algebra_test_NOT_BUILT)
+endif()

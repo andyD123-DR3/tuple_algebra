@@ -1,0 +1,5 @@
+if(EXISTS "D:/tuple/build_exp/tests/test_graph_hardening_v2[1]_tests.cmake")
+  include("D:/tuple/build_exp/tests/test_graph_hardening_v2[1]_tests.cmake")
+else()
+  add_test(test_graph_hardening_v2_NOT_BUILT test_graph_hardening_v2_NOT_BUILT)
+endif()

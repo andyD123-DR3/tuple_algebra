@@ -1,0 +1,5 @@
+if(EXISTS "D:/tuple/build_exp/tests/test_instantiation[1]_tests.cmake")
+  include("D:/tuple/build_exp/tests/test_instantiation[1]_tests.cmake")
+else()
+  add_test(test_instantiation_NOT_BUILT test_instantiation_NOT_BUILT)
+endif()
