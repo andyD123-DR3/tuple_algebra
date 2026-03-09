@@ -30,6 +30,7 @@
 #include <optional>
 #include <sstream>
 #include <string>
+#include <vector>
 
 namespace ex  = ctdp::calibrator::examples;
 namespace cal = ctdp::calibrator;

@@ -420,9 +420,9 @@ TEST(PlanSet, InsertAndBest) {
     // With cost_dominance, lower cost dominates higher, so only best survives
     constexpr auto ps = []() constexpr {
         plan_set<int, 10> ps;
-        ps.insert(plan<int>{1, 5.0});
-        ps.insert(plan<int>{2, 2.0});  // dominates 5.0
-        ps.insert(plan<int>{3, 8.0});  // dominated by 2.0
+        (void)ps.insert(plan<int>{1, 5.0});
+        (void)ps.insert(plan<int>{2, 2.0});  // dominates 5.0
+        (void)ps.insert(plan<int>{3, 8.0});  // dominated by 2.0
         return ps;
     }();
 
@@ -438,9 +438,9 @@ TEST(PlanSet, InsertAndBestNoDominance) {
     // With never_dominates, all feasible plans are kept sorted by cost
     constexpr auto ps = []() constexpr {
         plan_set<int, 10, never_dominates> ps;
-        ps.insert(plan<int>{1, 5.0});
-        ps.insert(plan<int>{2, 2.0});
-        ps.insert(plan<int>{3, 8.0});
+        (void)ps.insert(plan<int>{1, 5.0});
+        (void)ps.insert(plan<int>{2, 2.0});
+        (void)ps.insert(plan<int>{3, 8.0});
         return ps;
     }();
 
@@ -454,10 +454,10 @@ TEST(PlanSet, InsertAndBestNoDominance) {
 TEST(PlanSet, SortedOrder) {
     constexpr auto ps = []() constexpr {
         plan_set<int, 10, never_dominates> ps;
-        ps.insert(plan<int>{1, 5.0});
-        ps.insert(plan<int>{2, 2.0});
-        ps.insert(plan<int>{3, 8.0});
-        ps.insert(plan<int>{4, 1.0});
+        (void)ps.insert(plan<int>{1, 5.0});
+        (void)ps.insert(plan<int>{2, 2.0});
+        (void)ps.insert(plan<int>{3, 8.0});
+        (void)ps.insert(plan<int>{4, 1.0});
         return ps;
     }();
 
@@ -481,10 +481,10 @@ TEST(PlanSet, RejectsInfeasible) {
 TEST(PlanSet, CapacityEviction) {
     constexpr auto ps = []() constexpr {
         plan_set<int, 3, never_dominates> ps;
-        ps.insert(plan<int>{1, 5.0});
-        ps.insert(plan<int>{2, 2.0});
-        ps.insert(plan<int>{3, 8.0});
-        ps.insert(plan<int>{4, 1.0});  // should evict worst (8.0)
+        (void)ps.insert(plan<int>{1, 5.0});
+        (void)ps.insert(plan<int>{2, 2.0});
+        (void)ps.insert(plan<int>{3, 8.0});
+        (void)ps.insert(plan<int>{4, 1.0});  // should evict worst (8.0)
         return ps;
     }();
 
@@ -496,7 +496,7 @@ TEST(PlanSet, CapacityEviction) {
 TEST(PlanSet, DominanceRejection) {
     constexpr auto result = []() constexpr {
         plan_set<int, 10> ps;
-        ps.insert(plan<int>{1, 2.0});
+        (void)ps.insert(plan<int>{1, 2.0});
         auto ok = ps.insert(plan<int>{2, 5.0});  // dominated by 2.0
         return std::pair{ps.size(), ok};
     }();
@@ -508,9 +508,9 @@ TEST(PlanSet, DominanceRejection) {
 TEST(PlanSet, DominanceEviction) {
     constexpr auto ps = []() constexpr {
         plan_set<int, 10> ps;
-        ps.insert(plan<int>{1, 5.0});
-        ps.insert(plan<int>{2, 8.0});
-        ps.insert(plan<int>{3, 1.0});  // dominates both
+        (void)ps.insert(plan<int>{1, 5.0});
+        (void)ps.insert(plan<int>{2, 8.0});
+        (void)ps.insert(plan<int>{3, 1.0});  // dominates both
         return ps;
     }();
 
@@ -521,8 +521,8 @@ TEST(PlanSet, DominanceEviction) {
 TEST(PlanSet, Clear) {
     constexpr auto ps = []() constexpr {
         plan_set<int, 10> ps;
-        ps.insert(plan<int>{1, 5.0});
-        ps.insert(plan<int>{2, 2.0});
+        (void)ps.insert(plan<int>{1, 5.0});
+        (void)ps.insert(plan<int>{2, 2.0});
         ps.clear();
         return ps;
     }();
@@ -533,12 +533,12 @@ TEST(PlanSet, Clear) {
 TEST(PlanSet, Merge) {
     constexpr auto result = []() constexpr {
         plan_set<int, 10> a;
-        a.insert(plan<int>{1, 5.0});
-        a.insert(plan<int>{2, 3.0});
+        (void)a.insert(plan<int>{1, 5.0});
+        (void)a.insert(plan<int>{2, 3.0});
 
         plan_set<int, 10> b;
-        b.insert(plan<int>{3, 1.0});
-        b.insert(plan<int>{4, 4.0});
+        (void)b.insert(plan<int>{3, 1.0});
+        (void)b.insert(plan<int>{4, 4.0});
 
         auto inserted = a.merge(b);
         return std::pair{a.size(), inserted};
@@ -552,9 +552,9 @@ TEST(PlanSet, Merge) {
 TEST(PlanSet, Iteration) {
     constexpr auto total_cost = []() constexpr {
         plan_set<int, 10> ps;
-        ps.insert(plan<int>{1, 3.0});
-        ps.insert(plan<int>{2, 5.0});
-        ps.insert(plan<int>{3, 7.0});
+        (void)ps.insert(plan<int>{1, 3.0});
+        (void)ps.insert(plan<int>{2, 5.0});
+        (void)ps.insert(plan<int>{3, 7.0});
 
         // These will be dominated, so only 3.0 survives
         // Wait - cost_dominance is strict <, so 5.0 is dominated by 3.0
@@ -685,9 +685,9 @@ TEST(PlanTraversal, SubPlanCount) {
 TEST(PlanSet, CustomDominanceKeepsAll) {
     constexpr auto ps = []() constexpr {
         plan_set<int, 10, never_dominates> ps;
-        ps.insert(plan<int>{1, 5.0});
-        ps.insert(plan<int>{2, 2.0});
-        ps.insert(plan<int>{3, 8.0});
+        (void)ps.insert(plan<int>{1, 5.0});
+        (void)ps.insert(plan<int>{2, 2.0});
+        (void)ps.insert(plan<int>{3, 8.0});
         return ps;
     }();
 
@@ -701,15 +701,15 @@ TEST(PlanSet, CustomDominanceKeepsAll) {
 TEST(PlanSet, EqualityWithCandidates) {
     constexpr auto ps1 = []() constexpr {
         plan_set<int, 10, never_dominates> ps;
-        ps.insert(plan<int>{1, 5.0});
-        ps.insert(plan<int>{2, 2.0});
+        (void)ps.insert(plan<int>{1, 5.0});
+        (void)ps.insert(plan<int>{2, 2.0});
         return ps;
     }();
 
     constexpr auto ps2 = []() constexpr {
         plan_set<int, 10, never_dominates> ps;
-        ps.insert(plan<int>{2, 2.0});
-        ps.insert(plan<int>{1, 5.0});
+        (void)ps.insert(plan<int>{2, 2.0});
+        (void)ps.insert(plan<int>{1, 5.0});
         return ps;
     }();
 

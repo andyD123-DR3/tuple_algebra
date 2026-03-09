@@ -287,8 +287,8 @@ public:
         }
         
         // Shift elements to make room
-        auto pos = it - begin();
-        for (size_type i = size_; i > static_cast<size_type>(pos); --i) {
+        size_type pos = static_cast<size_type>(it - begin());
+        for (size_type i = size_; i > pos; --i) {
             storage_[i] = storage_[i - 1];
         }
         
@@ -318,7 +318,7 @@ public:
     
     /// Erase element at iterator position.
     constexpr iterator erase(iterator pos) {
-        auto idx = pos - begin();
+        size_type idx = static_cast<size_type>(pos - begin());
         
         // Shift elements to close gap
         for (size_type i = idx; i < size_ - 1; ++i) {

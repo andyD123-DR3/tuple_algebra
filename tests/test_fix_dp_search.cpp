@@ -12,6 +12,7 @@
 #include <cmath>
 #include <iostream>
 #include <numeric>
+#include <vector>
 
 using namespace ctdp::calibrator::fix;
 

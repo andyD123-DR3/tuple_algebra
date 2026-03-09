@@ -146,7 +146,7 @@ public:
     constexpr void clear() noexcept { size_ = 0; }
     
     constexpr iterator insert(const_iterator pos, T const& value) {
-        size_type index = pos - begin();
+        size_type index = static_cast<size_type>(pos - begin());
         if (size_ >= MaxN) {
             throw std::length_error("constexpr_vector::insert: capacity exceeded");
         }
@@ -162,7 +162,7 @@ public:
     }
     
     constexpr iterator insert(const_iterator pos, T&& value) {
-        size_type index = pos - begin();
+        size_type index = static_cast<size_type>(pos - begin());
         if (size_ >= MaxN) {
             throw std::length_error("constexpr_vector::insert: capacity exceeded");
         }
@@ -177,7 +177,7 @@ public:
     }
     
     constexpr iterator erase(const_iterator pos) {
-        size_type index = pos - begin();
+        size_type index = static_cast<size_type>(pos - begin());
         if (index >= size_) {
             throw std::out_of_range("constexpr_vector::erase: position out of range");
         }
@@ -192,8 +192,8 @@ public:
     }
     
     constexpr iterator erase(const_iterator first, const_iterator last) {
-        size_type start = first - begin();
-        size_type count = last - first;
+        size_type start = static_cast<size_type>(first - begin());
+        size_type count = static_cast<size_type>(last - first);
         
         if (count == 0) return begin() + start;
         if (start + count > size_) {
