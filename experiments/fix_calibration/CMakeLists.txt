@@ -54,4 +54,10 @@ if(CTDP_BUILD_TESTS)
     target_link_libraries(fix_experiment_test_beam_search PRIVATE
         ctdp_fix_experiment_common GTest::gtest GTest::gtest_main)
     gtest_discover_tests(fix_experiment_test_beam_search)
+
+    # Unit tests: output layer (report_types, output_table, json_report)
+    add_executable(fix_experiment_test_output tests/test_output.cpp)
+    target_link_libraries(fix_experiment_test_output PRIVATE
+        ctdp_fix_experiment_common GTest::gtest GTest::gtest_main)
+    gtest_discover_tests(fix_experiment_test_output)
 endif()

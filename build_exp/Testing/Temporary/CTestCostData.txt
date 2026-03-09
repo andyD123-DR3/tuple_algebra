@@ -49,29 +49,45 @@ test_phase3_fix_calibration 0 0
 ctdp_calibration_test 0 0
 ctdp_phase3_test 0 0
 ctdp_phase6_test 0 0
-OnehotExtractor.CorrectDimension 1 0.101736
-OnehotExtractor.AllUnrolled 1 0.104026
-OnehotExtractor.AllGeneric 1 0.103985
-OnehotExtractor.AllSWAR 1 0.107692
-OnehotExtractor.MixedConfig 1 0.103147
-OnehotExtractor.PerPositionBlockSumsToZeroOrOne 1 0.105565
-OnehotExtractor.ViaFixPoint 1 0.0994548
-OnehotExtractor.FeatureName 1 0.0988824
-CountExtractor.CorrectDimension 1 0.101212
-CountExtractor.CountsSumToTwelve 1 0.0997065
-CountExtractor.AllUnrolledCounts 1 0.100359
-CountExtractor.MixedCounts 1 0.100616
-CountExtractor.OnehotPrefixUnchanged 1 0.105031
-CountExtractor.FeatureName 1 0.100898
-TransitionExtractor.CorrectDimension 1 0.0961689
-TransitionExtractor.TransitionsSumToEleven 1 0.0960621
-TransitionExtractor.AllUnrolledTransitions 1 0.102261
-TransitionExtractor.AlternatingConfig 1 0.0981484
-TransitionExtractor.KnownConfigTransitions 1 0.103408
-TransitionExtractor.CountPrefixUnchanged 1 0.102845
-TransitionExtractor.FeatureName 1 0.0991283
-Extractors.DimensionsAreConsistent 1 0.0994816
-Extractors.AllExtractorsProduceCorrectDimsOnSameConfig 1 0.0984725
+OnehotExtractor.CorrectDimension 2 0.0754232
+OnehotExtractor.AllUnrolled 2 0.0511371
+OnehotExtractor.AllGeneric 2 0.0509185
+OnehotExtractor.AllSWAR 2 0.0516875
+OnehotExtractor.MixedConfig 2 0.0532454
+OnehotExtractor.PerPositionBlockSumsToZeroOrOne 2 0.049587
+OnehotExtractor.ViaFixPoint 2 0.0487629
+OnehotExtractor.FeatureName 2 0.0504236
+CountExtractor.CorrectDimension 2 0.0490814
+CountExtractor.CountsSumToTwelve 2 0.0509316
+CountExtractor.AllUnrolledCounts 2 0.0499157
+CountExtractor.MixedCounts 2 0.0525775
+CountExtractor.OnehotPrefixUnchanged 2 0.0492803
+CountExtractor.FeatureName 2 0.053204
+TransitionExtractor.CorrectDimension 2 0.0493089
+TransitionExtractor.TransitionsSumToEleven 2 0.0520852
+TransitionExtractor.AllUnrolledTransitions 2 0.0521634
+TransitionExtractor.AlternatingConfig 2 0.0513123
+TransitionExtractor.KnownConfigTransitions 2 0.0530729
+TransitionExtractor.CountPrefixUnchanged 2 0.0533753
+TransitionExtractor.FeatureName 2 0.0529437
+Extractors.DimensionsAreConsistent 2 0.0507147
+Extractors.AllExtractorsProduceCorrectDimsOnSameConfig 2 0.0513568
+fix_experiment_test_beam_search_NOT_BUILT 0 0
+JsonEscape.QuotesAndBackslash 1 0.101327
+JsonEscape.NewlineAndTab 1 0.10351
+JsonEscape.ControlChar 1 0.104134
+JsonReport.EmptyCandidates 1 0.102293
+JsonReport.InvalidBestIndexThrows 1 0.104786
+JsonReport.WriteToTempDir 0 0
+JsonReport.SchemaHasAllFields 1 0.100056
+OutputTable.EmptyCandidates 1 0.103848
+OutputTable.InvalidBestIndexThrows 1 0.0971971
+OutputTable.ContainsKeyFields 1 0.101582
+OutputTable.MisRankDetected 1 0.100121
+OutputTable.NoMisRankWhenBestMatchesPrediction 1 0.100956
+OutputTable.StreamStateRestored 1 0.0969966
+CallbackSignature.PrintReportIsOneArg 1 0.0964587
+CallbackSignature.WriteJsonReportIsOneArg 1 0.0999742
 ---
 core_test_NOT_BUILT
 test_io_lexer_NOT_BUILT
@@ -124,3 +140,5 @@ test_phase3_fix_calibration
 ctdp_calibration_test
 ctdp_phase3_test
 ctdp_phase6_test
+fix_experiment_test_beam_search_NOT_BUILT
+JsonReport.WriteToTempDir
