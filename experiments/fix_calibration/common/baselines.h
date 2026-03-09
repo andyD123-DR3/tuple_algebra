@@ -19,7 +19,7 @@
 #include <cstdint>
 #include <string_view>
 
-namespace ctdp::experiment::fix_calibration {
+namespace ctdp::fix_experiment {
 
 namespace fix = ctdp::calibrator::fix;
 
@@ -80,6 +80,6 @@ inline constexpr std::array<baseline_entry, 5> baselines = {{
 /// Number of named baselines.
 inline constexpr std::size_t num_baselines = baselines.size();
 
-} // namespace ctdp::experiment::fix_calibration
+} // namespace ctdp::fix_experiment
 
 #endif // CTDP_FIX_EXPERIMENT_BASELINES_H

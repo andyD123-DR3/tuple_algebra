@@ -11,7 +11,7 @@
 #include <cstdint>
 #include <ctdp/calibrator/fix/data_point.h>
 
-namespace experiment {
+namespace ctdp::fix_experiment {
 
 using Strategy = ctdp::calibrator::fix::Strategy;
 
@@ -55,6 +55,6 @@ inline constexpr int N_FIXED     = 7;
 inline constexpr int N_UNCERTAIN = 5;
 inline constexpr int N_SWEEP     = 1024;  // 4^5
 
-} // namespace experiment
+} // namespace ctdp::fix_experiment
 
 #endif // EXPERIMENT_FIX_CALIBRATION_CONFIG_H

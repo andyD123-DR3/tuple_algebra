@@ -10,7 +10,7 @@
 #include <cmath>
 
 namespace cfix = ctdp::calibrator::fix;
-using namespace experiment;
+using namespace ctdp::fix_experiment;
 
 // Helper: build a config from a string like "UUSLSUUSUUUU".
 // Fails loudly on invalid characters so test typos don't silently

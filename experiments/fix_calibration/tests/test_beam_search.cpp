@@ -15,7 +15,7 @@
 #include <string>
 
 namespace cfix = ctdp::calibrator::fix;
-using namespace experiment;
+using namespace ctdp::fix_experiment;
 
 // =================================================================
 // Mock models

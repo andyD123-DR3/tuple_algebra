@@ -52,7 +52,7 @@
 #include <unordered_set>
 #include <vector>
 
-namespace experiment {
+namespace ctdp::fix_experiment {
 
 // -- config_key: packed structural identifier -----------------------------
 // 12 fields x 2 bits = 24 bits.  Fits in uint32_t.
@@ -161,6 +161,6 @@ beam_result beam_search(
     return beam_result{std::move(beam), evals};
 }
 
-} // namespace experiment
+} // namespace ctdp::fix_experiment
 
 #endif // EXPERIMENT_FIX_CALIBRATION_BEAM_SEARCH_H
