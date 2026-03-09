@@ -89,6 +89,7 @@ static void t02_dispatch_table_all_distinct() {
     std::unordered_set<void*> ptrs;
     for (auto fn : detail::trivial_dispatch_table) {
         ptrs.insert(reinterpret_cast<void*>(fn));
+    }
     assert(static_cast<int>(ptrs.size()) == 64);
     std::cout << "T02 PASS: dispatch table – all 64 pointers distinct\n";
 }
