@@ -170,9 +170,9 @@ bench_corpus(std::span<DataPoint<4>>          corpus,
              const BenchConfig&               cfg = {})
 {
     bench::cache_thrasher thrasher(cfg.llc_bytes);
-    const int total = static_cast<int>(corpus.size());
+    const std::size_t total = corpus.size();
 
-    for (int i = 0; i < total; ++i) {
+    for (std::size_t i = 0; i < total; ++i) {
         auto& dp = corpus[i];
         int32_t dense_id = trivial_index.encode(dp.plan);
         assert(dense_id >= 0 && "bench_corpus: plan not valid for trivial_schema");
@@ -180,7 +180,7 @@ bench_corpus(std::span<DataPoint<4>>          corpus,
         dp.runs = measure_one_trivial(dense_id, messages, cfg, thrasher);
         dp.update_status();
 
-        if (cfg.progress_cb) cfg.progress_cb(i + 1, total);
+        if (cfg.progress_cb) cfg.progress_cb(static_cast<int>(i + 1), static_cast<int>(total));
     }
 }
 
@@ -209,9 +209,9 @@ bench_corpus_n12(
                                  const measurement_config&)>    plan_fn)
 {
     bench::cache_thrasher thrasher(cfg.llc_bytes);
-    const int total = static_cast<int>(corpus.size());
+    const std::size_t total = corpus.size();
 
-    for (int i = 0; i < total; ++i) {
+    for (std::size_t i = 0; i < total; ++i) {
         auto& dp = corpus[i];
 
         auto measure = [&](const measurement_config& m) {
@@ -227,7 +227,7 @@ bench_corpus_n12(
         dp.runs = rt;
         dp.update_status();
 
-        if (cfg.progress_cb) cfg.progress_cb(i + 1, total);
+        if (cfg.progress_cb) cfg.progress_cb(static_cast<int>(i + 1), static_cast<int>(total));
     }
 }
 

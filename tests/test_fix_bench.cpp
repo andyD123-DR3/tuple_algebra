@@ -289,8 +289,8 @@ static void t14_progress_callback_sequence() {
     assert(static_cast<int>(calls.size()) == 64);
     assert(calls.front() == std::make_pair(1,  64));
     assert(calls.back()  == std::make_pair(64, 64));
-    for (int i = 0; i < 64; ++i)
-        assert(calls[i].first == i+1 && calls[i].second == 64);
+    for (std::size_t i = 0; i < 64; ++i)
+        assert(calls[i].first == static_cast<int>(i)+1 && calls[i].second == 64);
     std::cout << "T14 PASS: progress callback contract (1..64 of 64)\n";
 }
 

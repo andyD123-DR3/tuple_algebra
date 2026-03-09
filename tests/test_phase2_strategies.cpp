@@ -593,7 +593,7 @@ static void test_G() {
             auto unr  = UnrP::parse_message(msg.c_str());
             auto swar = SwarP::parse_message(msg.c_str());
 
-            for (int fi = 0; fi < 4; ++fi) {
+            for (std::size_t fi = 0; fi < 4; ++fi) {
                 CHECK(unr.values[fi]  == ref.values[fi], "T39-unr");
                 CHECK(swar.values[fi] == ref.values[fi], "T39-swar");
             }

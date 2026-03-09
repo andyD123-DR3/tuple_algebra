@@ -109,7 +109,7 @@ static void t06_exhaustive_ranked_corpus_sorted() {
     auto tbl = make_table(10.0, 1.0);   // costs 10,11,...,73
     auto r   = exhaustive_search<4>(tbl);
     assert(static_cast<int>(r.ranked_corpus.size()) == 64);
-    for (int i = 1; i < 64; ++i)
+    for (std::size_t i = 1; i < 64; ++i)
         assert(r.ranked_corpus[i].cost >= r.ranked_corpus[i-1].cost);
     assert(r.ranked_corpus.front().cost == 10.0);
     assert(r.ranked_corpus.back().cost  == 73.0);
