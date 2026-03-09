@@ -48,4 +48,10 @@ if(CTDP_BUILD_TESTS)
     target_link_libraries(fix_experiment_test_extractors PRIVATE
         ctdp_fix_experiment_common GTest::gtest GTest::gtest_main)
     gtest_discover_tests(fix_experiment_test_extractors)
+
+    # Unit tests: beam search
+    add_executable(fix_experiment_test_beam_search tests/test_beam_search.cpp)
+    target_link_libraries(fix_experiment_test_beam_search PRIVATE
+        ctdp_fix_experiment_common GTest::gtest GTest::gtest_main)
+    gtest_discover_tests(fix_experiment_test_beam_search)
 endif()
