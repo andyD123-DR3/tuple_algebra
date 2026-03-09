@@ -180,9 +180,12 @@ inline std::string to_json(const ExperimentReport& r) {
     w.key("target_units");       w.value_string(r.target_units);
     w.key("beam_width");         w.value_size(r.beam_width);
     w.key("beam_depth");         w.value_size(r.beam_depth);
+    w.key("exhaustive");         w.value_string(r.exhaustive ? "true" : "false");
 
-    w.key("model");
-    detail::serialise_model(w, r.model);
+    if (!r.exhaustive) {
+        w.key("model");
+        detail::serialise_model(w, r.model);
+    }
 
     w.key("baselines");
     w.begin_array();

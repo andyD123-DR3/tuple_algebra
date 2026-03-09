@@ -1,7 +1,7 @@
 # experiments/fix_calibration/CMakeLists.txt
 #
 # Build system for the FIX parser optimisation experiments.
-# Shared headers, unit tests, and Programs A–E.
+# Shared headers, unit tests, and Programs A–F.
 #
 # Options:
 #   CTDP_FIX_EXPERIMENT_MOCK   Build with mock measurement (no RDTSC needed)
@@ -62,6 +62,9 @@ add_fix_experiment(B programs/B_p99_baseline.cpp)
 add_fix_experiment(C programs/C_p99_log_target.cpp)
 add_fix_experiment(D programs/D_p99_count_encoding.cpp)
 add_fix_experiment(E programs/E_p99_transition_encoding.cpp)
+# F is exhaustive (no Phase 2 split). The _verify target compiles
+# identically to the discovery target since F ignores CTDP_PHASE2.
+add_fix_experiment(F programs/F_consensus_sweep.cpp)
 
 # -- Tests (only when CTDP_BUILD_TESTS is ON) -------------------------
 if(CTDP_BUILD_TESTS)
@@ -108,4 +111,10 @@ if(CTDP_BUILD_TESTS)
     target_link_libraries(fix_experiment_test_compiled_measurer PRIVATE
         ctdp_fix_experiment_common GTest::gtest GTest::gtest_main)
     gtest_discover_tests(fix_experiment_test_compiled_measurer)
+
+    # Unit tests: sweep_configs + audit_configs + ancillary
+    add_executable(fix_experiment_test_sweep_configs tests/test_sweep_configs.cpp)
+    target_link_libraries(fix_experiment_test_sweep_configs PRIVATE
+        ctdp_fix_experiment_common GTest::gtest GTest::gtest_main)
+    gtest_discover_tests(fix_experiment_test_sweep_configs)
 endif()

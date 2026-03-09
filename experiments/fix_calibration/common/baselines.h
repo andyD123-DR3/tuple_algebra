@@ -80,6 +80,17 @@ inline constexpr std::array<baseline_entry, 5> baselines = {{
 /// Number of named baselines.
 inline constexpr std::size_t num_baselines = baselines.size();
 
+/// Baseline configs only (no names) — for compiled_measurer dispatch tables.
+/// Derived from the baselines array to prevent drift.
+inline constexpr auto baseline_configs = [] {
+    std::array<fix::fix_config, num_baselines> cfgs{};
+    for (std::size_t i = 0; i < num_baselines; ++i)
+        cfgs[i] = baselines[i].config;
+    return cfgs;
+}();
+
+static_assert(baseline_configs.size() == baselines.size());
+
 } // namespace ctdp::fix_experiment
 
 #endif // CTDP_FIX_EXPERIMENT_BASELINES_H
