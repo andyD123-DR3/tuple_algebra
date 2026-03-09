@@ -32,7 +32,7 @@
 #include <cstddef>
 #include <vector>
 
-namespace experiment {
+namespace ctdp::fix_experiment {
 
 // -- Type aliases from the ctdp calibrator namespace ---------------
 using fix_config  = ctdp::calibrator::fix::fix_config;
@@ -146,6 +146,6 @@ struct transition_extractor {
     static constexpr const char* name() { return "transition_extractor"; }
 };
 
-} // namespace experiment
+} // namespace ctdp::fix_experiment
 
 #endif // EXPERIMENT_FIX_CALIBRATION_FEATURE_EXTRACTORS_H

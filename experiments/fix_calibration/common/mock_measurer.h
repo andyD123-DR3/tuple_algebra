@@ -34,7 +34,7 @@
 #include <cstdint>
 #include <numbers>
 
-namespace ctdp::experiment::fix_calibration {
+namespace ctdp::fix_experiment {
 
 namespace fix = ctdp::calibrator::fix;
 
@@ -297,6 +297,6 @@ struct zero_noise_measurer {
     }
 };
 
-} // namespace ctdp::experiment::fix_calibration
+} // namespace ctdp::fix_experiment
 
 #endif // CTDP_FIX_EXPERIMENT_MOCK_MEASURER_H
