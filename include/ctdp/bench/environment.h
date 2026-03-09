@@ -34,7 +34,7 @@ inline bool pin_to(int cpu_id) noexcept {
 #ifdef __linux__
     cpu_set_t mask;
     CPU_ZERO(&mask);
-    CPU_SET(cpu_id, &mask);
+    CPU_SET(static_cast<std::size_t>(cpu_id), &mask);
     return sched_setaffinity(0, sizeof(mask), &mask) == 0;
 #else
     (void)cpu_id;
@@ -49,7 +49,7 @@ inline bool restore_affinity() noexcept {
     cpu_set_t mask;
     CPU_ZERO(&mask);
     int n = static_cast<int>(sysconf(_SC_NPROCESSORS_ONLN));
-    for (int i = 0; i < n; ++i) CPU_SET(i, &mask);
+    for (int i = 0; i < n; ++i) CPU_SET(static_cast<std::size_t>(i), &mask);
     return sched_setaffinity(0, sizeof(mask), &mask) == 0;
 #else
     return false;

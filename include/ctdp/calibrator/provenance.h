@@ -100,7 +100,7 @@ template <typename Scenario>
     prov.kernel_version = env.kernel_version;
     prov.l3_bytes       = env.llc_bytes;
     prov.tier1_counters = env.tier1_counters;
-    prov.num_cores      = bench::cpu_count();
+    prov.num_cores      = static_cast<std::size_t>(bench::cpu_count());
 
     // CPU model from /proc/cpuinfo (Linux)
 #ifdef __linux__
