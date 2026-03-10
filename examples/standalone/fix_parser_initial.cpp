@@ -1,23 +1,12 @@
 // ============================================================================
 // FIX Parser Compile-Time DP Demo
-<<<<<<< HEAD
-//
-=======
-// 
->>>>>>> 1806dc664ae1aaad8a0dea6fdb6fa63c589bfac2
 // Demonstrates systematic optimisation of integer conversion strategies
 // across a FIX MarketDataIncrementalRefresh message (22 fields, 12 numeric).
 //
 // Three parsers compared:
-<<<<<<< HEAD
-//   1. Generic    -- std::from_chars equivalent (per-char validation, noinline)
-//   2. Expert     -- hand-tuned switch a la Lima & Tonetti (runtime dispatch)
-//   3. DPOptimal  -- compile-time DP plan via expression templates (zero dispatch)
-=======
 //   1. Generic    — std::from_chars equivalent (per-char validation, noinline)
 //   2. Expert     — hand-tuned switch à la Lima & Tonetti (runtime dispatch)
 //   3. DPOptimal  — compile-time DP plan via expression templates (zero dispatch)
->>>>>>> 1806dc664ae1aaad8a0dea6fdb6fa63c589bfac2
 //
 // Compile:
 //   g++ -std=c++20 -O3 -march=native -o fix_parser_demo fix_parser_demo.cpp
@@ -228,11 +217,8 @@ template<int D> struct SWARParser {
                 else r = r * 10000 + blk;
             }
         }
-<<<<<<< HEAD
-        // Tail handled with constexpr selection -- no runtime branch
-=======
+
         // Tail handled with constexpr selection — no runtime branch
->>>>>>> 1806dc664ae1aaad8a0dea6fdb6fa63c589bfac2
         if constexpr (T == 3)
             r = r*1000 + (p[B*4]-'0')*100 + (p[B*4+1]-'0')*10 + (p[B*4+2]-'0');
         else if constexpr (T == 2)
