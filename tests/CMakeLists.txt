@@ -261,3 +261,5 @@ endforeach()
 # set_tests_properties(ctdp_phase4_integration_test ctdp_phase5_test
 #     PROPERTIES LABELS "hardware"
 # )
+# -- SpMV framework demo tests -----------------------------------------------
+add_subdirectory(spmv)

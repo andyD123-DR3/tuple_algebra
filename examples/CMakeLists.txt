@@ -222,3 +222,6 @@ elseif(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
         target_compile_options(${tgt} PRIVATE /O2 /W4)
     endforeach()
 endif()
+
+# -- SpMV framework demo -----------------------------------------------------
+add_subdirectory(framework/spmv)
