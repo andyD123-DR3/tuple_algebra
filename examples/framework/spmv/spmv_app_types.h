@@ -160,8 +160,8 @@ demo_dia_matrix build_dia(
 /// CSR SpMV: y = A * x
 inline void spmv_exec_csr(
     demo_csr_matrix const& A,
-    double const* __restrict__ x,
-    double* __restrict__ y)
+    double const* x,
+    double* y)
 {
     for (std::size_t r = 0; r < A.rows; ++r) {
         double sum = 0.0;
@@ -176,8 +176,8 @@ inline void spmv_exec_csr(
 /// No index indirection — stride-1 access on data[] and y[].
 inline void spmv_exec_dia(
     demo_dia_matrix const& A,
-    double const* __restrict__ x,
-    double* __restrict__ y)
+    double const* x,
+    double* y)
 {
     for (std::size_t r = 0; r < A.rows; ++r) {
         y[r] = 0.0;
@@ -200,3 +200,4 @@ inline void spmv_exec_dia(
 } // namespace ctdp::demo::spmv
 
 #endif // CTDP_EXAMPLES_SPMV_APP_TYPES_H
+
