@@ -1,4 +1,4 @@
-// test_spmv_bench.cpp — Tests for the SpMV bench adapter and search (PR3)
+﻿// test_spmv_bench.cpp â€” Tests for the SpMV bench adapter and search (PR3)
 //
 // Tests cover:
 //   - measure_plan: returns finite results for CSR and DIA
@@ -7,7 +7,7 @@
 //   - search_candidates: evaluates all candidates
 //   - search_candidates: selects a valid winner
 //   - search_candidates: all_results populated
-//   - End-to-end: analysis → candidates → search → winner
+//   - End-to-end: analysis â†’ candidates â†’ search â†’ winner
 //
 // Note: these are integration tests that do real timing.
 // They use short measurement windows (low min_iterations, short
@@ -15,7 +15,7 @@
 //
 // Build: requires GTest, spmv_graph.h, spmv_schema.h, spmv_app_types.h
 //
-// Part of the CT-DP framework — tests/spmv/
+// Part of the CT-DP framework â€” tests/spmv/
 // Copyright (c) 2026 Andrew Drakeford. All rights reserved.
 
 #include "spmv_bench.h"
@@ -23,6 +23,7 @@
 
 #include "ctdp/domain/spmv/spmv_schema.h"
 #include "spmv_app_types.h"
+#include "spmv_executor_bindings.h"
 
 #include "ctdp/domain/spmv/spmv_graph.h"
 
@@ -36,29 +37,6 @@ using namespace ctdp::graph;
 using namespace ctdp::domain::spmv;
 using namespace ctdp::demo::spmv;
 
-// ============================================================================
-// Executor specialisations (same as PR2 tests — needed for typed dispatch)
-// ============================================================================
-
-namespace ctdp::domain::spmv {
-
-template<>
-struct spmv_executor<spmv_format::csr> {
-    static void run(demo_csr_matrix const& m,
-                    double const* x, double* y) {
-        spmv_exec_csr(m, x, y);
-    }
-};
-
-template<>
-struct spmv_executor<spmv_format::dia> {
-    static void run(demo_dia_matrix const& m,
-                    double const* x, double* y) {
-        spmv_exec_dia(m, x, y);
-    }
-};
-
-} // namespace ctdp::domain::spmv
 
 // ============================================================================
 // Test config: short measurement for fast tests
@@ -69,7 +47,7 @@ namespace {
 constexpr std::size_t MaxR   = 512;
 constexpr std::size_t MaxNNZ = 1600;
 
-// Fast bench config for tests — just enough to get stable-ish results
+// Fast bench config for tests â€” just enough to get stable-ish results
 spmv_bench_config const test_cfg{
     /* min_iterations    */ 100,
     /* warmup_iterations */ 10,
@@ -161,8 +139,8 @@ TEST(MeasurePlan, NsPerRowScalesWithSize) {
                                 ti_large.x.data(), ti_large.n,
                                 ti_large.nnz, test_cfg);
 
-    // ns_per_row should be within 10× of each other
-    // (very loose — just checking the metric isn't broken)
+    // ns_per_row should be within 10Ã— of each other
+    // (very loose â€” just checking the metric isn't broken)
     EXPECT_GT(m_small.ns_per_row, 0.0);
     EXPECT_GT(m_large.ns_per_row, 0.0);
     double ratio = m_large.ns_per_row / m_small.ns_per_row;

@@ -1,4 +1,4 @@
-// spmv_bench.h — Measurement adapter and search for the CT-DP SpMV demo.
+﻿// spmv_bench.h â€” Measurement adapter and search for the CT-DP SpMV demo.
 //
 // Provides:
 //   - spmv_measurement: per-candidate timing result
@@ -7,20 +7,19 @@
 //   - spmv_search_result: aggregated search outcome
 //   - search_candidates(): exhaustive measurement-based search over spmv_space
 //
-// The measurement function invokes candidates through visit_plan →
+// The measurement function invokes candidates through visit_plan â†’
 // spmv_executor<F>::run, ensuring that what is measured is exactly
 // what typed execution produces.
 //
 // Primary metric: nanoseconds per row.
 //
-// Part of the CT-DP framework — examples/framework/spmv/
+// Part of the CT-DP framework â€” examples/framework/spmv/
 // Copyright (c) 2026 Andrew Drakeford. All rights reserved.
 
 #ifndef CTDP_EXAMPLES_SPMV_BENCH_H
 #define CTDP_EXAMPLES_SPMV_BENCH_H
 
-#include "ctdp/domain/spmv/spmv_schema.h"
-#include "spmv_app_types.h"
+#include "spmv_executor_bindings.h"
 
 #include <algorithm>
 #include <chrono>
@@ -53,10 +52,10 @@ struct spmv_bench_config {
 };
 
 // ============================================================================
-// measure_plan — time a single candidate
+// measure_plan â€” time a single candidate
 //
 // Invokes the candidate through the typed executor path:
-//   visit_plan → spmv_executor<F>::run
+//   visit_plan â†’ spmv_executor<F>::run
 //
 // This ensures measurement covers the real typed dispatch path,
 // not a shortcut.
@@ -76,7 +75,7 @@ inline spmv_measurement measure_plan(
 
     std::vector<double> y(n, 0.0);
 
-    // Warmup — through the typed path
+    // Warmup â€” through the typed path
     for (std::size_t i = 0; i < cfg.warmup_iterations; ++i) {
         visit_plan(plan, [&](auto fmt_tag) {
             constexpr auto F = decltype(fmt_tag)::value;
@@ -133,7 +132,7 @@ struct spmv_search_result {
 };
 
 // ============================================================================
-// search_candidates — exhaustive measurement-based search
+// search_candidates â€” exhaustive measurement-based search
 //
 // Evaluates every candidate in the space, selects the best by ns_per_row.
 // For a two-candidate space this is trivially correct and avoids premature

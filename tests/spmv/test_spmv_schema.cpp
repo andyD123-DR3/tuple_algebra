@@ -1,4 +1,4 @@
-// test_spmv_schema.cpp — Tests for the SpMV schema layer (PR2)
+﻿// test_spmv_schema.cpp â€” Tests for the SpMV schema layer (PR2)
 //
 // Tests cover:
 //   - SpmvPlan: equality, format name
@@ -11,11 +11,12 @@
 //
 // Build: requires GTest, spmv_graph.h, spmv_schema.h, spmv_app_types.h
 //
-// Part of the CT-DP framework — tests/spmv/
+// Part of the CT-DP framework â€” tests/spmv/
 // Copyright (c) 2026 Andrew Drakeford. All rights reserved.
 
 #include "ctdp/domain/spmv/spmv_schema.h"
 #include "spmv_app_types.h"
+#include "spmv_executor_bindings.h"
 #include "spmv_correctness.h"
 
 #include "ctdp/domain/spmv/spmv_graph.h"
@@ -29,32 +30,6 @@ using namespace ctdp::graph;
 using namespace ctdp::domain::spmv;
 using namespace ctdp::demo::spmv;
 
-// ============================================================================
-// Wire the demo's typed executors to the framework's spmv_executor<F>
-//
-// This is what an application does: specialise spmv_executor for each
-// format it supports, delegating to its own kernel implementations.
-// ============================================================================
-
-namespace ctdp::domain::spmv {
-
-template<>
-struct spmv_executor<spmv_format::csr> {
-    static void run(demo_csr_matrix const& m,
-                    double const* x, double* y) {
-        spmv_exec_csr(m, x, y);
-    }
-};
-
-template<>
-struct spmv_executor<spmv_format::dia> {
-    static void run(demo_dia_matrix const& m,
-                    double const* x, double* y) {
-        spmv_exec_dia(m, x, y);
-    }
-};
-
-} // namespace ctdp::domain::spmv
 
 // ============================================================================
 // SpmvPlan tests
@@ -206,7 +181,7 @@ TEST(CandidateConstruction, DiagonalMatrixProducesCSRandDIA) {
 
 TEST(CandidateConstruction, ArrowMatrixExcludesDIA) {
     // Arrow matrix: dense first/last row, sparse elsewhere.
-    // High diagonal count relative to size → DIA should be excluded.
+    // High diagonal count relative to size â†’ DIA should be excluded.
     constexpr auto pat     = make_arrow<16, 256>(8);
     constexpr auto metrics = compute_metrics(pat);
     constexpr auto rec     = recommend_format(metrics);

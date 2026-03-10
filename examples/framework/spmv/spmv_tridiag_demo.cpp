@@ -1,10 +1,10 @@
-// spmv_tridiag_demo.cpp — CT-DP SpMV tridiagonal demo driver
+﻿// spmv_tridiag_demo.cpp â€” CT-DP SpMV tridiagonal demo driver
 //
 // End-to-end vertical slice through the CT-DP framework:
 //
-//   structural factory  →  framework analysis  →  candidate construction
-//   →  correctness gate  →  measurement-based search  →  typed execution
-//   →  structured reporting
+//   structural factory  â†’  framework analysis  â†’  candidate construction
+//   â†’  correctness gate  â†’  measurement-based search  â†’  typed execution
+//   â†’  structured reporting
 //
 // This demo sits alongside the existing spmv_benchmark.cc. Both solve
 // the same problem. The existing benchmark is a flat script; this demo
@@ -20,6 +20,7 @@
 
 #include "ctdp/domain/spmv/spmv_schema.h"
 #include "spmv_app_types.h"
+#include "spmv_executor_bindings.h"
 #include "spmv_bench.h"
 #include "spmv_correctness.h"
 
@@ -36,29 +37,6 @@ using namespace ctdp::graph;
 using namespace ctdp::domain::spmv;
 using namespace ctdp::demo::spmv;
 
-// ============================================================================
-// Wire the demo's typed executors to the framework's spmv_executor<F>
-// ============================================================================
-
-namespace ctdp::domain::spmv {
-
-template<>
-struct spmv_executor<spmv_format::csr> {
-    static void run(demo_csr_matrix const& m,
-                    double const* x, double* y) {
-        spmv_exec_csr(m, x, y);
-    }
-};
-
-template<>
-struct spmv_executor<spmv_format::dia> {
-    static void run(demo_dia_matrix const& m,
-                    double const* x, double* y) {
-        spmv_exec_dia(m, x, y);
-    }
-};
-
-} // namespace ctdp::domain::spmv
 
 // ============================================================================
 // Reporting
@@ -197,7 +175,7 @@ int main() {
         // 5. Deterministic input
         auto x = make_input_vector(n);
 
-        // 6. Correctness gate — must pass before measurement
+        // 6. Correctness gate â€” must pass before measurement
         std::vector<double> y_csr(n), y_dia(n);
         spmv_exec_csr(csr, x.data(), y_csr.data());
         spmv_exec_dia(dia, x.data(), y_dia.data());
