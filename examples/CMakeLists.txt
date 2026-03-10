@@ -109,6 +109,8 @@ endif()
 add_executable(loop_nest_opt standalone/loop_nest_opt.cpp)
 add_executable(dep_break_opt standalone/dep_break_opt.cpp)
 add_executable(cache_size_opt standalone/cache_size_opt.cpp)
+add_executable(fix_parser_initial standalone/fix_parser_initial.cpp)
+add_executable(fix_parser_initial standalone/fix_parser_initial.cpp)
 
 # -- Framework example (uses ctdp_space) ---------------------------------------
 # Policy search over cost model weights, wrapping a subset-DP inner solver.
@@ -123,6 +125,7 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
         -Wno-conversion -Wno-sign-conversion)
     target_compile_options(cache_size_opt PRIVATE -O2
         -Wno-conversion -Wno-sign-conversion)
+    target_compile_options(fix_parser_initial PRIVATE -O3 -march=native)
     target_compile_options(cache_line_layout PRIVATE -O2
         -fconstexpr-ops-limit=500000000
         -Wno-conversion -Wno-sign-conversion)
@@ -134,6 +137,7 @@ elseif(CMAKE_CXX_COMPILER_ID STREQUAL "Clang" OR
         -Wno-conversion -Wno-sign-conversion)
     target_compile_options(cache_size_opt PRIVATE -O2
         -Wno-conversion -Wno-sign-conversion)
+    target_compile_options(fix_parser_initial PRIVATE -O3 -march=native)
     target_compile_options(cache_line_layout PRIVATE -O2
         -fconstexpr-steps=500000000
         -Wno-conversion -Wno-sign-conversion)
@@ -141,6 +145,7 @@ elseif(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
     target_compile_options(loop_nest_opt PRIVATE /O2 /arch:AVX2)
     target_compile_options(dep_break_opt PRIVATE /O2 /arch:AVX2)
     target_compile_options(cache_size_opt PRIVATE /O2)
+    target_compile_options(fix_parser_initial PRIVATE /O2 /arch:AVX2)
     target_compile_options(cache_line_layout PRIVATE /O2
         /constexpr:steps500000000)
 endif()
