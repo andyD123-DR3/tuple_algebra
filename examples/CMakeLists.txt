@@ -110,10 +110,8 @@ add_executable(loop_nest_opt standalone/loop_nest_opt.cpp)
 add_executable(dep_break_opt standalone/dep_break_opt.cpp)
 add_executable(cache_size_opt standalone/cache_size_opt.cpp)
 add_executable(fix_parser_initial standalone/fix_parser_initial.cpp)
-<<<<<<< HEAD
 add_executable(fix_parser_initial standalone/fix_parser_initial.cpp)
-=======
->>>>>>> 1806dc664ae1aaad8a0dea6fdb6fa63c589bfac2
+
 
 # -- Framework example (uses ctdp_space) ---------------------------------------
 # Policy search over cost model weights, wrapping a subset-DP inner solver.
