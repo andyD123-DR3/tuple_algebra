@@ -22,7 +22,7 @@
 #ifndef CTDP_DOMAIN_SPMV_SCHEMA_H
 #define CTDP_DOMAIN_SPMV_SCHEMA_H
 
-#include "spmv/spmv_graph.h"   // spmv_format, sparsity_metrics,
+#include "ctdp/domain/spmv/spmv_graph.h"   // spmv_format, sparsity_metrics,
                                 // format_recommendation
 
 #include <array>

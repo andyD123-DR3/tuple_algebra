@@ -23,7 +23,7 @@
 #include "spmv_bench.h"
 #include "spmv_correctness.h"
 
-#include "spmv/spmv_graph.h"
+#include "ctdp/domain/spmv/spmv_graph.h"
 
 #include <array>
 #include <cstddef>

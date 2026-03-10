@@ -18,7 +18,7 @@
 #include <vector>
 
 // Framework structural types (reused, not owned)
-#include "spmv/spmv_graph.h"
+#include "ctdp/domain/spmv/spmv_graph.h"
 
 namespace ctdp::demo::spmv {
 

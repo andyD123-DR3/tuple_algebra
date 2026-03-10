@@ -24,7 +24,7 @@
 #include "ctdp/domain/spmv/spmv_schema.h"
 #include "spmv_app_types.h"
 
-#include "spmv/spmv_graph.h"
+#include "ctdp/domain/spmv/spmv_graph.h"
 
 #include <gtest/gtest.h>
 
