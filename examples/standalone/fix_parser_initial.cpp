@@ -1,12 +1,13 @@
 // ============================================================================
 // FIX Parser Compile-Time DP Demo
+//
 // Demonstrates systematic optimisation of integer conversion strategies
 // across a FIX MarketDataIncrementalRefresh message (22 fields, 12 numeric).
 //
 // Three parsers compared:
-//   1. Generic    — std::from_chars equivalent (per-char validation, noinline)
-//   2. Expert     — hand-tuned switch à la Lima & Tonetti (runtime dispatch)
-//   3. DPOptimal  — compile-time DP plan via expression templates (zero dispatch)
+//   1. Generic    -- std::from_chars equivalent (per-char validation, noinline)
+//   2. Expert     -- hand-tuned switch a la Lima & Tonetti (runtime dispatch)
+//   3. DPOptimal  -- compile-time DP plan via expression templates (zero dispatch)
 //
 // Compile:
 //   g++ -std=c++20 -O3 -march=native -o fix_parser_demo fix_parser_demo.cpp
@@ -79,11 +80,7 @@ static constexpr std::array<int, NUM_NUMERIC> NUM_IDX = {
 // ============================================================================
 // Simulates realistic FIX wire data: tag=value pairs with random numeric
 // content of the correct digit count. Pre-location of field pointers is
-<<<<<<< HEAD
 // shared cost -- all parsers pay it equally.
-=======
-// shared cost — all parsers pay it equally.
->>>>>>> 1806dc664ae1aaad8a0dea6fdb6fa63c589bfac2
 
 struct WireMessage {
     char data[512];
@@ -158,11 +155,7 @@ void locate(WireMessage& msg) {
 // --- Strategy 1: Unrolled ---------------------------------------------------
 // Compile-time digit-count-specific arithmetic. For D <= 3, emits a single
 // expression with no loops or branches. For D > 3, uses a constexpr
-<<<<<<< HEAD
 // power-of-ten table -- the loop has a known trip count and the compiler
-=======
-// power-of-ten table — the loop has a known trip count and the compiler
->>>>>>> 1806dc664ae1aaad8a0dea6fdb6fa63c589bfac2
 // fully unrolls it.
 //
 // Selected by DP for: CheckSum (3d), MDEntryPosNo (3d)
@@ -194,11 +187,7 @@ template<int D> struct UnrolledParser {
 // blocks of 4 via multiply-accumulate. Block count and tail size are both
 // constexpr, so the compiler unrolls the block loop and eliminates the tail
 // branch entirely. For a 17-digit timestamp this is 4 blocks + 1 tail digit
-<<<<<<< HEAD
 // -- roughly 4x fewer multiply-accumulate chains than Horner.
-=======
-// — roughly 4× fewer multiply-accumulate chains than Horner.
->>>>>>> 1806dc664ae1aaad8a0dea6fdb6fa63c589bfac2
 //
 // Selected by DP for: BodyLength (4d), MsgSeqNum (7d), SendingTime (17d),
 //   MDEntryPx (10d), MDEntrySize (6d), SecurityID (8d), MDEntryTime (17d),
@@ -217,8 +206,7 @@ template<int D> struct SWARParser {
                 else r = r * 10000 + blk;
             }
         }
-
-        // Tail handled with constexpr selection — no runtime branch
+        // Tail handled with constexpr selection -- no runtime branch
         if constexpr (T == 3)
             r = r*1000 + (p[B*4]-'0')*100 + (p[B*4+1]-'0')*10 + (p[B*4+2]-'0');
         else if constexpr (T == 2)
@@ -307,11 +295,7 @@ struct Plan {
     static constexpr Strategy get(size_t i) { return strategies[i]; }
 };
 
-<<<<<<< HEAD
 // Dispatch: map (Strategy, D) -> parser struct at compile time
-=======
-// Dispatch: map (Strategy, D) → parser struct at compile time
->>>>>>> 1806dc664ae1aaad8a0dea6fdb6fa63c589bfac2
 template<Strategy S, int D> struct FieldParser;
 template<int D> struct FieldParser<Strategy::Unrolled, D> : UnrolledParser<D> {};
 template<int D> struct FieldParser<Strategy::SWAR, D>     : SWARParser<D> {};
@@ -349,11 +333,7 @@ struct MessageParser {
 
 using S_ = Strategy;
 
-<<<<<<< HEAD
 // Plan 1: ALL GENERIC -- the baseline (every numeric field uses from_chars-style)
-=======
-// Plan 1: ALL GENERIC — the baseline (every numeric field uses from_chars-style)
->>>>>>> 1806dc664ae1aaad8a0dea6fdb6fa63c589bfac2
 using PlanGeneric = Plan<
     S_::Skip,     // [0]  BeginString
     S_::Generic,  // [1]  BodyLength      4d
@@ -379,11 +359,7 @@ using PlanGeneric = Plan<
     S_::Skip      // [21] PossDupFlag
 >;
 
-<<<<<<< HEAD
 // Plan 2: EXPERT -- hand-tuned selection (SWAR everywhere, like Lima & Tonetti)
-=======
-// Plan 2: EXPERT — hand-tuned selection (SWAR everywhere, like Lima & Tonetti)
->>>>>>> 1806dc664ae1aaad8a0dea6fdb6fa63c589bfac2
 // An experienced developer would pick the best single strategy per field
 // by inspection. This is the "switch on digit count" approach.
 using PlanExpert = Plan<
@@ -411,17 +387,12 @@ using PlanExpert = Plan<
     S_::Skip        // [21] PossDupFlag
 >;
 
-<<<<<<< HEAD
 // Plan 3: DP-OPTIMAL -- selected by compile-time dynamic programming
-=======
-// Plan 3: DP-OPTIMAL — selected by compile-time dynamic programming
->>>>>>> 1806dc664ae1aaad8a0dea6fdb6fa63c589bfac2
 // The DP evaluates all 4^12 = 16.7M configurations using a per-field
 // additive cost model calibrated from measurement. This is the result:
 //   BBBLBBBBUBU (reading numeric fields left to right)
 using PlanDPOptimal = Plan<
     S_::Skip,       // [0]  BeginString
-<<<<<<< HEAD
     S_::SWAR,       // [1]  BodyLength      4d  -> SWAR
     S_::Skip,       // [2]  MsgType
     S_::SWAR,       // [3]  MsgSeqNum       7d  -> SWAR
@@ -439,25 +410,6 @@ using PlanDPOptimal = Plan<
     S_::Unrolled,   // [15] CheckSum        3d  -> Unrolled (3 instructions)
     S_::SWAR,       // [16] NumberOfOrders  4d  -> SWAR
     S_::Unrolled,   // [17] MDEntryPosNo    3d  -> Unrolled (3 instructions)
-=======
-    S_::SWAR,       // [1]  BodyLength      4d  → SWAR
-    S_::Skip,       // [2]  MsgType
-    S_::SWAR,       // [3]  MsgSeqNum       7d  → SWAR
-    S_::SWAR,       // [4]  SendingTime    17d  → SWAR
-    S_::Skip,       // [5]  MDReqID
-    S_::Loop,       // [6]  NoMDEntries     2d  → Loop  (beats SWAR at 2 digits)
-    S_::Skip,       // [7]  MDEntryType
-    S_::SWAR,       // [8]  MDEntryPx      10d  → SWAR
-    S_::SWAR,       // [9]  MDEntrySize     6d  → SWAR
-    S_::Skip,       // [10] Symbol
-    S_::Skip,       // [11] MDUpdateAction
-    S_::SWAR,       // [12] SecurityID      8d  → SWAR
-    S_::SWAR,       // [13] MDEntryTime    17d  → SWAR
-    S_::SWAR,       // [14] MDEntryDate     8d  → SWAR
-    S_::Unrolled,   // [15] CheckSum        3d  → Unrolled (3 instructions)
-    S_::SWAR,       // [16] NumberOfOrders  4d  → SWAR
-    S_::Unrolled,   // [17] MDEntryPosNo    3d  → Unrolled (3 instructions)
->>>>>>> 1806dc664ae1aaad8a0dea6fdb6fa63c589bfac2
     S_::Skip,       // [18] TradingSession
     S_::Skip,       // [19] SenderCompID
     S_::Skip,       // [20] TargetCompID
@@ -565,7 +517,6 @@ double bench_expert_rt(std::vector<WireMessage>& msgs) {
 }
 
 // ============================================================================
-<<<<<<< HEAD
 // PART 7: MAIN -- RUN ALL THREE AND COMPARE
 // ============================================================================
 
@@ -657,97 +608,6 @@ int main() {
     printf("    2. Dispatch elimination      (expression templates)\n");
     printf("    3. Systematic strategy search (compile-time DP)\n");
     printf("  ================================================================\n\n");
-=======
-// PART 7: MAIN — RUN ALL THREE AND COMPARE
-// ============================================================================
-
-void print_plan(const char* name, const auto& strategies) {
-    printf("  %-12s  ", name);
-    for (int i = 0; i < NUM_NUMERIC; ++i) {
-        int fi = NUM_IDX[i];
-        printf("%s", strategy_short(strategies[fi]));
-    }
-    printf("  (");
-    for (int i = 0; i < NUM_NUMERIC; ++i) {
-        int fi = NUM_IDX[i];
-        if (i > 0) printf(", ");
-        printf("%s:%s[%dd]", FIELDS[fi].name, strategy_name(strategies[fi]), FIELDS[fi].digits);
-    }
-    printf(")\n");
-}
-
-int main() {
-    printf("================================================================\n");
-    printf("  FIX Parser Compile-Time DP Demo\n");
-    printf("  Message: MarketDataIncrementalRefresh (22 fields, 12 numeric)\n");
-    printf("  Strategy space: 4^12 = %d configurations\n", (int)std::pow(4, 12));
-    printf("  Benchmark: %d msgs × %d reps × %d trials, median\n",
-           N_MSGS, REPS, TRIALS);
-    printf("================================================================\n\n");
-
-    // Generate messages
-    printf("Generating %d wire messages...\n", N_MSGS);
-    std::mt19937 rng(42);
-    std::vector<WireMessage> msgs(N_MSGS);
-    for (auto& m : msgs) { generate(m, rng); locate(m); }
-    printf("  Sample message length: %d bytes\n\n", msgs[0].len);
-
-    // Show plans
-    printf("Plan assignments (numeric fields only):\n");
-    print_plan("Generic", PlanGeneric::strategies);
-    print_plan("Expert", PlanExpert::strategies);
-    print_plan("DPOptimal", PlanDPOptimal::strategies);
-    printf("\n");
-
-    // Where Expert and DPOptimal differ
-    printf("DP deviations from Expert (SWAR-everywhere):\n");
-    for (int i = 0; i < NUM_NUMERIC; ++i) {
-        int fi = NUM_IDX[i];
-        auto expert_s = PlanExpert::get(fi);
-        auto dp_s     = PlanDPOptimal::get(fi);
-        if (expert_s != dp_s) {
-            printf("  %-18s %2dd:  %s → %s\n",
-                   FIELDS[fi].name, FIELDS[fi].digits,
-                   strategy_name(expert_s), strategy_name(dp_s));
-        }
-    }
-    printf("\n");
-
-    // Benchmark
-    printf("Benchmarking (this takes a moment)...\n\n");
-
-    double t_generic = bench_plan<PlanGeneric>(msgs);
-    printf("  Generic  (ET)     %6.1f ns/msg  (baseline)\n", t_generic);
-
-    double t_expert_rt = bench_expert_rt(msgs);
-    printf("  Expert   (RT)     %6.1f ns/msg  (%.2f× vs generic)\n",
-           t_expert_rt, t_generic / t_expert_rt);
-
-    double t_expert_et = bench_plan<PlanExpert>(msgs);
-    printf("  Expert   (ET)     %6.1f ns/msg  (%.2f× vs generic)\n",
-           t_expert_et, t_generic / t_expert_et);
-
-    double t_dp = bench_plan<PlanDPOptimal>(msgs);
-    printf("  DPOptimal(ET)     %6.1f ns/msg  (%.2f× vs generic)\n",
-           t_dp, t_generic / t_dp);
-
-    printf("\n--- Decomposition ---\n");
-    printf("  Specialisation alone (Generic→Expert RT):     %.2f×\n",
-           t_generic / t_expert_rt);
-    printf("  Dispatch elimination (Expert RT→Expert ET):   %.2f×  (%.1f ns saved)\n",
-           t_expert_rt / t_expert_et, t_expert_rt - t_expert_et);
-    printf("  DP strategy tuning   (Expert ET→DPOptimal):   %.2f×\n",
-           t_expert_et / t_dp);
-    printf("  Combined             (Generic→DPOptimal ET):  %.2f×\n",
-           t_generic / t_dp);
-
-    printf("\n================================================================\n");
-    printf("  Three sources of speedup, layered:\n");
-    printf("  1. Per-field specialisation  (Tonetti's insight)\n");
-    printf("  2. Dispatch elimination      (expression templates)\n");
-    printf("  3. Systematic strategy search (compile-time DP)\n");
-    printf("================================================================\n");
->>>>>>> 1806dc664ae1aaad8a0dea6fdb6fa63c589bfac2
 
     return 0;
 }
