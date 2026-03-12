@@ -96,22 +96,34 @@ int main() {
     return 0;
 }
 
-#else
+#else // CTDP_PHASE2
 
 int main() {
     std::printf("Program E — log(p99) transitions (Phase 2: verification)\n\n");
-    auto messages = fix::generate_message_pool(fxe::POOL_SIZE, fxe::EVAL_POOL_SEED);
-    auto mconfig  = fxe::default_measurement_config();
-    fxe::rdtsc_adapter adapter{messages, mconfig};
+
+    auto mconfig = fxe::default_measurement_config();
     using namespace ctdp::fix_experiment::generated;
-    fxe::compiled_measurer_dual<fxe::rdtsc_adapter, fxe::training_pool, E_candidates>
-        measurer{adapter};
+
+    // Stage 1: re-derive discovery on TRAINING pool for consistency check.
+    auto train_msgs = fix::generate_message_pool(fxe::POOL_SIZE, fxe::MSG_POOL_SEED);
+    fxe::rdtsc_adapter train_adapter{train_msgs, mconfig};
+    fxe::compiled_measurer_single<fxe::rdtsc_adapter, fxe::training_pool>
+        train_measurer{train_adapter};
+
     auto discovery = fxe::run_discovery<fxe::transition_extractor>(
-        make_params(), measurer, target_fn());
+        make_params(), train_measurer, target_fn());
+
     fxe::verify_candidates_match(discovery, E_candidates);
     std::printf("  Consistency check: PASS (%zu candidates match)\n",
         discovery.candidates.size());
-    auto report = fxe::run_verification(make_params(), measurer, discovery);
+
+    // Stage 2: measure candidates + baselines on SEPARATE evaluation pool.
+    auto eval_msgs = fix::generate_message_pool(fxe::POOL_SIZE, fxe::EVAL_POOL_SEED);
+    fxe::rdtsc_adapter eval_adapter{eval_msgs, mconfig};
+    fxe::compiled_measurer_dual<fxe::rdtsc_adapter, fxe::training_pool, E_candidates>
+        eval_measurer{eval_adapter};
+
+    auto report = fxe::run_verification(make_params(), eval_measurer, discovery);
     fxe::print_report(report);
     try {
         fxe::write_json_report_to("results", report);
