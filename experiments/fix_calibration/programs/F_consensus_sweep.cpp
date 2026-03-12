@@ -5,18 +5,20 @@
 // Question: "What is the exact optimum within the consensus subspace?"
 // Method:   Direct measurement of all 1,024 configs + 21-point audit.
 //
-// The consensus subspace is derived from Programs A–E:
+// The consensus subspace is derived from Programs A-E:
 //   7 field positions are fixed (unanimous or near-unanimous agreement)
 //   5 field positions are uncertain (1, 6, 7, 8, 9)
-//   4 strategies × 5 positions = 4^5 = 1,024 configs
+//   4 strategies x 5 positions = 4^5 = 1,024 configs
 //
 // This is a reduced-space exact sweep, NOT a search of the full 4^12
-// space.  The fixed-position audit (7 positions × 3 alternatives = 21
+// space.  The fixed-position audit (7 positions x 3 alternatives = 21
 // one-flip variants) checks whether the consensus locking was safe.
 // If any audit config beats the sweep winner, the consensus at that
 // position is suspect.
 //
 // No SVR, no beam search, no Phase 1/Phase 2 split.
+// "Predicted" in the report equals measured p50 because this is direct
+// measurement, not a surrogate model.
 //
 // Build target:
 //   fix_experiment_F       Mock or real RDTSC (single executable)
@@ -38,19 +40,81 @@
 #include <ctdp/calibrator/fix_et_parser.h>
 
 #include <algorithm>
-#include <cstdio>
-#include <cstddef>
 #include <cmath>
+#include <cstddef>
+#include <cstdint>
+#include <cstdio>
 #include <filesystem>
+#include <limits>
+#include <numeric>
 #include <string>
 #include <vector>
 
 namespace fxe = ctdp::fix_experiment;
 namespace fix = ctdp::calibrator::fix;
 
-// ─────────────────────────────────────────────────────────────────────
+// -----------------------------------------------------------------
+//  Fixed reference panel (same seed as A-E for cross-experiment
+//  comparability).  Measured before the heavy sweep to give a clean
+//  machine-state ruler.
+// -----------------------------------------------------------------
+
+static constexpr std::uint32_t REF_POOL_SEED = 777;
+
+struct reference_point {
+    std::string name;
+    std::string config_label;
+    double      p50_ns;
+};
+
+struct reference_summary {
+    std::vector<reference_point> points;
+    double mean_p50_ns   = std::numeric_limits<double>::quiet_NaN();
+    double median_p50_ns = std::numeric_limits<double>::quiet_NaN();
+};
+
+template<class Measurer>
+static reference_summary measure_reference_panel(Measurer& measurer) {
+    reference_summary out{};
+    out.points.reserve(fxe::num_baselines);
+    std::vector<double> vals;
+    vals.reserve(fxe::num_baselines);
+
+    for (const auto& bl : fxe::baselines) {
+        auto mr = measurer.measure(bl.config);
+        out.points.push_back(reference_point{
+            std::string(bl.name),
+            fix::config_to_string(bl.config),
+            mr.p50_ns});
+        vals.push_back(mr.p50_ns);
+    }
+
+    if (!vals.empty()) {
+        out.mean_p50_ns = std::accumulate(vals.begin(), vals.end(), 0.0)
+                        / static_cast<double>(vals.size());
+        std::sort(vals.begin(), vals.end());
+        const std::size_t n = vals.size();
+        out.median_p50_ns = (n % 2 == 1)
+            ? vals[n / 2]
+            : 0.5 * (vals[n / 2 - 1] + vals[n / 2]);
+    }
+    return out;
+}
+
+static void print_reference_summary(
+    const char* title, const reference_summary& s)
+{
+    std::printf("\n%s\n", title);
+    for (const auto& p : s.points)
+        std::printf("  %-14s %-12s p50 = %.3f ns\n",
+            p.name.c_str(), p.config_label.c_str(), p.p50_ns);
+    std::printf("  Mean p50   : %.3f ns\n", s.mean_p50_ns);
+    std::printf("  Median p50 : %.3f ns\n", s.median_p50_ns);
+}
+
+// -----------------------------------------------------------------
 //  Sweep result entry
-// ─────────────────────────────────────────────────────────────────────
+// -----------------------------------------------------------------
 
 struct sweep_entry {
     std::size_t             index;
@@ -58,9 +122,9 @@ struct sweep_entry {
     fxe::measurement_result result;
 };
 
-// ─────────────────────────────────────────────────────────────────────
+// -----------------------------------------------------------------
 //  Audit result: one-flip variant of a consensus-fixed position
-// ─────────────────────────────────────────────────────────────────────
+// -----------------------------------------------------------------
 
 struct audit_entry {
     int                     fixed_position;  // which consensus position was flipped
@@ -70,9 +134,9 @@ struct audit_entry {
     fxe::measurement_result result;
 };
 
-// ─────────────────────────────────────────────────────────────────────
+// -----------------------------------------------------------------
 //  Build ExperimentReport from sweep results (non-mutating)
-// ─────────────────────────────────────────────────────────────────────
+// -----------------------------------------------------------------
 
 static fxe::ExperimentReport build_sweep_report(
     const std::vector<sweep_entry>& entries,
@@ -123,9 +187,9 @@ static fxe::ExperimentReport build_sweep_report(
     return report;
 }
 
-// ─────────────────────────────────────────────────────────────────────
+// -----------------------------------------------------------------
 //  Print audit results
-// ─────────────────────────────────────────────────────────────────────
+// -----------------------------------------------------------------
 
 static void print_audit(
     const std::vector<audit_entry>& audits,
@@ -152,18 +216,18 @@ static void print_audit(
     }
 
     if (suspect_count == 0) {
-        std::printf("\n  Audit: PASS — no one-flip variant beats sweep winner\n");
+        std::printf("\n  Audit: PASS - no one-flip variant beats sweep winner\n");
     } else {
-        std::printf("\n  Audit: %d SUSPECT positions — consensus locking may lose "
+        std::printf("\n  Audit: %d SUSPECT positions - consensus locking may lose "
             "degrees of freedom\n", suspect_count);
     }
 }
 
-// ─────────────────────────────────────────────────────────────────────
+// -----------------------------------------------------------------
 
 template<typename Measurer>
 static int run_sweep(Measurer& measurer) {
-    // ── Sweep all 1,024 configs ──
+    // -- Sweep all 1,024 configs --
     std::vector<sweep_entry> entries;
     entries.reserve(fxe::sweep_configs.size());
     for (std::size_t i = 0; i < fxe::sweep_configs.size(); ++i) {
@@ -182,7 +246,7 @@ static int run_sweep(Measurer& measurer) {
     double sweep_best_p50 = best_it->result.p50_ns;
     auto sweep_winner = best_it->config;
 
-    // ── Measure 21 audit configs ──
+    // -- Measure 21 audit configs --
     // One-flip variants of each consensus-fixed position, using the
     // compile-time audit_configs (based on sweep_configs[0]).
     // Tests whether flipping a fixed position improves the result.
@@ -205,7 +269,7 @@ static int run_sweep(Measurer& measurer) {
         }
     }
 
-    // ── Measure baselines ──
+    // -- Measure baselines --
     std::vector<fxe::BaselineResult> bl_results;
     bl_results.reserve(fxe::num_baselines);
     for (const auto& bl : fxe::baselines) {
@@ -217,8 +281,13 @@ static int run_sweep(Measurer& measurer) {
         });
     }
 
-    // ── Report ──
+    // -- Report --
     auto report = build_sweep_report(entries, bl_results, fxe::N_BEAM);
+
+    std::printf(
+        "\n  Note: F is a direct exhaustive sweep.  'Predicted' in the report\n"
+        "  equals measured p50 because there is no surrogate model.\n");
+
     fxe::print_report(report);
 
     // Sweep range
@@ -226,7 +295,7 @@ static int run_sweep(Measurer& measurer) {
         [](const auto& a, const auto& b) {
             return a.result.p50_ns < b.result.p50_ns;
         });
-    std::printf("  Sweep range: %.2f – %.2f ns (p50, %zu configs)\n",
+    std::printf("  Sweep range: %.2f - %.2f ns (p50, %zu configs)\n",
         sweep_best_p50, worst_it->result.p50_ns, entries.size());
 
     // Audit
@@ -243,12 +312,12 @@ static int run_sweep(Measurer& measurer) {
     return 0;
 }
 
-// ─────────────────────────────────────────────────────────────────────
+// -----------------------------------------------------------------
 
 #ifdef CTDP_FIX_EXPERIMENT_MOCK
 
 int main() {
-    std::printf("Program F — consensus sweep (MOCK MODE)\n\n");
+    std::printf("Program F - consensus sweep (MOCK MODE)\n\n");
     std::printf("  Sweep space: %zu configs (%d uncertain positions)\n",
         fxe::sweep_configs.size(), fxe::N_UNCERTAIN);
     std::printf("  Audit: %zu one-flip variants (%d fixed positions)\n",
@@ -263,14 +332,27 @@ int main() {
 #else
 
 int main() {
-    std::printf("Program F — consensus sweep (RDTSC)\n\n");
+    std::printf("Program F - consensus sweep (RDTSC)\n\n");
     std::printf("  Sweep space: %zu configs (%d uncertain positions)\n",
         fxe::sweep_configs.size(), fxe::N_UNCERTAIN);
     std::printf("  Audit: %zu one-flip variants (%d fixed positions)\n",
         fxe::N_AUDIT, fxe::N_FIXED);
 
+    auto mconfig = fxe::default_measurement_config();
+
+    // Reference panel FIRST -- before the heavy sweep, so the ruler
+    // is not polluted by prior cache/thermal state.  Uses the same
+    // REF_POOL_SEED as A-E for cross-experiment comparability.
+    auto ref_messages = fix::generate_message_pool(fxe::POOL_SIZE, REF_POOL_SEED);
+    fxe::rdtsc_adapter ref_adapter{ref_messages, mconfig};
+    fxe::compiled_measurer_single<fxe::rdtsc_adapter, fxe::baseline_configs>
+        ref_measurer{ref_adapter};
+    auto ref_panel = measure_reference_panel(ref_measurer);
+    print_reference_summary(
+        "Reference panel (measured before sweep):", ref_panel);
+
+    // Main sweep measurer on the evaluation message pool.
     auto messages = fix::generate_message_pool(fxe::POOL_SIZE, fxe::EVAL_POOL_SEED);
-    auto mconfig  = fxe::default_measurement_config();
     fxe::rdtsc_adapter adapter{messages, mconfig};
 
     // Dispatch table: 1,024 sweep + 26 ancillary (5 baselines + 21 audit)
@@ -278,7 +360,7 @@ int main() {
         fxe::rdtsc_adapter, fxe::sweep_configs, fxe::sweep_ancillary>
         measurer{adapter};
 
-    std::printf("  Dispatch table: %zu + %zu entries\n",
+    std::printf("  Dispatch table: %zu + %zu entries\n\n",
         fxe::sweep_configs.size(), fxe::sweep_ancillary.size());
 
     return run_sweep(measurer);
