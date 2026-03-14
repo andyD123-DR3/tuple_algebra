@@ -70,8 +70,8 @@ static constexpr std::array<FieldDesc, NF> FIELDS = {{
 }};
 
 // Indices of the 12 numeric fields within FIELDS[]
-static constexpr int NUM_NUMERIC = 12;
-static constexpr std::array<int, NUM_NUMERIC> NUM_IDX = {
+static constexpr size_t NUM_NUMERIC = 12;
+static constexpr std::array<size_t, NUM_NUMERIC> NUM_IDX = {
     1, 3, 4, 6, 8, 9, 12, 13, 14, 15, 16, 17
 };
 
@@ -100,8 +100,8 @@ void generate(WireMessage& msg, std::mt19937& rng) {
     };
     auto wn = [&](int tag, int digits) {
         char buf[20];
-        buf[0] = '1' + (rng() % 9);  // no leading zero
-        for (int i = 1; i < digits; ++i) buf[i] = '0' + (rng() % 10);
+        buf[0] = static_cast<char>('1' + (rng() % 9));  // no leading zero
+        for (int i = 1; i < digits; ++i) buf[i] = static_cast<char>('0' + (rng() % 10));
         buf[digits] = '\0';
         p += sprintf(p, "%d=%s%c", tag, buf, SOH);
     };
@@ -115,7 +115,7 @@ void generate(WireMessage& msg, std::mt19937& rng) {
 
 void locate(WireMessage& msg) {
     auto ti = [](int tag) -> int {
-        for (int i = 0; i < NF; ++i) if (FIELDS[i].tag == tag) return i;
+        for (size_t i = 0; i < NF; ++i) if (FIELDS[i].tag == tag) return static_cast<int>(i);
         return -1;
     };
     const char* p = msg.data;
@@ -123,7 +123,8 @@ void locate(WireMessage& msg) {
     while (p < end) {
         int tag = 0;
         while (p < end && *p != '=') { tag = tag*10 + (*p-'0'); ++p; }
-        if (p >= end) break; ++p;
+        if (p >= end) break;
+        ++p;
         const char* vs = p;
         while (p < end && *p != SOH) ++p;
         int vl = (int)(p - vs);
@@ -420,10 +421,10 @@ using PlanDPOptimal = Plan<
 // PART 6: BENCHMARK HARNESS
 // ============================================================================
 
-static constexpr int N_MSGS   = 1000;   // L1-resident working set
-static constexpr int WARMUP   = 5000;   // warmup iterations
-static constexpr int REPS     = 40;     // repetitions per trial
-static constexpr int TRIALS   = 15;     // trials (take median)
+static constexpr size_t N_MSGS   = 1000;   // L1-resident working set
+static constexpr size_t WARMUP   = 5000;   // warmup iterations
+static constexpr int    REPS     = 40;     // repetitions per trial
+static constexpr size_t TRIALS   = 15;     // trials (take median)
 
 // Volatile sink to prevent dead code elimination
 volatile int64_t g_sink = 0;
@@ -433,17 +434,17 @@ double bench_plan(std::vector<WireMessage>& msgs) {
     ParseResult result{};
 
     // Warmup
-    for (int w = 0; w < WARMUP; ++w) {
+    for (size_t w = 0; w < WARMUP; ++w) {
         MessageParser<PlanType>::parse(msgs[w % N_MSGS], result);
         g_sink = result.values[4];
     }
 
     // Measure
     std::vector<double> times(TRIALS);
-    for (int t = 0; t < TRIALS; ++t) {
+    for (size_t t = 0; t < TRIALS; ++t) {
         auto start = std::chrono::high_resolution_clock::now();
         for (int r = 0; r < REPS; ++r) {
-            for (int m = 0; m < N_MSGS; ++m) {
+            for (size_t m = 0; m < N_MSGS; ++m) {
                 MessageParser<PlanType>::parse(msgs[m], result);
                 g_sink = result.values[4];
             }
@@ -484,8 +485,8 @@ NO_INLINE int64_t parse_swar(const char* p, int len) {
 }
 
 NO_INLINE void parse_expert_rt(const WireMessage& msg, ParseResult& out) {
-    for (int i = 0; i < NUM_NUMERIC; ++i) {
-        int fi = NUM_IDX[i];
+    for (size_t i = 0; i < NUM_NUMERIC; ++i) {
+        size_t fi = NUM_IDX[i];
         if (msg.locs[fi].value_ptr)
             out.values[fi] = parse_swar(msg.locs[fi].value_ptr, msg.locs[fi].value_len);
     }
@@ -495,15 +496,15 @@ NO_INLINE void parse_expert_rt(const WireMessage& msg, ParseResult& out) {
 
 double bench_expert_rt(std::vector<WireMessage>& msgs) {
     ParseResult result{};
-    for (int w = 0; w < WARMUP; ++w) {
+    for (size_t w = 0; w < WARMUP; ++w) {
         rt::parse_expert_rt(msgs[w % N_MSGS], result);
         g_sink = result.values[4];
     }
     std::vector<double> times(TRIALS);
-    for (int t = 0; t < TRIALS; ++t) {
+    for (size_t t = 0; t < TRIALS; ++t) {
         auto start = std::chrono::high_resolution_clock::now();
         for (int r = 0; r < REPS; ++r) {
-            for (int m = 0; m < N_MSGS; ++m) {
+            for (size_t m = 0; m < N_MSGS; ++m) {
                 rt::parse_expert_rt(msgs[m], result);
                 g_sink = result.values[4];
             }
@@ -524,8 +525,8 @@ void print_plan_table() {
     printf("  +--------------------+-----+----------+----------+-----------+\n");
     printf("  | Field              |  D  | Generic  | Expert   | DPOptimal |\n");
     printf("  +--------------------+-----+----------+----------+-----------+\n");
-    for (int i = 0; i < NUM_NUMERIC; ++i) {
-        int fi = NUM_IDX[i];
+    for (size_t i = 0; i < NUM_NUMERIC; ++i) {
+        size_t fi = NUM_IDX[i];
         const char* g = strategy_name(PlanGeneric::get(fi));
         const char* e = strategy_name(PlanExpert::get(fi));
         const char* d = strategy_name(PlanDPOptimal::get(fi));
@@ -536,13 +537,13 @@ void print_plan_table() {
     printf("  +--------------------+-----+----------+----------+-----------+\n");
     printf("                                                     * = DP differs\n");
     printf("\n  Signature:  Generic  = ");
-    for (int i = 0; i < NUM_NUMERIC; ++i)
+    for (size_t i = 0; i < NUM_NUMERIC; ++i)
         printf("%s", strategy_short(PlanGeneric::get(NUM_IDX[i])));
     printf("\n              Expert   = ");
-    for (int i = 0; i < NUM_NUMERIC; ++i)
+    for (size_t i = 0; i < NUM_NUMERIC; ++i)
         printf("%s", strategy_short(PlanExpert::get(NUM_IDX[i])));
     printf("\n              DPOptimal= ");
-    for (int i = 0; i < NUM_NUMERIC; ++i)
+    for (size_t i = 0; i < NUM_NUMERIC; ++i)
         printf("%s", strategy_short(PlanDPOptimal::get(NUM_IDX[i])));
     printf("\n");
 }
@@ -578,7 +579,7 @@ int main() {
     printf("  ================================================================\n");
     printf("  Message:  MarketDataIncrementalRefresh (22 fields, 12 numeric)\n");
     printf("  Space:    4^12 = %d configurations\n", (int)std::pow(4, 12));
-    printf("  Protocol: %d msgs x %d reps x %d trials, median\n",
+    printf("  Protocol: %zu msgs x %d reps x %zu trials, median\n",
            N_MSGS, REPS, TRIALS);
     printf("  ================================================================\n\n");
 
@@ -586,7 +587,7 @@ int main() {
     std::mt19937 rng(42);
     std::vector<WireMessage> msgs(N_MSGS);
     for (auto& m : msgs) { generate(m, rng); locate(m); }
-    printf("  Generated %d messages, %d bytes each\n\n", N_MSGS, msgs[0].len);
+    printf("  Generated %zu messages, %d bytes each\n\n", N_MSGS, msgs[0].len);
 
     // Show plan table
     printf("  Strategy assignments (numeric fields only):\n\n");
