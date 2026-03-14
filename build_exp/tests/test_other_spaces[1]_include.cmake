@@ -1,5 +1,0 @@
-if(EXISTS "D:/tuple/build_exp/tests/test_other_spaces[1]_tests.cmake")
-  include("D:/tuple/build_exp/tests/test_other_spaces[1]_tests.cmake")
-else()
-  add_test(test_other_spaces_NOT_BUILT test_other_spaces_NOT_BUILT)
-endif()

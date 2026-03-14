@@ -1,5 +1,0 @@
-if(EXISTS "D:/tuple/build_exp/tests/test_symmetric_graph[1]_tests.cmake")
-  include("D:/tuple/build_exp/tests/test_symmetric_graph[1]_tests.cmake")
-else()
-  add_test(test_symmetric_graph_NOT_BUILT test_symmetric_graph_NOT_BUILT)
-endif()

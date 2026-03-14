@@ -1,5 +1,0 @@
-if(EXISTS "D:/tuple/build_exp/tests/test_space_parameterised[1]_tests.cmake")
-  include("D:/tuple/build_exp/tests/test_space_parameterised[1]_tests.cmake")
-else()
-  add_test(test_space_parameterised_NOT_BUILT test_space_parameterised_NOT_BUILT)
-endif()

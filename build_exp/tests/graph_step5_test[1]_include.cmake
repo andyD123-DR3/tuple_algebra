@@ -1,5 +1,0 @@
-if(EXISTS "D:/tuple/build_exp/tests/graph_step5_test[1]_tests.cmake")
-  include("D:/tuple/build_exp/tests/graph_step5_test[1]_tests.cmake")
-else()
-  add_test(graph_step5_test_NOT_BUILT graph_step5_test_NOT_BUILT)
-endif()

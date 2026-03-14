@@ -1,5 +1,0 @@
-if(EXISTS "D:/tuple/build_exp/tests/test_interval_split_space[1]_tests.cmake")
-  include("D:/tuple/build_exp/tests/test_interval_split_space[1]_tests.cmake")
-else()
-  add_test(test_interval_split_space_NOT_BUILT test_interval_split_space_NOT_BUILT)
-endif()

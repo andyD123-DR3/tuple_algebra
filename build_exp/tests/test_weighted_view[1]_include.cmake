@@ -1,5 +1,0 @@
-if(EXISTS "D:/tuple/build_exp/tests/test_weighted_view[1]_tests.cmake")
-  include("D:/tuple/build_exp/tests/test_weighted_view[1]_tests.cmake")
-else()
-  add_test(test_weighted_view_NOT_BUILT test_weighted_view_NOT_BUILT)
-endif()

@@ -1,5 +1,0 @@
-if(EXISTS "D:/tuple/build_exp/tests/test_constrained_search[1]_tests.cmake")
-  include("D:/tuple/build_exp/tests/test_constrained_search[1]_tests.cmake")
-else()
-  add_test(test_constrained_search_NOT_BUILT test_constrained_search_NOT_BUILT)
-endif()

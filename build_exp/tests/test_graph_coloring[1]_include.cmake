@@ -1,5 +1,0 @@
-if(EXISTS "D:/tuple/build_exp/tests/test_graph_coloring[1]_tests.cmake")
-  include("D:/tuple/build_exp/tests/test_graph_coloring[1]_tests.cmake")
-else()
-  add_test(test_graph_coloring_NOT_BUILT test_graph_coloring_NOT_BUILT)
-endif()

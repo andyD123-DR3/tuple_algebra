@@ -1,5 +1,0 @@
-if(EXISTS "D:/tuple/build_exp/experiments/fix_calibration/fix_experiment_test_output[1]_tests.cmake")
-  include("D:/tuple/build_exp/experiments/fix_calibration/fix_experiment_test_output[1]_tests.cmake")
-else()
-  add_test(fix_experiment_test_output_NOT_BUILT fix_experiment_test_output_NOT_BUILT)
-endif()

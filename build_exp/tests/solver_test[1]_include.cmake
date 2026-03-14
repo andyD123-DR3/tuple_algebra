@@ -1,5 +1,0 @@
-if(EXISTS "D:/tuple/build_exp/tests/solver_test[1]_tests.cmake")
-  include("D:/tuple/build_exp/tests/solver_test[1]_tests.cmake")
-else()
-  add_test(solver_test_NOT_BUILT solver_test_NOT_BUILT)
-endif()

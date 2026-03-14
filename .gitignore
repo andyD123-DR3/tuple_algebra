@@ -7,3 +7,4 @@ CMakeSettings.json
 build/ 
 ~$*
 build_msvc/ 
+build_exp/
