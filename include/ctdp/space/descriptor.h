@@ -1,7 +1,7 @@
 #ifndef CTDP_SPACE_DESCRIPTOR_H
 #define CTDP_SPACE_DESCRIPTOR_H
 
-// ctdp v0.8.0 — Dimension descriptors + descriptor_space + feature_bridge
+// ctdp/space/descriptor.h — Dimension descriptors + descriptor_space
 //
 // Predefined ordinate types with defaults:
 //   positive_int("N")           [1,64] step 1    raw
@@ -9,45 +9,28 @@
 //   make_int_set("X", {vals})   explicit          raw
 //   bool_flag("V")              {false,true}      binary
 //   make_enum_vals("S", {vals}) explicit enum      one_hot
+//   make_ordinal("R", {vals})   ordered enum       normalised
 //
 // descriptor_space: canonical space generated from descriptors.
 //   Point type = std::tuple<ValueTypes...>  (heterogeneous, tuple-like)
 //   enumerate(fn) = Cartesian product       (callback, constexpr-safe)
 //   Named access: space.get_dim_as_int(point, "TK")
 //
-// feature_bridge: Layer 2 encoding, descriptor → span<double>.
-//   default_bridge(space) reads encoding hints from descriptors.
-//   bridge.with(dim_idx, hint) returns new bridge with override.
-//   bridge.write_features(point, span<double>).
-//   Bridge::num_features = model vector length (≠ Space::rank when one_hot used).
+// For feature encoding, see feature_bridge.h.
+// For vocabulary types (dim_kind, encoding_hint, concept), see concepts.h.
 
-
+#include "ctdp/space/concepts.h"
+#include "ctdp/space/feature_bridge.h"
 #include "ctdp/space/space.h"
 
 #include <array>
-#include <cmath>
 #include <cstddef>
 #include <cstdint>
-#include <span>
-#include <stdexcept>
 #include <string_view>
 #include <tuple>
 #include <type_traits>
-#include <vector>
 
 namespace ctdp::space {
-
-// ═══════════════════════════════════════════════════════════════════════
-// dim_kind + encoding_hint
-// ═══════════════════════════════════════════════════════════════════════
-
-enum class dim_kind : std::uint8_t {
-    int_set, power_of_two, int_range, bool_flag, enum_set,
-};
-
-enum class encoding_hint : std::uint8_t {
-    raw, log2, one_hot, binary, normalised,
-};
 
 // ═══════════════════════════════════════════════════════════════════════
 // Predefined ordinate types
@@ -284,19 +267,6 @@ constexpr auto make_ordinal(std::string_view name, const E (&vals)[N]) {
     for (std::size_t i = 0; i < N; ++i) d.values[i] = vals[i];
     return d;
 }
-
-// ═══════════════════════════════════════════════════════════════════════
-// dimension_descriptor concept
-// ═══════════════════════════════════════════════════════════════════════
-
-template <typename D>
-concept dimension_descriptor = requires(const D& d) {
-    { d.name } -> std::convertible_to<std::string_view>;
-    { D::kind } -> std::convertible_to<dim_kind>;
-    { d.default_encoding() } -> std::convertible_to<encoding_hint>;
-    { d.cardinality() } -> std::convertible_to<std::size_t>;
-    typename D::value_type;
-};
 
 static_assert(dimension_descriptor<positive_int>);
 static_assert(dimension_descriptor<power_2>);
@@ -619,167 +589,15 @@ static_assert(described_space<gemm_tile_space>);
 static_assert(described_space<loop_transform_space>);
 static_assert(described_space<bool_option_space>);
 
+
 // ═══════════════════════════════════════════════════════════════════════
-// feature_bridge — Layer 2 encoding
+// default_bridge — connect descriptor_space to feature_bridge
 //
-// Reads descriptor encoding hints, writes point → span<double>.
-// Supports override via .with(dim_idx, hint).
-//
-// num_features = model vector length (≠ rank when one_hot used).
-// This is the ONLY place that knows about numeric encoding.
-// Space knows structure; Bridge knows features; Model knows neither.
+// This is the glue between the space layer (descriptor_space) and the
+// encoding layer (feature_bridge). It reads encoding hints from the
+// descriptors and builds a bridge ready for feature extraction.
 // ═══════════════════════════════════════════════════════════════════════
 
-namespace detail {
-constexpr int ilog2(int v) {
-    int r = 0; while (v > 1) { v >>= 1; ++r; } return r;
-}
-
-// Prefer encoding_cardinality() when available (e.g. conditional_dim).
-// Falls back to cardinality() for all other descriptors.
-// This ensures feature width stability for conditional dimensions.
-template <typename D>
-constexpr std::size_t encoding_card_of(const D& d) {
-    if constexpr (requires { d.encoding_cardinality(); }) {
-        return d.encoding_cardinality();
-    } else {
-        return d.cardinality();
-    }
-}
-} // namespace detail
-
-template <typename... Descriptors>
-struct feature_bridge {
-    static constexpr std::size_t ndims = sizeof...(Descriptors);
-    using descriptors_tuple = std::tuple<Descriptors...>;
-    using point_type = std::tuple<typename Descriptors::value_type...>;
-
-    descriptors_tuple descs_;
-    std::array<encoding_hint, ndims> encodings_{};
-    std::array<std::size_t, ndims> cardinalities_{};
-    std::array<std::size_t, ndims> offsets_{};
-    std::size_t total_features_ = 0;
-
-    // Construct from descriptors tuple (no default construction needed)
-    explicit feature_bridge(descriptors_tuple descs)
-        : descs_(std::move(descs))
-    {
-        init_from_descs();
-    }
-
-    std::size_t num_features() const { return total_features_; }
-
-    // Override encoding for one dimension, returns new bridge
-    feature_bridge with(std::size_t dim_idx, encoding_hint enc) const {
-        if (dim_idx >= ndims) {
-            throw std::out_of_range("feature_bridge::with(): dim_idx out of range");
-        }
-        auto copy = *this;
-        copy.encodings_[dim_idx] = enc;
-        copy.recompute_offsets();
-        return copy;
-    }
-
-    void write_features(const point_type& pt, std::span<double> out) const {
-        write_impl(pt, out.data(), std::index_sequence_for<Descriptors...>{});
-    }
-
-    // Convenience: allocate and return feature vector
-    std::vector<double> encode(const point_type& pt) const {
-        std::vector<double> out(total_features_, 0.0);
-        write_features(pt, out);
-        return out;
-    }
-
-private:
-    void init_from_descs() {
-        [this]<std::size_t... Is>(std::index_sequence<Is...>) {
-            ((encodings_[Is] = std::get<Is>(descs_).default_encoding()), ...);
-            // Use encoding_card_of to get stable feature width for
-            // conditional_dim (always reports full wrapped cardinality).
-            ((cardinalities_[Is] = detail::encoding_card_of(std::get<Is>(descs_))), ...);
-        }(std::index_sequence_for<Descriptors...>{});
-        recompute_offsets();
-    }
-
-    void recompute_offsets() {
-        std::size_t off = 0;
-        for (std::size_t i = 0; i < ndims; ++i) {
-            offsets_[i] = off;
-            off += (encodings_[i] == encoding_hint::one_hot)
-                   ? cardinalities_[i] : 1;
-        }
-        total_features_ = off;
-    }
-
-    template <std::size_t... Is>
-    void write_impl(const point_type& pt, double* out,
-                    std::index_sequence<Is...>) const {
-        (write_dim<Is>(pt, out + offsets_[Is]), ...);
-    }
-
-    template <std::size_t I>
-    void write_dim(const point_type& pt, double* out) const {
-        using D = std::remove_cvref_t<decltype(std::get<I>(descs_))>;
-        const auto& desc = std::get<I>(descs_);
-        auto enc = encodings_[I];
-        auto val = std::get<I>(pt);
-
-        if constexpr (D::kind == dim_kind::bool_flag) {
-            *out = val ? 1.0 : 0.0;
-        } else if constexpr (D::kind == dim_kind::enum_set) {
-            auto idx = desc.index_of(val);
-            if (enc == encoding_hint::one_hot) {
-                auto card = detail::encoding_card_of(desc);
-                for (std::size_t k = 0; k < card; ++k)
-                    out[k] = (k == idx) ? 1.0 : 0.0;
-                // idx >= card → all zeros (inactive conditional_dim or invalid value)
-            } else if (enc == encoding_hint::normalised) {
-                // Ordinal encoding: rank / (cardinality - 1)
-                auto card = detail::encoding_card_of(desc);
-                if (idx >= card) {
-                    *out = -1.0;  // invalid / inactive
-                } else if (card <= 1) {
-                    *out = 0.0;   // degenerate: single value
-                } else {
-                    *out = static_cast<double>(idx)
-                         / static_cast<double>(card - 1);
-                }
-            } else {
-                auto card = detail::encoding_card_of(desc);
-                // Guard: invalid value → -1.0 (not UB)
-                *out = (idx < card)
-                    ? static_cast<double>(desc.value_as_int(idx))
-                    : -1.0;
-            }
-        } else {
-            // int-valued: positive_int, power_2, int_set
-            if (enc == encoding_hint::log2) {
-                *out = static_cast<double>(detail::ilog2(val));
-            } else if (enc == encoding_hint::normalised) {
-                if constexpr (requires { desc.lo; desc.hi; }) {
-                    auto range = desc.hi - desc.lo;
-                    *out = (range != 0)
-                        ? static_cast<double>(val - desc.lo)
-                          / static_cast<double>(range)
-                        : 0.0;  // Fix 3.1: hi==lo → 0.0
-                } else {
-                    *out = static_cast<double>(val);
-                }
-            } else if (enc == encoding_hint::one_hot) {
-                auto idx = desc.index_of(val);
-                auto card = detail::encoding_card_of(desc);
-                for (std::size_t k = 0; k < card; ++k)
-                    out[k] = (k == idx) ? 1.0 : 0.0;
-                // idx >= card → all zeros (inactive conditional_dim or invalid value)
-            } else {
-                *out = static_cast<double>(val);
-            }
-        }
-    }
-};
-
-// Factory: build bridge from a descriptor_space
 template <typename... Ds>
 auto default_bridge(const descriptor_space<Ds...>& space) {
     return feature_bridge<Ds...>(space.descriptors());

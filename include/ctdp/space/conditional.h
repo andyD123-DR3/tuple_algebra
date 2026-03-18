@@ -23,7 +23,8 @@
 #ifndef CTDP_SPACE_CONDITIONAL_H
 #define CTDP_SPACE_CONDITIONAL_H
 
-#include "ctdp/space/descriptor.h"
+#include "ctdp/space/concepts.h"
+#include "ctdp/space/feature_bridge.h"
 
 #include <cstddef>
 #include <string_view>
@@ -116,9 +117,15 @@ struct conditional_dim {
     /// Feature width is ALWAYS the wrapped descriptor's feature width.
     /// This is the stability guarantee: active or not, same width.
     constexpr std::size_t feature_width() const {
-        auto enc = wrapped.default_encoding();
-        if (enc == encoding_hint::one_hot) return wrapped.cardinality();
-        return 1;
+        // If the wrapped descriptor provides its own feature_width (e.g. partition),
+        // use that. Otherwise fall back to the encoding-based calculation.
+        if constexpr (requires { wrapped.feature_width(); }) {
+            return wrapped.feature_width();
+        } else {
+            auto enc = wrapped.default_encoding();
+            if (enc == encoding_hint::one_hot) return wrapped.cardinality();
+            return 1;
+        }
     }
 
     /// Write features for this dimension.
@@ -130,34 +137,13 @@ struct conditional_dim {
             for (std::size_t k = 0; k < w; ++k) out[k] = 0.0;
             return;
         }
-        // Active: delegate to the wrapped descriptor's encoding logic
-        auto enc = wrapped.default_encoding();
-        if (enc == encoding_hint::one_hot) {
-            auto idx = wrapped.index_of(val);
-            for (std::size_t k = 0; k < wrapped.cardinality(); ++k)
-                out[k] = (k == idx) ? 1.0 : 0.0;
-        } else if (enc == encoding_hint::binary) {
-            // bool_flag style
-            if constexpr (std::is_same_v<value_type, bool>) {
-                *out = val ? 1.0 : 0.0;
-            } else {
-                *out = static_cast<double>(val);
-            }
-        } else if (enc == encoding_hint::log2) {
-            *out = static_cast<double>(detail::ilog2(static_cast<int>(val)));
-        } else if (enc == encoding_hint::normalised) {
-            if constexpr (requires { wrapped.lo; wrapped.hi; }) {
-                auto range = wrapped.hi - wrapped.lo;
-                *out = (range != 0)
-                    ? static_cast<double>(static_cast<int>(val) - wrapped.lo)
-                      / static_cast<double>(range)
-                    : 0.0;
-            } else {
-                *out = static_cast<double>(val);
-            }
+        // Active: if the wrapped descriptor provides its own write_features
+        // (e.g. partition with pairwise encoding), delegate to it.
+        // Otherwise use the shared scalar encoding logic.
+        if constexpr (requires { wrapped.write_features(val, out); }) {
+            wrapped.write_features(val, out);
         } else {
-            // raw
-            *out = static_cast<double>(val);
+            detail::encode_scalar(wrapped, val, wrapped.default_encoding(), out);
         }
     }
 
@@ -187,7 +173,9 @@ template <typename D>
 conditional_dim(bool, D) -> conditional_dim<D>;
 
 // Verify concept satisfaction
-static_assert(dimension_descriptor<conditional_dim<bool_flag>>);
+// Concept satisfaction verified in test_conditional_dim.cpp.
+// Cannot static_assert here because ordinate types (bool_flag etc.)
+// are defined in descriptor.h, which conditional.h does not include.
 
 // ═══════════════════════════════════════════════════════════════════════
 // Factory helpers
