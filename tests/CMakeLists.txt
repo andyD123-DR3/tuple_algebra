@@ -130,6 +130,15 @@ add_test(NAME test_performance_models COMMAND test_performance_models)
 # ── Space layer v0.7.2 tests (descriptor_space, valid_view, tiers) ───────
 ctdp_add_test(test_space_v072 test_space_v072.cpp)
 
+# ── Space layer: conditional_dim (Sprint 2, property-driven dimension presence) ─
+ctdp_add_test(test_conditional_dim test_conditional_dim.cpp)
+
+# ── Space layer: reduction properties + space generator (Sprint 2, tasks 2.3-2.7) ─
+ctdp_add_test(test_reduction_space test_reduction_space.cpp)
+
+# ── Space layer: ordinal ordinate type + fix<I> alias (Sprint 1) ──────────
+ctdp_add_test(test_ordinal_fix test_ordinal_fix.cpp)
+
 # ── Bench / calibrator tests (percentile, FIX ET parser) ────────────────
 # test_percentile fails to compile with GTest<=1.15.2 + GCC13/libstdc++13.
 # Root cause: gtest.h compares const char* with std::string_view via operator==,
@@ -183,6 +192,9 @@ add_custom_target(check
             test_constraints
             test_cost_table_io
             test_space_v072
+            test_conditional_dim
+            test_reduction_space
+            test_ordinal_fix
     COMMENT "Running all CTDP tests"
 )
 
