@@ -1,7 +1,7 @@
 #ifndef CTDP_SPACE_DESCRIPTOR_H
 #define CTDP_SPACE_DESCRIPTOR_H
 
-// ctdp v0.8.0 — Dimension descriptors + descriptor_space + feature_bridge
+// ctdp v0.7.2 — Dimension descriptors + descriptor_space + feature_bridge
 //
 // Predefined ordinate types with defaults:
 //   positive_int("N")           [1,64] step 1    raw
@@ -20,7 +20,6 @@
 //   bridge.with(dim_idx, hint) returns new bridge with override.
 //   bridge.write_features(point, span<double>).
 //   Bridge::num_features = model vector length (≠ Space::rank when one_hot used).
-
 
 #include "ctdp/space/space.h"
 
@@ -217,75 +216,6 @@ constexpr auto make_enum_vals(std::string_view name, const E (&vals)[N]) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════
-// ordinal — ordered categorical descriptor
-//
-// Like enum_vals, but values have a meaningful rank order.
-// The first value is the lowest rank, the last is the highest.
-//
-// Default encoding: normalised rank — index / (cardinality - 1).
-//   4 levels: 0.0, 0.333, 0.667, 1.0
-//   1 level:  0.0
-//
-// Use for dimensions where ordering matters but distances don't:
-//   reproducibility: nondet < deterministic < reproducible < bitwise
-//   SIMD tier:       scalar < SSE < AVX2 < AVX-512
-//   memory level:    L1 < L2 < L3 < DRAM
-//
-// The normalised rank encoding preserves ordering in the feature
-// vector, is stable under insertion of new levels at the ends,
-// and is compatible with linear, SVR, and MLP cost models.
-// ═══════════════════════════════════════════════════════════════════════
-
-template <typename E, std::size_t N>
-    requires std::is_enum_v<E>
-struct ordinal {
-    std::string_view name;
-    std::array<E, N> values{};    // in rank order: values[0] = lowest
-    encoding_hint encoding = encoding_hint::normalised;
-    static constexpr dim_kind kind = dim_kind::enum_set;
-    using value_type = E;
-
-    constexpr ordinal encoded_as(encoding_hint e) const {
-        auto c = *this; c.encoding = e; return c;
-    }
-    constexpr encoding_hint default_encoding() const { return encoding; }
-    constexpr std::size_t cardinality() const { return N; }
-    constexpr E value_at(std::size_t i) const { return values[i]; }
-    constexpr bool contains(E v) const {
-        for (std::size_t i = 0; i < N; ++i) if (values[i] == v) return true;
-        return false;
-    }
-    constexpr std::size_t index_of(E v) const {
-        for (std::size_t i = 0; i < N; ++i) if (values[i] == v) return i;
-        return N;
-    }
-    constexpr int value_as_int(std::size_t i) const {
-        return static_cast<int>(values[i]);
-    }
-
-    /// Rank of a value as a double in [0.0, 1.0].
-    /// Equivalent to what the normalised encoding produces.
-    constexpr double rank_of(E v) const {
-        auto idx = index_of(v);
-        if (idx >= N) return -1.0;  // not found
-        return (N > 1) ? static_cast<double>(idx) / static_cast<double>(N - 1)
-                       : 0.0;
-    }
-
-    /// Ordinal comparison: is a ranked strictly below b?
-    constexpr bool less_than(E a, E b) const {
-        return index_of(a) < index_of(b);
-    }
-};
-
-template <typename E, std::size_t N> requires std::is_enum_v<E>
-constexpr auto make_ordinal(std::string_view name, const E (&vals)[N]) {
-    ordinal<E, N> d; d.name = name;
-    for (std::size_t i = 0; i < N; ++i) d.values[i] = vals[i];
-    return d;
-}
-
-// ═══════════════════════════════════════════════════════════════════════
 // dimension_descriptor concept
 // ═══════════════════════════════════════════════════════════════════════
 
@@ -302,8 +232,6 @@ static_assert(dimension_descriptor<positive_int>);
 static_assert(dimension_descriptor<power_2>);
 static_assert(dimension_descriptor<int_set<3>>);
 static_assert(dimension_descriptor<bool_flag>);
-static_assert(dimension_descriptor<enum_vals<dim_kind, 3>>);
-static_assert(dimension_descriptor<ordinal<dim_kind, 3>>);
 
 // ═══════════════════════════════════════════════════════════════════════
 // descriptor_space — canonical space from descriptors
@@ -471,7 +399,7 @@ private:
     template <typename Fn>
     constexpr void dim_dispatch(std::size_t d, Fn&& fn) const {
         [&]<std::size_t... Is>(std::index_sequence<Is...>) {
-            ((void)(Is == d ? (fn(std::get<Is>(descs_)), true) : false), ...);
+            ((Is == d ? (fn(std::get<Is>(descs_)), true) : false), ...);
         }(std::make_index_sequence<rank>{});
     }
 
@@ -634,18 +562,6 @@ namespace detail {
 constexpr int ilog2(int v) {
     int r = 0; while (v > 1) { v >>= 1; ++r; } return r;
 }
-
-// Prefer encoding_cardinality() when available (e.g. conditional_dim).
-// Falls back to cardinality() for all other descriptors.
-// This ensures feature width stability for conditional dimensions.
-template <typename D>
-constexpr std::size_t encoding_card_of(const D& d) {
-    if constexpr (requires { d.encoding_cardinality(); }) {
-        return d.encoding_cardinality();
-    } else {
-        return d.cardinality();
-    }
-}
 } // namespace detail
 
 template <typename... Descriptors>
@@ -695,9 +611,7 @@ private:
     void init_from_descs() {
         [this]<std::size_t... Is>(std::index_sequence<Is...>) {
             ((encodings_[Is] = std::get<Is>(descs_).default_encoding()), ...);
-            // Use encoding_card_of to get stable feature width for
-            // conditional_dim (always reports full wrapped cardinality).
-            ((cardinalities_[Is] = detail::encoding_card_of(std::get<Is>(descs_))), ...);
+            ((cardinalities_[Is] = std::get<Is>(descs_).cardinality()), ...);
         }(std::index_sequence_for<Descriptors...>{});
         recompute_offsets();
     }
@@ -730,25 +644,12 @@ private:
         } else if constexpr (D::kind == dim_kind::enum_set) {
             auto idx = desc.index_of(val);
             if (enc == encoding_hint::one_hot) {
-                auto card = detail::encoding_card_of(desc);
-                for (std::size_t k = 0; k < card; ++k)
+                for (std::size_t k = 0; k < desc.cardinality(); ++k)
                     out[k] = (k == idx) ? 1.0 : 0.0;
-                // idx >= card → all zeros (inactive conditional_dim or invalid value)
-            } else if (enc == encoding_hint::normalised) {
-                // Ordinal encoding: rank / (cardinality - 1)
-                auto card = detail::encoding_card_of(desc);
-                if (idx >= card) {
-                    *out = -1.0;  // invalid / inactive
-                } else if (card <= 1) {
-                    *out = 0.0;   // degenerate: single value
-                } else {
-                    *out = static_cast<double>(idx)
-                         / static_cast<double>(card - 1);
-                }
+                // idx == cardinality → all zeros (invalid value)
             } else {
-                auto card = detail::encoding_card_of(desc);
                 // Guard: invalid value → -1.0 (not UB)
-                *out = (idx < card)
+                *out = (idx < desc.cardinality())
                     ? static_cast<double>(desc.value_as_int(idx))
                     : -1.0;
             }
@@ -768,10 +669,9 @@ private:
                 }
             } else if (enc == encoding_hint::one_hot) {
                 auto idx = desc.index_of(val);
-                auto card = detail::encoding_card_of(desc);
-                for (std::size_t k = 0; k < card; ++k)
+                for (std::size_t k = 0; k < desc.cardinality(); ++k)
                     out[k] = (k == idx) ? 1.0 : 0.0;
-                // idx >= card → all zeros (inactive conditional_dim or invalid value)
+                // idx == cardinality → all zeros (invalid value)
             } else {
                 *out = static_cast<double>(val);
             }

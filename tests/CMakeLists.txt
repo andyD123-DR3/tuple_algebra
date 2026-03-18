@@ -139,6 +139,9 @@ ctdp_add_test(test_reduction_space test_reduction_space.cpp)
 # ── Space layer: ordinal ordinate type + fix<I> alias (Sprint 1) ──────────
 ctdp_add_test(test_ordinal_fix test_ordinal_fix.cpp)
 
+# ── Space layer: partition ordinate type (Sprint 3) ───────────────────────
+ctdp_add_test(test_partition test_partition.cpp)
+
 # ── Bench / calibrator tests (percentile, FIX ET parser) ────────────────
 # test_percentile fails to compile with GTest<=1.15.2 + GCC13/libstdc++13.
 # Root cause: gtest.h compares const char* with std::string_view via operator==,
@@ -195,6 +198,7 @@ add_custom_target(check
             test_conditional_dim
             test_reduction_space
             test_ordinal_fix
+            test_partition
     COMMENT "Running all CTDP tests"
 )
 
