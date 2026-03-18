@@ -135,6 +135,23 @@ auto make_reduction_opt_space(
     return reduction_opt_space_result{std::move(space), std::move(bridge)};
 }
 
+/// Overload accepting pre-computed properties directly.
+///
+/// Used by tree_space child factories that have group-level properties
+/// (from make_group_properties) but no tuple_reduction for the subset.
+inline auto make_reduction_opt_space(const reduction_properties_t& props)
+{
+    auto space = descriptor_space("reduction_opt",
+        default_tile_dim(),
+        conditional_dim(props.all_associative,   default_tree_shape_dim()),
+        conditional_dim(props.all_have_identity, default_vec_width_dim())
+    );
+
+    auto bridge = default_bridge(space);
+
+    return reduction_opt_space_result{std::move(space), std::move(bridge)};
+}
+
 } // namespace ctdp::space
 
 #endif // CTDP_SPACE_REDUCTION_SPACE_H
