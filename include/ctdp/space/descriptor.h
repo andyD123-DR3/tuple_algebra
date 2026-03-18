@@ -217,6 +217,75 @@ constexpr auto make_enum_vals(std::string_view name, const E (&vals)[N]) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════
+// ordinal — ordered categorical descriptor
+//
+// Like enum_vals, but values have a meaningful rank order.
+// The first value is the lowest rank, the last is the highest.
+//
+// Default encoding: normalised rank — index / (cardinality - 1).
+//   4 levels: 0.0, 0.333, 0.667, 1.0
+//   1 level:  0.0
+//
+// Use for dimensions where ordering matters but distances don't:
+//   reproducibility: nondet < deterministic < reproducible < bitwise
+//   SIMD tier:       scalar < SSE < AVX2 < AVX-512
+//   memory level:    L1 < L2 < L3 < DRAM
+//
+// The normalised rank encoding preserves ordering in the feature
+// vector, is stable under insertion of new levels at the ends,
+// and is compatible with linear, SVR, and MLP cost models.
+// ═══════════════════════════════════════════════════════════════════════
+
+template <typename E, std::size_t N>
+    requires std::is_enum_v<E>
+struct ordinal {
+    std::string_view name;
+    std::array<E, N> values{};    // in rank order: values[0] = lowest
+    encoding_hint encoding = encoding_hint::normalised;
+    static constexpr dim_kind kind = dim_kind::enum_set;
+    using value_type = E;
+
+    constexpr ordinal encoded_as(encoding_hint e) const {
+        auto c = *this; c.encoding = e; return c;
+    }
+    constexpr encoding_hint default_encoding() const { return encoding; }
+    constexpr std::size_t cardinality() const { return N; }
+    constexpr E value_at(std::size_t i) const { return values[i]; }
+    constexpr bool contains(E v) const {
+        for (std::size_t i = 0; i < N; ++i) if (values[i] == v) return true;
+        return false;
+    }
+    constexpr std::size_t index_of(E v) const {
+        for (std::size_t i = 0; i < N; ++i) if (values[i] == v) return i;
+        return N;
+    }
+    constexpr int value_as_int(std::size_t i) const {
+        return static_cast<int>(values[i]);
+    }
+
+    /// Rank of a value as a double in [0.0, 1.0].
+    /// Equivalent to what the normalised encoding produces.
+    constexpr double rank_of(E v) const {
+        auto idx = index_of(v);
+        if (idx >= N) return -1.0;  // not found
+        return (N > 1) ? static_cast<double>(idx) / static_cast<double>(N - 1)
+                       : 0.0;
+    }
+
+    /// Ordinal comparison: is a ranked strictly below b?
+    constexpr bool less_than(E a, E b) const {
+        return index_of(a) < index_of(b);
+    }
+};
+
+template <typename E, std::size_t N> requires std::is_enum_v<E>
+constexpr auto make_ordinal(std::string_view name, const E (&vals)[N]) {
+    ordinal<E, N> d; d.name = name;
+    for (std::size_t i = 0; i < N; ++i) d.values[i] = vals[i];
+    return d;
+}
+
+// ═══════════════════════════════════════════════════════════════════════
 // dimension_descriptor concept
 // ═══════════════════════════════════════════════════════════════════════
 
@@ -233,6 +302,8 @@ static_assert(dimension_descriptor<positive_int>);
 static_assert(dimension_descriptor<power_2>);
 static_assert(dimension_descriptor<int_set<3>>);
 static_assert(dimension_descriptor<bool_flag>);
+static_assert(dimension_descriptor<enum_vals<dim_kind, 3>>);
+static_assert(dimension_descriptor<ordinal<dim_kind, 3>>);
 
 // ═══════════════════════════════════════════════════════════════════════
 // descriptor_space — canonical space from descriptors
@@ -663,6 +734,17 @@ private:
                 for (std::size_t k = 0; k < card; ++k)
                     out[k] = (k == idx) ? 1.0 : 0.0;
                 // idx >= card → all zeros (inactive conditional_dim or invalid value)
+            } else if (enc == encoding_hint::normalised) {
+                // Ordinal encoding: rank / (cardinality - 1)
+                auto card = detail::encoding_card_of(desc);
+                if (idx >= card) {
+                    *out = -1.0;  // invalid / inactive
+                } else if (card <= 1) {
+                    *out = 0.0;   // degenerate: single value
+                } else {
+                    *out = static_cast<double>(idx)
+                         / static_cast<double>(card - 1);
+                }
             } else {
                 auto card = detail::encoding_card_of(desc);
                 // Guard: invalid value → -1.0 (not UB)

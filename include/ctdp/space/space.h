@@ -387,6 +387,15 @@ auto section(const Space& space,
     return section_space<DimIdx, Space>(space, value);
 }
 
+/// Alias: fix<DimIdx>(space, value) — optimisation-vocabulary name.
+/// "Fix dimension I to this value" — the language of branch-and-bound,
+/// Benders decomposition, and MIP solvers. Equivalent to section.
+template <std::size_t DimIdx, typename Space>
+auto fix(const Space& space,
+         std::tuple_element_t<DimIdx, typename Space::point_type> value) {
+    return section_space<DimIdx, Space>(space, value);
+}
+
 // ═══════════════════════════════════════════════════════════════════════
 // filter_section — filter-based section for any space (no rank reduction)
 //
