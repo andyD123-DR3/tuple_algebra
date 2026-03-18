@@ -190,9 +190,11 @@ TEST(ConditionalDim, Inactive_EnumVals_IndexOfDefault) {
     auto cd = conditional_dim(false,
         make_enum_vals("tree", {TreeShape::Flat, TreeShape::Binary}));
 
-    EXPECT_EQ(cd.index_of(TreeShape::Flat), 0u);
-    // Non-default value: index should be out-of-range (>= cardinality)
-    EXPECT_GE(cd.index_of(TreeShape::Binary), cd.cardinality());
+    // Inactive: index_of returns out-of-range for ALL values (including default).
+    // This is intentional — it causes the feature bridge to write all-zero
+    // one-hot encoding, which is the correct representation for "no choice made".
+    EXPECT_GE(cd.index_of(TreeShape::Flat), cd.encoding_cardinality());
+    EXPECT_GE(cd.index_of(TreeShape::Binary), cd.encoding_cardinality());
 }
 
 TEST(ConditionalDim, Inactive_IntSet_CardinalityIsOne) {

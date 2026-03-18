@@ -90,7 +90,8 @@ struct lane_properties {
         ct_dp::algebra::is_identity_transform_v<transform_type>;
 
     static constexpr bool power_transform =
-        ct_dp::algebra::is_power_transform_v<transform_type>;
+        ct_dp::algebra::is_power_transform_v<transform_type>
+        && !ct_dp::algebra::is_identity_transform_v<transform_type>;
 };
 
 // Fold properties across all lanes of a tuple_reduction
