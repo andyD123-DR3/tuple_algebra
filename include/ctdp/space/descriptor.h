@@ -21,6 +21,7 @@
 //   bridge.write_features(point, span<double>).
 //   Bridge::num_features = model vector length (≠ Space::rank when one_hot used).
 
+
 #include "ctdp/space/space.h"
 
 #include <array>

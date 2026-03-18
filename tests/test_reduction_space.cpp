@@ -229,7 +229,7 @@ TEST(ReductionOptSpace, StatsReduction_AllTreeShapesAppear) {
     std::array<int, 3> tree_counts{};
     result.space.enumerate([&](auto const& pt) {
         auto shape = std::get<1>(pt);
-        tree_counts[static_cast<int>(shape)]++;
+        tree_counts[static_cast<std::size_t>(shape)]++;
     });
 
     // Each tree shape appears: 7 tiles × 4 vec widths = 28 times
@@ -257,19 +257,18 @@ TEST(ReductionOptSpace, StatsReduction_AllVecWidthsAppear) {
 // Section 7: make_reduction_opt_space — assoc only, no identity
 // ════════════════════════════════════════════════════════════════════════
 
-TEST(ReductionOptSpace, AssocNoIdentity_VecWidthInactive) {
-    // concat_fn has no identity<T>() and is not declared associative.
-    // We need an op that IS associative but has no identity.
-    // For testing purposes, use a custom op:
-    struct assoc_no_ident_fn {
-        template<typename T>
-        constexpr T operator()(T a, T b) const noexcept { return a + b; }
-        static constexpr bool declared_associative = true;
-        static constexpr bool declared_commutative = true;
-        static constexpr bool declared_idempotent  = false;
-        // No identity<T>() method
-    };
+// Associative op without identity<T>() — must be at namespace scope
+// because Clang rejects templates and static constexpr in local classes.
+struct assoc_no_ident_fn {
+    template<typename T>
+    constexpr T operator()(T a, T b) const noexcept { return a + b; }
+    static constexpr bool declared_associative = true;
+    static constexpr bool declared_commutative = true;
+    static constexpr bool declared_idempotent  = false;
+    // No identity<T>() method
+};
 
+TEST(ReductionOptSpace, AssocNoIdentity_VecWidthInactive) {
     auto red = make_reduction(
         reduction_lane{identity_t{}, assoc_no_ident_fn{}, 0}
     );

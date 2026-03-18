@@ -587,7 +587,7 @@ TEST(ConditionalDim, ReductionScenario_AssocEnablesTreeShape) {
     std::array<int, 4> tree_counts{};
     space.enumerate([&](auto const& pt) {
         auto shape = std::get<1>(pt);
-        tree_counts[static_cast<int>(shape)]++;
+        tree_counts[static_cast<std::size_t>(shape)]++;
     });
     for (int c : tree_counts) {
         EXPECT_EQ(c, 7);  // each shape appears once per tile size
