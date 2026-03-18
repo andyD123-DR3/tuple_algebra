@@ -562,6 +562,18 @@ namespace detail {
 constexpr int ilog2(int v) {
     int r = 0; while (v > 1) { v >>= 1; ++r; } return r;
 }
+
+// Prefer encoding_cardinality() when available (e.g. conditional_dim).
+// Falls back to cardinality() for all other descriptors.
+// This ensures feature width stability for conditional dimensions.
+template <typename D>
+constexpr std::size_t encoding_card_of(const D& d) {
+    if constexpr (requires { d.encoding_cardinality(); }) {
+        return d.encoding_cardinality();
+    } else {
+        return d.cardinality();
+    }
+}
 } // namespace detail
 
 template <typename... Descriptors>
@@ -611,7 +623,9 @@ private:
     void init_from_descs() {
         [this]<std::size_t... Is>(std::index_sequence<Is...>) {
             ((encodings_[Is] = std::get<Is>(descs_).default_encoding()), ...);
-            ((cardinalities_[Is] = std::get<Is>(descs_).cardinality()), ...);
+            // Use encoding_card_of to get stable feature width for
+            // conditional_dim (always reports full wrapped cardinality).
+            ((cardinalities_[Is] = detail::encoding_card_of(std::get<Is>(descs_))), ...);
         }(std::index_sequence_for<Descriptors...>{});
         recompute_offsets();
     }
@@ -644,12 +658,14 @@ private:
         } else if constexpr (D::kind == dim_kind::enum_set) {
             auto idx = desc.index_of(val);
             if (enc == encoding_hint::one_hot) {
-                for (std::size_t k = 0; k < desc.cardinality(); ++k)
+                auto card = detail::encoding_card_of(desc);
+                for (std::size_t k = 0; k < card; ++k)
                     out[k] = (k == idx) ? 1.0 : 0.0;
-                // idx == cardinality → all zeros (invalid value)
+                // idx >= card → all zeros (inactive conditional_dim or invalid value)
             } else {
+                auto card = detail::encoding_card_of(desc);
                 // Guard: invalid value → -1.0 (not UB)
-                *out = (idx < desc.cardinality())
+                *out = (idx < card)
                     ? static_cast<double>(desc.value_as_int(idx))
                     : -1.0;
             }
@@ -669,9 +685,10 @@ private:
                 }
             } else if (enc == encoding_hint::one_hot) {
                 auto idx = desc.index_of(val);
-                for (std::size_t k = 0; k < desc.cardinality(); ++k)
+                auto card = detail::encoding_card_of(desc);
+                for (std::size_t k = 0; k < card; ++k)
                     out[k] = (k == idx) ? 1.0 : 0.0;
-                // idx == cardinality → all zeros (invalid value)
+                // idx >= card → all zeros (inactive conditional_dim or invalid value)
             } else {
                 *out = static_cast<double>(val);
             }
