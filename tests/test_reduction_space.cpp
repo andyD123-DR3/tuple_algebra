@@ -472,3 +472,406 @@ TEST(ReductionOptSpaceE2E, FullPipeline_ReductionStillComputes) {
 }
 
 } // namespace
+
+// ════════════════════════════════════════════════════════════════════════
+// Sections 11-16: Extended properties (per-lane, type-safe, cost, fingerprint)
+//
+// These are in a separate anonymous namespace because they need
+// additional helper types at namespace scope.
+// ════════════════════════════════════════════════════════════════════════
+
+namespace {
+
+using namespace ct_dp::algebra;
+using namespace ctdp::space;
+
+// ════════════════════════════════════════════════════════════════════════
+// Section 11: Type-safe aggregate properties
+// ════════════════════════════════════════════════════════════════════════
+
+TEST(ReductionProperties, TypeSafe_IntLanes_ExactAssociative) {
+    // Integer lanes: declares_associative_v<plus_fn, int> is true
+    auto red = make_reduction(
+        reduction_lane{identity_t{}, plus_fn{}, 0},
+        reduction_lane{identity_t{}, min_fn{},  std::numeric_limits<int>::max()}
+    );
+    auto props = reduction_properties(red);
+
+    EXPECT_TRUE(props.all_associative);
+    EXPECT_TRUE(props.all_exact_associative);
+    EXPECT_TRUE(props.all_exact_commutative);
+}
+
+TEST(ReductionProperties, TypeSafe_DoubleLanes_NotExactAssociative) {
+    // Double lanes: declares_associative_v<plus_fn, double> is false
+    // (double is not an exact type)
+    auto red = make_reduction(
+        reduction_lane{identity_t{}, plus_fn{}, 0.0},
+        reduction_lane{identity_t{}, min_fn{},  std::numeric_limits<double>::max()}
+    );
+    auto props = reduction_properties(red);
+
+    EXPECT_TRUE(props.all_associative);        // abstract: yes
+    EXPECT_FALSE(props.all_exact_associative);  // type-safe: no (double)
+    EXPECT_FALSE(props.all_exact_commutative);
+}
+
+TEST(ReductionProperties, TypeSafe_MixedIntDouble_NotExact) {
+    // Mix of int and double lanes — exact fails on double lanes
+    auto red = make_reduction(
+        reduction_lane{constant_t<1>{}, plus_fn{}, 0},       // int: exact
+        reduction_lane{identity_t{},    plus_fn{}, 0.0}      // double: not exact
+    );
+    auto props = reduction_properties(red);
+
+    EXPECT_TRUE(props.all_associative);
+    EXPECT_FALSE(props.all_exact_associative);  // broken by double lane
+}
+
+TEST(ReductionProperties, TypeSafe_PerLane_MixedTypes) {
+    auto red = make_reduction(
+        reduction_lane{identity_t{}, plus_fn{}, 0},       // int: exact
+        reduction_lane{identity_t{}, plus_fn{}, 0.0}      // double: not exact
+    );
+    auto props = reduction_properties(red);
+
+    EXPECT_TRUE(props.lane_exact_associative[0]);   // int lane
+    EXPECT_FALSE(props.lane_exact_associative[1]);  // double lane
+    EXPECT_TRUE(props.lane_exact_commutative[0]);
+    EXPECT_FALSE(props.lane_exact_commutative[1]);
+}
+
+// ════════════════════════════════════════════════════════════════════════
+// Section 12: Per-lane property arrays
+// ════════════════════════════════════════════════════════════════════════
+
+// Non-associative op at namespace scope (Clang requirement)
+struct custom_fn {
+    template<typename T>
+    constexpr T operator()(T a, T b) const noexcept { return a + b; }
+    // No declared properties at all
+};
+
+TEST(ReductionProperties, PerLane_MixedAssociativity) {
+    auto red = make_reduction(
+        reduction_lane{identity_t{}, plus_fn{},   0},   // assoc
+        reduction_lane{identity_t{}, custom_fn{}, 0},   // NOT assoc
+        reduction_lane{identity_t{}, min_fn{},    std::numeric_limits<int>::max()} // assoc
+    );
+    auto props = reduction_properties(red);
+
+    EXPECT_EQ(props.lane_count, 3u);
+    EXPECT_TRUE(props.lane_associative[0]);
+    EXPECT_FALSE(props.lane_associative[1]);
+    EXPECT_TRUE(props.lane_associative[2]);
+
+    EXPECT_FALSE(props.all_associative);
+    EXPECT_TRUE(props.any_non_associative);
+}
+
+TEST(ReductionProperties, PerLane_IdentityPresence) {
+    auto red = make_reduction(
+        reduction_lane{identity_t{}, plus_fn{}, 0},          // has identity
+        reduction_lane{identity_t{}, custom_fn{}, 0}         // no identity
+    );
+    auto props = reduction_properties(red);
+
+    EXPECT_TRUE(props.lane_has_identity[0]);
+    EXPECT_FALSE(props.lane_has_identity[1]);
+}
+
+TEST(ReductionProperties, PerLane_Idempotent) {
+    auto red = make_reduction(
+        reduction_lane{identity_t{}, plus_fn{}, 0},          // not idempotent
+        reduction_lane{identity_t{}, min_fn{},  std::numeric_limits<int>::max()}, // idempotent
+        reduction_lane{identity_t{}, max_fn{},  std::numeric_limits<int>::lowest()} // idempotent
+    );
+    auto props = reduction_properties(red);
+
+    EXPECT_FALSE(props.lane_idempotent[0]);
+    EXPECT_TRUE(props.lane_idempotent[1]);
+    EXPECT_TRUE(props.lane_idempotent[2]);
+}
+
+TEST(ReductionProperties, PerLane_IdentityTransform) {
+    auto red = make_reduction(
+        reduction_lane{constant_t<1>{}, plus_fn{}, 0},     // not identity transform
+        reduction_lane{identity_t{},    plus_fn{}, 0.0},   // identity transform
+        reduction_lane{power_t<2>{},    plus_fn{}, 0.0}    // not identity transform
+    );
+    auto props = reduction_properties(red);
+
+    EXPECT_FALSE(props.lane_identity_transform[0]);
+    EXPECT_TRUE(props.lane_identity_transform[1]);
+    EXPECT_FALSE(props.lane_identity_transform[2]);
+}
+
+TEST(ReductionProperties, PerLane_EntriesBeyondLaneCountAreZero) {
+    auto red = make_reduction(
+        reduction_lane{identity_t{}, plus_fn{}, 0}
+    );
+    auto props = reduction_properties(red);
+
+    EXPECT_EQ(props.lane_count, 1u);
+    // Beyond lane_count: should be default-initialised (false / 0)
+    EXPECT_FALSE(props.lane_associative[1]);
+    EXPECT_FALSE(props.lane_commutative[1]);
+    EXPECT_EQ(props.lane_fingerprint[1], 0u);
+    EXPECT_EQ(props.lane_transform_cost[1], transform_cost::free);
+}
+
+// ════════════════════════════════════════════════════════════════════════
+// Section 13: Transform cost classification
+// ════════════════════════════════════════════════════════════════════════
+
+TEST(ReductionProperties, TransformCost_Identity_IsFree) {
+    auto red = make_reduction(
+        reduction_lane{identity_t{}, plus_fn{}, 0}
+    );
+    auto props = reduction_properties(red);
+    EXPECT_EQ(props.lane_transform_cost[0], transform_cost::free);
+}
+
+TEST(ReductionProperties, TransformCost_Constant_IsFree) {
+    auto red = make_reduction(
+        reduction_lane{constant_t<1>{}, plus_fn{}, 0}
+    );
+    auto props = reduction_properties(red);
+    EXPECT_EQ(props.lane_transform_cost[0], transform_cost::free);
+}
+
+TEST(ReductionProperties, TransformCost_Power2_IsCheap) {
+    auto red = make_reduction(
+        reduction_lane{power_t<2>{}, plus_fn{}, 0.0}
+    );
+    auto props = reduction_properties(red);
+    EXPECT_EQ(props.lane_transform_cost[0], transform_cost::cheap);
+}
+
+TEST(ReductionProperties, TransformCost_Power3_IsCheap) {
+    auto red = make_reduction(
+        reduction_lane{power_t<3>{}, plus_fn{}, 0.0}
+    );
+    auto props = reduction_properties(red);
+    EXPECT_EQ(props.lane_transform_cost[0], transform_cost::cheap);
+}
+
+TEST(ReductionProperties, TransformCost_Negate_IsExpensive) {
+    auto red = make_reduction(
+        reduction_lane{negate_t{}, plus_fn{}, 0.0}
+    );
+    auto props = reduction_properties(red);
+    EXPECT_EQ(props.lane_transform_cost[0], transform_cost::expensive);
+}
+
+TEST(ReductionProperties, TransformCost_Abs_IsExpensive) {
+    auto red = make_reduction(
+        reduction_lane{abs_t{}, plus_fn{}, 0.0}
+    );
+    auto props = reduction_properties(red);
+    EXPECT_EQ(props.lane_transform_cost[0], transform_cost::expensive);
+}
+
+TEST(ReductionProperties, TransformCost_StatsReduction_PerLane) {
+    // count=constant(free), sum=identity(free), sumsq=power(cheap),
+    // min=identity(free), max=identity(free)
+    auto red = make_reduction(
+        reduction_lane{constant_t<1>{}, plus_fn{}, 0},
+        reduction_lane{identity_t{},    plus_fn{}, 0.0},
+        reduction_lane{power_t<2>{},    plus_fn{}, 0.0},
+        reduction_lane{identity_t{},    min_fn{},  std::numeric_limits<double>::max()},
+        reduction_lane{identity_t{},    max_fn{},  std::numeric_limits<double>::lowest()}
+    );
+    auto props = reduction_properties(red);
+
+    EXPECT_EQ(props.lane_transform_cost[0], transform_cost::free);     // constant
+    EXPECT_EQ(props.lane_transform_cost[1], transform_cost::free);     // identity
+    EXPECT_EQ(props.lane_transform_cost[2], transform_cost::cheap);    // power_t<2>
+    EXPECT_EQ(props.lane_transform_cost[3], transform_cost::free);     // identity
+    EXPECT_EQ(props.lane_transform_cost[4], transform_cost::free);     // identity
+}
+
+// ════════════════════════════════════════════════════════════════════════
+// Section 14: Fusibility fingerprint
+// ════════════════════════════════════════════════════════════════════════
+
+TEST(ReductionProperties, Fingerprint_SameOpsSameFingerprint) {
+    auto red = make_reduction(
+        reduction_lane{identity_t{}, plus_fn{}, 0},
+        reduction_lane{power_t<2>{}, plus_fn{}, 0}
+    );
+    auto props = reduction_properties(red);
+
+    // Both lanes use plus_fn (assoc+commut+identity, not idempotent)
+    // Fingerprint only depends on reduce op properties, not transform
+    EXPECT_EQ(props.lane_fingerprint[0], props.lane_fingerprint[1]);
+    EXPECT_TRUE(props.fusible(0, 1));
+}
+
+TEST(ReductionProperties, Fingerprint_DifferentOps_DifferentFingerprint) {
+    auto red = make_reduction(
+        reduction_lane{identity_t{}, plus_fn{}, 0},          // assoc, commut, identity, NOT idemp
+        reduction_lane{identity_t{}, min_fn{},  std::numeric_limits<int>::max()} // assoc, commut, identity, idemp
+    );
+    auto props = reduction_properties(red);
+
+    // plus and min differ on idempotent → different fingerprint
+    EXPECT_NE(props.lane_fingerprint[0], props.lane_fingerprint[1]);
+    EXPECT_FALSE(props.fusible(0, 1));
+}
+
+TEST(ReductionProperties, Fingerprint_MinMaxSameFingerprint) {
+    auto red = make_reduction(
+        reduction_lane{identity_t{}, min_fn{}, std::numeric_limits<int>::max()},
+        reduction_lane{identity_t{}, max_fn{}, std::numeric_limits<int>::lowest()}
+    );
+    auto props = reduction_properties(red);
+
+    // min and max: both assoc, commut, identity, idempotent → same fingerprint
+    EXPECT_EQ(props.lane_fingerprint[0], props.lane_fingerprint[1]);
+    EXPECT_TRUE(props.fusible(0, 1));
+}
+
+TEST(ReductionProperties, Fingerprint_NonAssocVsAssoc) {
+    auto red = make_reduction(
+        reduction_lane{identity_t{}, plus_fn{},   0},
+        reduction_lane{identity_t{}, custom_fn{}, 0}
+    );
+    auto props = reduction_properties(red);
+
+    EXPECT_NE(props.lane_fingerprint[0], props.lane_fingerprint[1]);
+    EXPECT_FALSE(props.fusible(0, 1));
+}
+
+TEST(ReductionProperties, Fingerprint_Encoding) {
+    // plus_fn: assoc=1, commut=1, identity=1, idempotent=0 → 0b0111 = 7
+    auto red = make_reduction(
+        reduction_lane{identity_t{}, plus_fn{}, 0}
+    );
+    auto props = reduction_properties(red);
+    EXPECT_EQ(props.lane_fingerprint[0], 7u);
+
+    // min_fn: assoc=1, commut=1, identity=1, idempotent=1 → 0b1111 = 15
+    auto red2 = make_reduction(
+        reduction_lane{identity_t{}, min_fn{}, std::numeric_limits<int>::max()}
+    );
+    auto props2 = reduction_properties(red2);
+    EXPECT_EQ(props2.lane_fingerprint[0], 15u);
+}
+
+// ════════════════════════════════════════════════════════════════════════
+// Section 15: Fusibility convenience queries
+// ════════════════════════════════════════════════════════════════════════
+
+TEST(ReductionProperties, AllFusible_HomogeneousOps) {
+    auto red = make_reduction(
+        reduction_lane{identity_t{},    plus_fn{}, 0},
+        reduction_lane{power_t<2>{},    plus_fn{}, 0},
+        reduction_lane{constant_t<1>{}, plus_fn{}, 0}
+    );
+    auto props = reduction_properties(red);
+
+    EXPECT_TRUE(props.all_fusible());
+    EXPECT_EQ(props.num_fingerprint_classes(), 1u);
+}
+
+TEST(ReductionProperties, AllFusible_HeterogeneousOps_False) {
+    auto red = make_reduction(
+        reduction_lane{identity_t{}, plus_fn{}, 0},
+        reduction_lane{identity_t{}, min_fn{},  std::numeric_limits<int>::max()}
+    );
+    auto props = reduction_properties(red);
+
+    EXPECT_FALSE(props.all_fusible());
+    EXPECT_EQ(props.num_fingerprint_classes(), 2u);
+}
+
+TEST(ReductionProperties, NumFingerprintClasses_ThreeDistinct) {
+    auto red = make_reduction(
+        reduction_lane{identity_t{}, plus_fn{},   0},          // assoc+commut+ident
+        reduction_lane{identity_t{}, min_fn{},    std::numeric_limits<int>::max()}, // +idempotent
+        reduction_lane{identity_t{}, custom_fn{}, 0}           // none
+    );
+    auto props = reduction_properties(red);
+
+    EXPECT_EQ(props.num_fingerprint_classes(), 3u);
+}
+
+TEST(ReductionProperties, Fusible_OutOfBounds_ReturnsFalse) {
+    auto red = make_reduction(
+        reduction_lane{identity_t{}, plus_fn{}, 0},
+        reduction_lane{identity_t{}, plus_fn{}, 0}
+    );
+    auto props = reduction_properties(red);
+
+    // In-range: same op → fusible
+    EXPECT_TRUE(props.fusible(0, 1));
+    // Out of range: beyond lane_count → false, not UB
+    EXPECT_FALSE(props.fusible(0, 2));
+    EXPECT_FALSE(props.fusible(2, 0));
+    EXPECT_FALSE(props.fusible(15, 15));
+}
+
+// ════════════════════════════════════════════════════════════════════════
+// Section 16: Stats reduction — full property check
+// ════════════════════════════════════════════════════════════════════════
+
+TEST(ReductionProperties, StatsReduction_FullPropertyInventory) {
+    // count=constant/plus, sum=identity/plus, sumsq=power2/plus,
+    // min=identity/min, max=identity/max
+    auto red = make_reduction(
+        reduction_lane{constant_t<1>{}, plus_fn{}, 0},
+        reduction_lane{identity_t{},    plus_fn{}, 0.0},
+        reduction_lane{power_t<2>{},    plus_fn{}, 0.0},
+        reduction_lane{identity_t{},    min_fn{},  std::numeric_limits<double>::max()},
+        reduction_lane{identity_t{},    max_fn{},  std::numeric_limits<double>::lowest()}
+    );
+    auto props = reduction_properties(red);
+
+    // Aggregate
+    EXPECT_TRUE(props.all_associative);
+    EXPECT_TRUE(props.all_commutative);
+    EXPECT_TRUE(props.all_have_identity);
+    EXPECT_FALSE(props.all_idempotent);       // plus is not idempotent
+
+    // Type-safe: lanes 0 is int (exact), lanes 1-4 are double (not exact)
+    EXPECT_FALSE(props.all_exact_associative);
+    EXPECT_TRUE(props.lane_exact_associative[0]);   // int plus
+    EXPECT_FALSE(props.lane_exact_associative[1]);  // double plus
+    EXPECT_FALSE(props.lane_exact_associative[2]);  // double plus
+
+    // Per-lane associativity (all true — abstract)
+    for (std::size_t i = 0; i < 5; ++i) {
+        EXPECT_TRUE(props.lane_associative[i]) << "lane " << i;
+        EXPECT_TRUE(props.lane_commutative[i]) << "lane " << i;
+        EXPECT_TRUE(props.lane_has_identity[i]) << "lane " << i;
+    }
+
+    // Idempotent: lanes 3,4 (min, max) are idempotent
+    EXPECT_FALSE(props.lane_idempotent[0]);
+    EXPECT_FALSE(props.lane_idempotent[1]);
+    EXPECT_FALSE(props.lane_idempotent[2]);
+    EXPECT_TRUE(props.lane_idempotent[3]);
+    EXPECT_TRUE(props.lane_idempotent[4]);
+
+    // Fingerprint: plus lanes share one, min/max lanes share another
+    EXPECT_EQ(props.lane_fingerprint[0], props.lane_fingerprint[1]);  // both plus
+    EXPECT_EQ(props.lane_fingerprint[1], props.lane_fingerprint[2]);  // both plus
+    EXPECT_EQ(props.lane_fingerprint[3], props.lane_fingerprint[4]);  // both min/max
+    EXPECT_NE(props.lane_fingerprint[0], props.lane_fingerprint[3]);  // plus ≠ min
+
+    // Fusibility
+    EXPECT_TRUE(props.fusible(0, 1));   // plus + plus
+    EXPECT_TRUE(props.fusible(3, 4));   // min + max
+    EXPECT_FALSE(props.fusible(0, 3));  // plus ≠ min
+    EXPECT_EQ(props.num_fingerprint_classes(), 2u);
+
+    // Transform cost
+    EXPECT_EQ(props.lane_transform_cost[0], transform_cost::free);   // constant
+    EXPECT_EQ(props.lane_transform_cost[1], transform_cost::free);   // identity
+    EXPECT_EQ(props.lane_transform_cost[2], transform_cost::cheap);  // power_t<2>
+    EXPECT_EQ(props.lane_transform_cost[3], transform_cost::free);   // identity
+    EXPECT_EQ(props.lane_transform_cost[4], transform_cost::free);   // identity
+}
+
+} // namespace
