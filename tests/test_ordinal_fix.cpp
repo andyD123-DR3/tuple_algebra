@@ -337,7 +337,7 @@ TEST(Fix, ReducesRank) {
         bool_flag("turbo")
     );
 
-    auto fixed = fix<0>(space, Color::BLUE);
+    auto fixed = ctdp::space::fix<0>(space, Color::BLUE);
     EXPECT_EQ(decltype(fixed)::rank, 2u);  // 3 - 1 = 2
 }
 
@@ -349,7 +349,7 @@ TEST(Fix, CorrectEnumeration) {
     );
 
     // Fix color to BLUE → size × turbo = 4 points
-    auto fixed = fix<0>(space, Color::BLUE);
+    auto fixed = ctdp::space::fix<0>(space, Color::BLUE);
     std::size_t count = 0;
     fixed.enumerate([&](auto const&) { ++count; });
     EXPECT_EQ(count, 4u);
@@ -363,7 +363,7 @@ TEST(Fix, FixMiddleDimension) {
     );
 
     // Fix size to LARGE → color × turbo = 6 points
-    auto fixed = fix<1>(space, Size::LARGE);
+    auto fixed = ctdp::space::fix<1>(space, Size::LARGE);
     std::size_t count = 0;
     fixed.enumerate([&](auto const&) { ++count; });
     EXPECT_EQ(count, 6u);
@@ -377,7 +377,7 @@ TEST(Fix, FixLastDimension) {
     );
 
     // Fix turbo to true → color × size = 6 points
-    auto fixed = fix<2>(space, true);
+    auto fixed = ctdp::space::fix<2>(space, true);
     std::size_t count = 0;
     fixed.enumerate([&](auto const&) { ++count; });
     EXPECT_EQ(count, 6u);
@@ -389,7 +389,7 @@ TEST(Fix, EmbedRoundTrip) {
         make_enum_vals("size", {Size::SMALL, Size::LARGE})
     );
 
-    auto fixed = fix<0>(space, Color::GREEN);
+    auto fixed = ctdp::space::fix<0>(space, Color::GREEN);
 
     auto reduced = std::tuple{Size::LARGE};
     auto full = fixed.embed(reduced);
@@ -405,7 +405,7 @@ TEST(Fix, WithOrdinal) {
     );
 
     // Fix repro to deterministic → 1D: 3 tile values
-    auto subproblem = fix<1>(space, Repro::deterministic);
+    auto subproblem = ctdp::space::fix<1>(space, Repro::deterministic);
     std::size_t count = 0;
     subproblem.enumerate([&](auto const&) { ++count; });
     EXPECT_EQ(count, 3u);
@@ -469,7 +469,7 @@ TEST(Ordinal, ReproScenario_FullPipeline) {
     EXPECT_DOUBLE_EQ(features[4], 2.0 / 3.0);   // repro rank 2/3
 
     // Fix repro to bitwise → 2D subproblem: tile × tree = 9
-    auto subproblem = fix<2>(space, Repro::bitwise);
+    auto subproblem = ctdp::space::fix<2>(space, Repro::bitwise);
     std::size_t count = 0;
     subproblem.enumerate([&](auto const&) { ++count; });
     EXPECT_EQ(count, 9u);
