@@ -28,6 +28,7 @@ namespace ctdp::space {
 
 enum class dim_kind : std::uint8_t {
     int_set, power_of_two, int_range, bool_flag, enum_set, partition,
+    permutation,
 };
 
 // ═══════════════════════════════════════════════════════════════════════
@@ -35,7 +36,7 @@ enum class dim_kind : std::uint8_t {
 // ═══════════════════════════════════════════════════════════════════════
 
 enum class encoding_hint : std::uint8_t {
-    raw, log2, one_hot, binary, normalised, pairwise,
+    raw, log2, one_hot, binary, normalised, pairwise, precedence,
 };
 
 // ═══════════════════════════════════════════════════════════════════════

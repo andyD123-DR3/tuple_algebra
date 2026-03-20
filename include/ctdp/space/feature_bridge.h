@@ -66,7 +66,8 @@ constexpr std::size_t feature_width_of(const D& d, encoding_hint enc) {
 //
 // Single source of truth for encoding a descriptor value to features.
 // Used by feature_bridge::write_dim and conditional_dim::write_features.
-// Does NOT handle dim_kind::partition (those have write_features).
+// Scalar encoding — compound types with write_features (partition,
+// permutation) are handled in write_dim, not here.
 
 template <typename D, typename V>
 void encode_scalar(const D& desc, V val, encoding_hint enc, double* out) {
@@ -205,10 +206,8 @@ private:
         auto enc = encodings_[I];
         auto val = std::get<I>(pt);
 
-        if constexpr (D::kind == dim_kind::partition) {
-            // Pairwise co-membership encoding: N*(N-1)/2 binary features.
-            static_assert(requires { desc.write_features(val, out); },
-                "partition dim_kind requires write_features(value_type, double*)");
+        if constexpr (D::kind == dim_kind::partition || D::kind == dim_kind::permutation) {
+            // Compound types (partition, permutation) provide their own encoding.
             desc.write_features(val, out);
         } else {
             detail::encode_scalar(desc, val, enc, out);

@@ -378,6 +378,13 @@ struct section_space {
     constexpr base_point embed(const point_type& reduced) const {
         return detail::tuple_insert<DimIdx>(reduced, fixed_);
     }
+
+    // Named dimension access — delegates to base after embedding.
+    // Required for declarative constraints (make_product_le etc.)
+    // to work on fixed subspaces.
+    int get_dim_as_int(const point_type& pt, std::string_view dim) const {
+        return base_.get_dim_as_int(embed(pt), dim);
+    }
 };
 
 // Factory: section<DimIdx>(space, value)
