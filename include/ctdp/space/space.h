@@ -1,7 +1,7 @@
 #ifndef CTDP_SPACE_SPACE_H
 #define CTDP_SPACE_SPACE_H
 
-// ctdp v0.7.2 — Search space concept, algebra, constexpr enumeration
+// ctdp v0.8.0 — Search space concept, algebra, constexpr enumeration
 //
 // Three-layer architecture (this is Layer 1):
 //   Layer 1 (Space):  structure — rank, names, enumeration, algebra
@@ -289,6 +289,12 @@ auto to_vector(const Space& space) {
     return result;
 }
 
+template <typename PointType>
+struct search_result {
+    PointType     best{};
+    double        best_cost = std::numeric_limits<double>::infinity();
+    std::size_t   evaluated = 0;
+};
 // ═══════════════════════════════════════════════════════════════════════
 // exhaustive_search — generic over any enumerable space
 //
@@ -299,45 +305,24 @@ auto to_vector(const Space& space) {
 
 template <typename Space, typename CostFn>
     requires has_enumerate<Space>
-constexpr auto exhaustive_search(const Space& space, CostFn&& cost_fn)
-    -> typename Space::point_type
-{
-    typename Space::point_type best{};
-    double best_cost = std::numeric_limits<double>::infinity();
-    bool found = false;
-
-    space.enumerate([&](const typename Space::point_type& p) {
-        if constexpr (constrained_space<Space>) {
-            if (!space.is_valid(p)) return;
-        }
-        double c = cost_fn(p);
-        if (!found || c < best_cost) {
-            best = p; best_cost = c; found = true;
-        }
-    });
-    return best;
-}
-
-template <typename Space, typename CostFn>
-    requires has_enumerate<Space>
 constexpr auto exhaustive_search_with_cost(const Space& space, CostFn&& cost_fn)
-    -> std::pair<typename Space::point_type, double>
+-> search_result<typename Space::point_type>
 {
-    typename Space::point_type best{};
-    double best_cost = std::numeric_limits<double>::infinity();
-    bool found = false;
+    search_result<typename Space::point_type> result;
 
     space.enumerate([&](const typename Space::point_type& p) {
         if constexpr (constrained_space<Space>) {
             if (!space.is_valid(p)) return;
         }
+        ++result.evaluated;
         double c = cost_fn(p);
-        if (!found || c < best_cost) {
-            best = p; best_cost = c; found = true;
+        if (result.evaluated == 1u || c < result.best_cost) {
+            result.best = p; result.best_cost = c;
         }
-    });
-    return {best, best_cost};
+        });
+    return result;
 }
+
 
 // ═══════════════════════════════════════════════════════════════════════
 // section_space — genuine rank reduction on tuple-based points
@@ -393,12 +378,28 @@ struct section_space {
     constexpr base_point embed(const point_type& reduced) const {
         return detail::tuple_insert<DimIdx>(reduced, fixed_);
     }
+
+    // Named dimension access — delegates to base after embedding.
+    // Required for declarative constraints (make_product_le etc.)
+    // to work on fixed subspaces.
+    int get_dim_as_int(const point_type& pt, std::string_view dim) const {
+        return base_.get_dim_as_int(embed(pt), dim);
+    }
 };
 
 // Factory: section<DimIdx>(space, value)
 template <std::size_t DimIdx, typename Space>
 auto section(const Space& space,
              std::tuple_element_t<DimIdx, typename Space::point_type> value) {
+    return section_space<DimIdx, Space>(space, value);
+}
+
+/// Alias: fix<DimIdx>(space, value) — optimisation-vocabulary name.
+/// "Fix dimension I to this value" — the language of branch-and-bound,
+/// Benders decomposition, and MIP solvers. Equivalent to section.
+template <std::size_t DimIdx, typename Space>
+auto fix(const Space& space,
+         std::tuple_element_t<DimIdx, typename Space::point_type> value) {
     return section_space<DimIdx, Space>(space, value);
 }
 
