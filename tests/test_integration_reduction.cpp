@@ -13,6 +13,7 @@
 #include "ct_dp/algebra/make_reduction.h"
 #include <gtest/gtest.h>
 #include <algorithm>
+#include <functional>
 #include <limits>
 #include <vector>
 
@@ -178,8 +179,8 @@ protected:
             const partition_value<3>&, std::size_t,
             std::span<const std::size_t>)> child_factory_;
 
-    decltype(make_fusibility_filter<3>(
-        std::declval<reduction_properties_t>())) filter_{
+    std::function<bool(const partition_value<3>&)> filter_{
+
             make_fusibility_filter<3>(props_)};
 };
 
