@@ -155,7 +155,7 @@ protected:
                                     default_vec_width_dim()));
         };
 
-        filter_ = decltype(filter_)(make_fusibility_filter<3>(props_));
+        filter_ = make_fusibility_filter<3>(props_);
     }
 
     decltype(make_reduction(

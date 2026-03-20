@@ -318,32 +318,27 @@ constexpr auto exhaustive_search(const Space& space, CostFn&& cost_fn)
     return best;
 }
 
-template <typename PointType>
-struct search_result {
-    PointType     best{};
-    double        best_cost = std::numeric_limits<double>::infinity();
-    std::size_t   evaluated = 0;
-};
-
 template <typename Space, typename CostFn>
     requires has_enumerate<Space>
 constexpr auto exhaustive_search_with_cost(const Space& space, CostFn&& cost_fn)
--> search_result<typename Space::point_type>
+    -> std::pair<typename Space::point_type, double>
 {
-    search_result<typename Space::point_type> result;
+    typename Space::point_type best{};
+    double best_cost = std::numeric_limits<double>::infinity();
+    bool found = false;
 
     space.enumerate([&](const typename Space::point_type& p) {
         if constexpr (constrained_space<Space>) {
             if (!space.is_valid(p)) return;
         }
-        ++result.evaluated;
         double c = cost_fn(p);
-        if (result.evaluated == 1u || c < result.best_cost) {
-            result.best = p; result.best_cost = c;
+        if (!found || c < best_cost) {
+            best = p; best_cost = c; found = true;
         }
-        });
-    return result;
+    });
+    return {best, best_cost};
 }
+
 // ═══════════════════════════════════════════════════════════════════════
 // section_space — genuine rank reduction on tuple-based points
 //
