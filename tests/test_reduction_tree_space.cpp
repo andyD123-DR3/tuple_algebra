@@ -336,7 +336,7 @@ TEST(E2E, FiveLaneStats) {
     EXPECT_EQ(count, 10u);  // 10 legal partitions of 5 lanes
 
     // Encode one point to verify features
-    auto rv = root_desc.value_at(0);  // [0,0,0,0,0] all one group
+    auto rv = partition_value<5>{{0,0,0,1,1}};  // plus group + min/max group
     ASSERT_TRUE(filter(rv));
 
     auto child_factory = make_reduction_child_factory(props);
