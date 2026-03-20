@@ -201,11 +201,12 @@ private:
 
     template <std::size_t I>
     void write_dim(const point_type& pt, double* out) const {
+        using D = std::remove_cvref_t<decltype(std::get<I>(descs_))>;
         const auto& desc = std::get<I>(descs_);
         auto enc = encodings_[I];
         auto val = std::get<I>(pt);
 
-        if constexpr (requires { desc.write_features(val, out); }) {
+        if constexpr (D::kind == dim_kind::partition || D::kind == dim_kind::permutation) {
             // Compound types (partition, permutation) provide their own encoding.
             desc.write_features(val, out);
         } else {
