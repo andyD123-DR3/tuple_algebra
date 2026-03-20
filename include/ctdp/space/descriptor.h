@@ -339,7 +339,14 @@ struct descriptor_space {
         int result = -1;
         [&]<std::size_t... Is>(std::index_sequence<Is...>) {
             ((names[Is] == dim
-                ? (result = static_cast<int>(std::get<Is>(pt)), true)
+                ? [&]() {
+                    using elem_t = std::tuple_element_t<Is, point_type>;
+                    if constexpr (std::is_convertible_v<elem_t, int>) {
+                        result = static_cast<int>(std::get<Is>(pt));
+                    }
+                    // non-int dims (permutation, partition): result stays -1
+                    return true;
+                }()
                 : false), ...);
         }(std::make_index_sequence<rank>{});
         return result;

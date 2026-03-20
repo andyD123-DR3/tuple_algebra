@@ -142,6 +142,22 @@ ctdp_add_test(test_ordinal_fix test_ordinal_fix.cpp)
 # ── Space layer: partition ordinate type (Sprint 3) ───────────────────────
 ctdp_add_test(test_partition test_partition.cpp)
 
+# ── Space layer: tree_space (Sprint 4, partition-rooted hierarchy) ────────
+ctdp_add_test(test_tree_space test_tree_space.cpp)
+ctdp_add_test(test_reduction_tree_space test_reduction_tree_space.cpp)
+
+# ── Space layer: counted_view + constraints (Sprint 5) ───────────────────
+ctdp_add_test(test_counted_view test_counted_view.cpp)
+
+# ── Integration tests (Sprint 6) ─────────────────────────────────────────
+ctdp_add_test(test_integration_fix test_integration_fix.cpp)
+ctdp_add_test(test_integration_gemm test_integration_gemm.cpp)
+ctdp_add_test(test_integration_spmv test_integration_spmv.cpp)
+ctdp_add_test(test_integration_reduction test_integration_reduction.cpp)
+
+# ── Space layer: permutation ordinate type (Sprint 7) ────────────────────
+ctdp_add_test(test_permutation test_permutation.cpp)
+
 # ── Bench / calibrator tests (percentile, FIX ET parser) ────────────────
 # test_percentile fails to compile with GTest<=1.15.2 + GCC13/libstdc++13.
 # Root cause: gtest.h compares const char* with std::string_view via operator==,
@@ -199,6 +215,14 @@ add_custom_target(check
             test_reduction_space
             test_ordinal_fix
             test_partition
+            test_tree_space
+            test_reduction_tree_space
+            test_counted_view
+            test_integration_fix
+            test_integration_gemm
+            test_integration_spmv
+            test_integration_reduction
+            test_permutation
     COMMENT "Running all CTDP tests"
 )
 
