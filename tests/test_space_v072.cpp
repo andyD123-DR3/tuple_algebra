@@ -171,7 +171,7 @@ TEST(SpaceV072, DispatchNTTP) {
 // TODO: investigate g++-13 template deduction discrepancy.
 // ============================================================================
 
-#if 0
+
 TEST(SpaceV072, TierCompositionSearch) {
     constexpr auto base = make_test_space();
 
@@ -221,7 +221,7 @@ TEST(SpaceV072, TierCompositionSearch) {
     EXPECT_DOUBLE_EQ(features[5], 1.0);  // turbo
     */
 }
-#endif
+
 
 // ── Concept static assertions ───────────────────────────────────────────────
 
