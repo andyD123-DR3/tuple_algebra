@@ -425,7 +425,7 @@ TEST(Integration, Bridge_FromBase) {
 TEST(Integration, ComposeWithFix) {
     auto space = make_gemm_space();
     // Fix TK to 8 (index 2)
-    auto fixed = fix<2>(space, 8);
+    auto fixed = ctdp::space::section<2>(space, 8);
 
     // Build constraint against the FIXED 2D subspace
     auto c = make_product_le(fixed, 256, "TM", "TN");
@@ -442,7 +442,7 @@ TEST(Integration, ComposeWithFix) {
 
 TEST(Integration, BackwardsCompat_ValidView) {
     auto space = make_gemm_space();
-    auto vv = make_valid_view(space, [](const auto& pt) {
+    auto vv = filter_valid(space, [](const auto& pt) {
         return std::get<0>(pt) <= 16;
     });
 

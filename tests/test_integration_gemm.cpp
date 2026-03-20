@@ -124,7 +124,7 @@ TEST(IntegrationGemm, FeatureEncoding) {
 
 TEST(IntegrationGemm, FixDimension) {
     auto space = make_gemm_space();
-    auto fixed = fix<2>(space, 8);  // fix TK=8
+    auto fixed = ctdp::space::section<2>(space, 8);  // fix TK=8
 
     EXPECT_EQ(decltype(fixed)::rank, 2u);
     auto names = fixed.dimension_names();
@@ -139,7 +139,7 @@ TEST(IntegrationGemm, FixDimension) {
 
 TEST(IntegrationGemm, FixWithConstraint) {
     auto space = make_gemm_space();
-    auto fixed = fix<2>(space, 8);
+    auto fixed = ctdp::space::section<2>(space, 8);
 
     auto c = make_product_le(fixed, 128, "TM", "TN");
     auto view = make_counted_view(fixed, c);
