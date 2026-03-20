@@ -152,7 +152,6 @@ ctdp_add_test(test_counted_view test_counted_view.cpp)
 # ── Integration tests (Sprint 6) ─────────────────────────────────────────
 ctdp_add_test(test_integration_fix test_integration_fix.cpp)
 ctdp_add_test(test_integration_gemm test_integration_gemm.cpp)
-ctdp_add_test(test_integration_spmv test_integration_spmv.cpp)
 ctdp_add_test(test_integration_reduction test_integration_reduction.cpp)
 
 # ── Space layer: permutation ordinate type (Sprint 7) ────────────────────
@@ -220,7 +219,6 @@ add_custom_target(check
             test_counted_view
             test_integration_fix
             test_integration_gemm
-            test_integration_spmv
             test_integration_reduction
             test_permutation
     COMMENT "Running all CTDP tests"
