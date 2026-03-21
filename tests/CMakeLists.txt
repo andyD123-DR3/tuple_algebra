@@ -155,6 +155,16 @@ ctdp_add_test(test_interval_partition_plan plan/test_interval_partition_plan.cpp
 # ── Sprint 8: Matrix chain integration ──────────────────────────────────────
 ctdp_add_test(test_matrix_chain_enumeration e2e/test_matrix_chain_enumeration.cpp)
 
+
+# ── Sprint 9 ──────────────────────────────────────
+ctdp_add_test(test_all_binary_splits solver/test_all_binary_splits.cpp)
+ctdp_add_test(test_triangular_memo solver/test_triangular_memo.cpp)
+ctdp_add_test(test_interval_solver solver/test_interval_solver.cpp)
+ctdp_add_test(test_matrix_chain_solver e2e/test_matrix_chain_solver.cpp)
+
+
+
+
 # ══ Bench / calibrator tests (percentile, FIX ET parser) ═══════════════════
 # test_percentile fails to compile with GTest<=1.15.2 + GCC13/libstdc++13.
 # Root cause: gtest.h compares const char* with std::string_view via operator==,
