@@ -83,6 +83,19 @@ struct interval_partition_plan {
             ctx.left(k),      // left_ctx
             ctx.right(k)      // right_ctx
         };
+
+
+        // Sprint 9: Runtime plan construction from split point
+        static interval_partition_plan from_split(interval_context ctx, size_t k) {
+            assert(k > ctx.i && k < ctx.j && "Invalid split point");
+            return { ctx, k, interval_context{ctx.i, k}, interval_context{k, ctx.j} };
+        }
+
+        bool is_legal() const {
+            return left_ctx.i == whole.i && left_ctx.j == split &&
+                right_ctx.i == split && right_ctx.j == whole.j;
+        }
+
     }
     
     /**
