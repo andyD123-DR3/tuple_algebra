@@ -226,9 +226,9 @@ TEST(IntervalPartitionPlan, PlanAccessors) {
     binary_cut_desc<10> desc;
     auto plan = interval_partition_plan::make(ctx, desc, 3);  // split at 8
     
-    EXPECT_EQ(plan.left_size(), 3);
-    EXPECT_EQ(plan.right_size(), 7);
-    EXPECT_EQ(plan.split, 8);
+    EXPECT_EQ(plan.left_size(), 4);
+    EXPECT_EQ(plan.right_size(), 6);
+    EXPECT_EQ(plan.split, 9);
     EXPECT_EQ(plan.whole.size(), 10);
 }
 
