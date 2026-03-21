@@ -33,6 +33,15 @@ struct interval_partition_plan {
     solver::interval_context left_ctx;    ///< Left subinterval [i, k)
     solver::interval_context right_ctx;   ///< Right subinterval [k, j)
     
+    // Sprint 9: Runtime plan construction from split point
+    [[nodiscard]] static constexpr interval_partition_plan from_split(
+        solver::interval_context ctx, 
+        size_t k
+    ) noexcept {
+        assert(k > ctx.i && k < ctx.j && "Invalid split point");
+        return {ctx, k, solver::interval_context{ctx.i, k}, solver::interval_context{k, ctx.j}};
+    }
+    
     /**
      * @brief Factory: Apply descriptor choice to context
      * 
@@ -83,19 +92,6 @@ struct interval_partition_plan {
             ctx.left(k),      // left_ctx
             ctx.right(k)      // right_ctx
         };
-
-
-        // Sprint 9: Runtime plan construction from split point
-        static interval_partition_plan from_split(interval_context ctx, size_t k) {
-            assert(k > ctx.i && k < ctx.j && "Invalid split point");
-            return { ctx, k, interval_context{ctx.i, k}, interval_context{k, ctx.j} };
-        }
-
-        bool is_legal() const {
-            return left_ctx.i == whole.i && left_ctx.j == split &&
-                right_ctx.i == split && right_ctx.j == whole.j;
-        }
-
     }
     
     /**
