@@ -30,7 +30,7 @@ template<class R>
 concept IntervalRecurrence =
 requires(const R& r,
          interval_context ctx,
-         const interval_partition_plan& plan,
+         const plan::interval_partition_plan& plan,
          const typename R::value_type& left,
          const typename R::value_type& right) {
     typename R::value_type;
@@ -153,7 +153,7 @@ public:
         
         split_policy_.for_each(ctx, [&](size_t k) {
             // Build plan from runtime split
-            auto plan = interval_partition_plan::from_split(ctx, k);
+            auto plan = plan::interval_partition_plan::from_split(ctx, k);
             
             // Recurse on children
             value_type left = solve(plan.left_ctx, memo);

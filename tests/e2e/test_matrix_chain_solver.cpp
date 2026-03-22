@@ -29,7 +29,7 @@ struct matrix_chain_recurrence {
             : std::nullopt;
     }
     
-    value_type combine(const interval_partition_plan& plan,
+    uint64_t combine(const ct_dp::plan::interval_partition_plan& plan,
                        value_type left,
                        value_type right) const {
         // Extract interval boundaries from plan
