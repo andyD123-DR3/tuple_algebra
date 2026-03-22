@@ -1,4 +1,4 @@
-# ══ Google Test ═════════════════════════════════════════════════════════════
+# ── Google Test ───────────────────────────────────────────────────────────────
 include(FetchContent)
 FetchContent_Declare(
     googletest
@@ -12,27 +12,24 @@ FetchContent_MakeAvailable(googletest)
 
 include(GoogleTest)
 
-# ══ Helper function ═════════════════════════════════════════════════════════
+# ── Helper function ──────────────────────────────────────────────────────────
 function(ctdp_add_test target source)
     add_executable(${target} ${source})
     target_link_libraries(${target} PRIVATE ctdp_all GTest::gtest GTest::gtest_main)
     gtest_discover_tests(${target})
 endfunction()
 
-# ══ Core library tests ══════════════════════════════════════════════════════
+# ── Core library tests ───────────────────────────────────────────────────
 ctdp_add_test(core_test core/core_test.cc)
 ctdp_add_test(test_io_lexer core/test_io_lexer.cpp)
 
-# ══ Solver library tests (original Half A) ═════════════════════════════════
+# ── Solver library tests (original Half A) ───────────────────────────────
 ctdp_add_test(solver_test solver/solver_test.cc)
 
-# ── Sprint 8: Interval context ──────────────────────────────────────────────
-ctdp_add_test(test_interval_context solver/test_interval_context.cpp)
-
-# ══ Solver I/O tests (cost table) ══════════════════════════════════════════
+# ── Solver I/O tests (cost table) ────────────────────────────────────────
 ctdp_add_test(test_cost_table_io solver/test_cost_table_io.cpp)
 
-# ══ Solver library tests (integrated Half B: algorithms, spaces, cost models, memo)
+# ── Solver library tests (integrated Half B: algorithms, spaces, cost models, memo)
 ctdp_add_test(test_solver_concepts     test_solver_concepts.cpp)
 ctdp_add_test(test_per_element_space   test_per_element_space.cpp)
 ctdp_add_test(test_interval_split_space test_interval_split_space.cpp)
@@ -44,21 +41,21 @@ ctdp_add_test(test_exhaustive_search   test_exhaustive_search.cpp)
 ctdp_add_test(test_select_and_run      test_select_and_run.cpp)
 ctdp_add_test(test_memo                test_memo.cpp)
 
-# ══ Space-parameterised cost and constraint tests ══════════════════════════
+# ── Space-parameterised cost and constraint tests ────────────────────────
 ctdp_add_test(test_space_parameterised test_space_parameterised.cpp)
 ctdp_add_test(test_candidate_traversal test_candidate_traversal.cpp)
 ctdp_add_test(test_heterogeneous_space test_heterogeneous_space.cpp)
 
-# ══ Constrained search (beam_search, local_search) ═════════════════════════
+# ── Constrained search (beam_search, local_search) ──────────────────────
 ctdp_add_test(test_constrained_search test_constrained_search.cpp)
 
-# ══ Constraint module (combinators, factories) ═════════════════════════════
+# ── Constraint module (combinators, factories) ──────────────────────────
 ctdp_add_test(test_constraints test_constraints.cpp)
 
-# ══ Algebra library tests ═══════════════════════════════════════════════════
+# ── Algebra library tests ────────────────────────────────────────────────
 ctdp_add_test(algebra_test algebra/algebra_test.cc)
 
-# ══ Graph library tests ═════════════════════════════════════════════════════
+# ── Graph library tests ──────────────────────────────────────────────────────
 # Step 1: Graph representation, builder, implicit, equality
 ctdp_add_test(graph_step1_test graph/graph_step1_test.cc)
 
@@ -130,42 +127,22 @@ add_executable(test_performance_models test_performance_models.cpp)
 target_link_libraries(test_performance_models PRIVATE ctdp_all)
 add_test(NAME test_performance_models COMMAND test_performance_models)
 
-# ══ Space layer v0.7.2 tests (descriptor_space, valid_view, tiers) ═════════
+# ── Space layer v0.7.2 tests (descriptor_space, valid_view, tiers) ───────
 ctdp_add_test(test_space_v072 test_space_v072.cpp)
 
-# ══ Space layer: conditional_dim (Sprint 2, property-driven dimension presence) ═
+# ── Space layer: conditional_dim (Sprint 2, property-driven dimension presence) ─
 ctdp_add_test(test_conditional_dim test_conditional_dim.cpp)
 
-# ══ Space layer: reduction properties + space generator (Sprint 2, tasks 2.3-2.7) ═
+# ── Space layer: reduction properties + space generator (Sprint 2, tasks 2.3-2.7) ─
 ctdp_add_test(test_reduction_space test_reduction_space.cpp)
 
-# ══ Space layer: ordinal ordinate type + fix<I> alias (Sprint 1) ═══════════
+# ── Space layer: ordinal ordinate type + fix<I> alias (Sprint 1) ──────────
 ctdp_add_test(test_ordinal_fix test_ordinal_fix.cpp)
 
-# ══ Space layer: partition ordinate type (Sprint 3) ════════════════════════
+# ── Space layer: partition ordinate type (Sprint 3) ───────────────────────
 ctdp_add_test(test_partition test_partition.cpp)
 
-# ── Sprint 8: Binary cut descriptor and features ────────────────────────────
-ctdp_add_test(test_binary_cut_desc space/test_binary_cut_desc.cpp)
-ctdp_add_test(test_binary_cut_features space/test_binary_cut_features.cpp)
-
-# ── Sprint 8: Interval partition plan ───────────────────────────────────────
-ctdp_add_test(test_interval_partition_plan plan/test_interval_partition_plan.cpp)
-
-# ── Sprint 8: Matrix chain integration ──────────────────────────────────────
-ctdp_add_test(test_matrix_chain_enumeration e2e/test_matrix_chain_enumeration.cpp)
-
-
-# ── Sprint 9 ──────────────────────────────────────
-ctdp_add_test(test_all_binary_splits solver/test_all_binary_splits.cpp)
-ctdp_add_test(test_triangular_memo solver/test_triangular_memo.cpp)
-ctdp_add_test(test_interval_solver solver/test_interval_solver.cpp)
-ctdp_add_test(test_matrix_chain_solver e2e/test_matrix_chain_solver.cpp)
-
-
-
-
-# ══ Bench / calibrator tests (percentile, FIX ET parser) ═══════════════════
+# ── Bench / calibrator tests (percentile, FIX ET parser) ────────────────
 # test_percentile fails to compile with GTest<=1.15.2 + GCC13/libstdc++13.
 # Root cause: gtest.h compares const char* with std::string_view via operator==,
 # which GCC13's C++20 rewritten comparisons make ambiguous.  Not a bug in our code.
@@ -185,7 +162,7 @@ target_link_libraries(test_perf_counter PRIVATE ctdp_all GTest::gtest GTest::gte
 target_compile_features(test_perf_counter PRIVATE cxx_std_20)
 add_test(NAME test_perf_counter COMMAND test_perf_counter)
 
-# ══ Aggregate target ════════════════════════════════════════════════════════
+# ── Aggregate target ─────────────────────────────────────────────────────────
 add_custom_target(check
     COMMAND ${CMAKE_CTEST_COMMAND} --output-on-failure
     DEPENDS core_test test_io_lexer solver_test algebra_test
@@ -222,15 +199,10 @@ add_custom_target(check
             test_reduction_space
             test_ordinal_fix
             test_partition
-            test_binary_cut_desc
-            test_binary_cut_features
-            test_interval_context
-            test_interval_partition_plan
-            test_matrix_chain_enumeration
     COMMENT "Running all CTDP tests"
 )
 
-# ══ Calibration tests (standalone, no GTest) ═══════════════════════════════
+# ── Calibration tests (standalone, no GTest) ─────────────────────────────────
 # These use their own lightweight assert-based test infrastructure.
 set(CTDP_CALIBRATION_TEST_SOURCES
     calibration_test.cpp
@@ -240,7 +212,7 @@ set(CTDP_CALIBRATION_TEST_SOURCES
     phase6_test.cpp
 )
 
-# ══ fix/ parser-optimiser tests (standalone, no GTest, no HW) ══════════════
+# ── fix/ parser-optimiser tests (standalone, no GTest, no HW) ────────────────
 add_executable(test_fix_bench test_fix_bench.cpp)
 target_include_directories(test_fix_bench PRIVATE
     ${CMAKE_SOURCE_DIR}/include)
