@@ -151,6 +151,7 @@ ctdp_add_test(test_binary_cut_features space/test_binary_cut_features.cpp)
 
 # ── Sprint 8: Interval partition plan ───────────────────────────────────────
 ctdp_add_test(test_interval_partition_plan plan/test_interval_partition_plan.cpp)
+ctdp_add_test(test_plan_core plan/test_plan_core.cpp)
 
 # ── Sprint 8: Matrix chain integration ──────────────────────────────────────
 ctdp_add_test(test_matrix_chain_enumeration e2e/test_matrix_chain_enumeration.cpp)
