@@ -32,7 +32,35 @@ struct interval_partition_plan {
     size_t split;                         ///< Absolute cut point k where i < k < j
     solver::interval_context left_ctx;    ///< Left subinterval [i, k)
     solver::interval_context right_ctx;   ///< Right subinterval [k, j)
-    
+
+    /**
+     * @brief Factory: Build plan directly from an absolute split point
+     *
+     * This is the runtime composition point used by generic interval solvers
+     * and split policies that emit absolute interior cuts.
+     *
+     * Preconditions (enforced by assertion):
+     * - ctx.i < k < ctx.j
+     *
+     * @param ctx Runtime interval context
+     * @param k Absolute cut point strictly inside ctx
+     * @return Partition plan with derived left/right subintervals
+     */
+    [[nodiscard]] static constexpr interval_partition_plan from_split(
+        solver::interval_context ctx,
+        size_t k
+    ) noexcept {
+        assert(k > ctx.i && k < ctx.j &&
+               "Split point must be strictly interior to interval");
+
+        return {
+            ctx,
+            k,
+            ctx.left(k),
+            ctx.right(k)
+        };
+    }
+
     /**
      * @brief Factory: Apply descriptor choice to context
      * 
@@ -77,12 +105,7 @@ struct interval_partition_plan {
         size_t rel = desc.ordinal_to_relative_cut(ordinal);
         size_t k = ctx.start() + rel;  // Absolute cut point
         
-        return {
-            ctx,              // whole
-            k,                // split
-            ctx.left(k),      // left_ctx
-            ctx.right(k)      // right_ctx
-        };
+        return from_split(ctx, k);
     }
     
     /**
@@ -95,7 +118,7 @@ struct interval_partition_plan {
      * 
      * @return true if plan is legal
      */
-    constexpr bool is_legal() const noexcept {
+    [[nodiscard]] constexpr bool is_legal() const noexcept {
         return whole.i < split && split < whole.j &&
                left_ctx.i == whole.i && left_ctx.j == split &&
                right_ctx.i == split && right_ctx.j == whole.j;
@@ -105,16 +128,16 @@ struct interval_partition_plan {
      * @brief Get left subproblem size
      * @return left_ctx.size()
      */
-    constexpr size_t left_size() const noexcept { 
-        return left_ctx.size(); 
+    [[nodiscard]] constexpr size_t left_size() const noexcept {
+        return left_ctx.size();
     }
     
     /**
      * @brief Get right subproblem size
      * @return right_ctx.size()
      */
-    constexpr size_t right_size() const noexcept { 
-        return right_ctx.size(); 
+    [[nodiscard]] constexpr size_t right_size() const noexcept {
+        return right_ctx.size();
     }
     
     /**
@@ -125,7 +148,7 @@ struct interval_partition_plan {
      * 
      * @return true if sizes sum to whole
      */
-    constexpr bool preserves_size() const noexcept {
+    [[nodiscard]] constexpr bool preserves_size() const noexcept {
         return left_size() + right_size() == whole.size();
     }
 };

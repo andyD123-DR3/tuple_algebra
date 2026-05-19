@@ -30,6 +30,7 @@
 // Algorithms
 #include "algorithms/per_element_argmin.h"
 #include "algorithms/interval_dp.h"
+#include "algorithms/interval_solver.h"
 #include "algorithms/exhaustive_search.h"
 #include "algorithms/beam_search.h"
 #include "algorithms/local_search.h"
@@ -41,5 +42,11 @@
 // Memoisation
 #include "memo/candidate_cache.h"
 #include "memo/cost_purity.h"
+#include "memo/triangular_memo.h"
+
+// Stage 1 interval solver substrate
+#include "interval_context.h"
+#include "plans/interval_partition_plan.h"
+#include "policies/all_binary_splits.h"
 
 #endif // CTDP_SOLVER_SOLVER_H

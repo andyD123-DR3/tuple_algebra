@@ -1,0 +1,161 @@
+#include "ctdp/solver/solver.h"
+
+#include <gtest/gtest.h>
+
+#include <array>
+#include <cstddef>
+#include <functional>
+#include <optional>
+
+namespace {
+
+using ctdp::interval_dp;
+using ctdp::interval_split_space;
+using ctdp::make_chain_cost;
+using ctdp::solver::interval_context;
+using ctdp::solver::memo::triangular_memo;
+using ctdp::solver::plans::interval_partition_plan;
+using ctdp::solver::algorithms::interval_memo;
+using ctdp::solver::algorithms::interval_recurrence;
+using ctdp::solver::algorithms::interval_solver;
+
+struct matrix_chain_recurrence {
+    using value_type = double;
+
+    std::array<std::size_t, 7> dims{};
+
+    [[nodiscard]] std::optional<double> base_case(interval_context ctx) const {
+        if (ctx.size() == 1) {
+            return 0.0;
+        }
+        return std::nullopt;
+    }
+
+    [[nodiscard]] double combine(interval_partition_plan const& plan,
+                                 double left,
+                                 double right) const {
+        return left + right + static_cast<double>(
+            dims[plan.whole.start()] * dims[plan.split] * dims[plan.whole.end()]);
+    }
+};
+
+struct left_size_score_recurrence {
+    using value_type = int;
+
+    [[nodiscard]] std::optional<int> base_case(interval_context ctx) const {
+        if (ctx.size() == 1) {
+            return 0;
+        }
+        return std::nullopt;
+    }
+
+    [[nodiscard]] int combine(interval_partition_plan const& plan,
+                              int left,
+                              int right) const {
+        return left + right + static_cast<int>(plan.left_size());
+    }
+};
+
+struct leftmost_split_only {
+    template<class Emit>
+    void for_each(interval_context ctx, Emit&& emit) const {
+        emit(ctx.start() + 1);
+    }
+};
+
+struct counting_recurrence {
+    using value_type = int;
+
+    std::size_t* base_calls{};
+    std::size_t* combine_calls{};
+
+    [[nodiscard]] std::optional<int> base_case(interval_context ctx) const {
+        ++(*base_calls);
+        if (ctx.size() == 1) {
+            return 1;
+        }
+        return std::nullopt;
+    }
+
+    [[nodiscard]] int combine(interval_partition_plan const&,
+                              int left,
+                              int right) const {
+        ++(*combine_calls);
+        return left + right;
+    }
+};
+
+static_assert(interval_recurrence<matrix_chain_recurrence>);
+static_assert(interval_recurrence<left_size_score_recurrence>);
+static_assert(interval_memo<triangular_memo<double>, double>);
+static_assert(interval_memo<triangular_memo<int>, int>);
+
+TEST(IntervalSolver, MatchesIntervalDPOnCormenMatrixChain) {
+    constexpr std::array<std::size_t, 7> dims{30, 35, 15, 5, 10, 20, 25};
+
+    matrix_chain_recurrence recurrence{dims};
+    interval_solver<matrix_chain_recurrence> solver{recurrence};
+    triangular_memo<double> memo{6};
+
+    auto value = solver.solve(interval_context{0, 6}, memo);
+
+    auto space = interval_split_space<7>{.n = 6};
+    auto dp_result = interval_dp(space, make_chain_cost(dims));
+
+    EXPECT_DOUBLE_EQ(value, dp_result.predicted_cost);
+    EXPECT_DOUBLE_EQ(value, 15125.0);
+}
+
+TEST(IntervalSolver, CompareControlsOptimisationDirection) {
+    left_size_score_recurrence recurrence;
+
+    interval_solver<left_size_score_recurrence> min_solver{recurrence};
+    triangular_memo<int> min_memo{4};
+
+    interval_solver<left_size_score_recurrence,
+                    ctdp::solver::policies::all_binary_splits,
+                    std::greater<>> max_solver{recurrence, {}, {}};
+    triangular_memo<int> max_memo{4};
+
+    auto min_value = min_solver.solve(interval_context{0, 4}, min_memo);
+    auto max_value = max_solver.solve(interval_context{0, 4}, max_memo);
+
+    EXPECT_EQ(min_value, 3);
+    EXPECT_EQ(max_value, 6);
+}
+
+TEST(IntervalSolver, CustomSplitPolicyRestrictsSearch) {
+    left_size_score_recurrence recurrence;
+    interval_solver<left_size_score_recurrence, leftmost_split_only> solver{recurrence};
+    triangular_memo<int> memo{4};
+
+    auto value = solver.solve(interval_context{0, 4}, memo);
+
+    EXPECT_EQ(value, 3);
+}
+
+TEST(IntervalSolver, ReusesMemoizedRootAndSubproblems) {
+    std::size_t base_calls = 0;
+    std::size_t combine_calls = 0;
+
+    counting_recurrence recurrence{&base_calls, &combine_calls};
+    interval_solver<counting_recurrence> solver{recurrence};
+    triangular_memo<int> memo{4};
+
+    auto first = solver.solve(interval_context{0, 4}, memo);
+    auto base_after_first = base_calls;
+    auto combine_after_first = combine_calls;
+
+    auto second = solver.solve(interval_context{0, 4}, memo);
+
+    EXPECT_EQ(first, 4);
+    EXPECT_EQ(second, 4);
+    EXPECT_EQ(memo.size(), 10u);
+    EXPECT_EQ(base_after_first, 10u);
+    EXPECT_EQ(combine_after_first, 10u);
+    EXPECT_EQ(base_calls, base_after_first);
+    EXPECT_EQ(combine_calls, combine_after_first);
+}
+
+} // namespace
+

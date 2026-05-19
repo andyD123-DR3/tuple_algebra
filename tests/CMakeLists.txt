@@ -29,6 +29,12 @@ ctdp_add_test(solver_test solver/solver_test.cc)
 # ── Sprint 8: Interval context ──────────────────────────────────────────────
 ctdp_add_test(test_interval_context solver/test_interval_context.cpp)
 
+# ── Sprint 9 Stage 1: Interval solver substrate ─────────────────────────────
+ctdp_add_test(test_all_binary_splits solver/test_all_binary_splits.cpp)
+ctdp_add_test(test_triangular_memo solver/test_triangular_memo.cpp)
+ctdp_add_test(test_interval_substrate_canonical solver/test_interval_substrate_canonical.cpp)
+ctdp_add_test(test_interval_solver solver/test_interval_solver.cpp)
+
 # ══ Solver I/O tests (cost table) ══════════════════════════════════════════
 ctdp_add_test(test_cost_table_io solver/test_cost_table_io.cpp)
 
@@ -220,6 +226,10 @@ add_custom_target(check
             test_binary_cut_desc
             test_binary_cut_features
             test_interval_context
+            test_all_binary_splits
+            test_triangular_memo
+            test_interval_substrate_canonical
+            test_interval_solver
             test_interval_partition_plan
             test_matrix_chain_enumeration
     COMMENT "Running all CTDP tests"

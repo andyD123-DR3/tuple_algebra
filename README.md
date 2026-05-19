@@ -15,7 +15,7 @@ cd build && ctest --output-on-failure
 | Tier | Headers | Lines | Description |
 |------|--------:|------:|-------------|
 | **core** | 15 | 3,104 | Constexpr containers, sorting, concepts, limits, plan, solve_stats |
-| **solver** | 32 | 4,634 | Algorithms (exhaustive, beam, local, interval DP), spaces, ML cost models, memo |
+| **solver** | 32 | 4,634 | Algorithms (exhaustive, beam, local, interval DP), Stage 1 interval substrate, spaces, ML cost models, memo |
 | **algebra** | 7 | 937 | Tuple algebra for variadic reductions (P3666R2) |
 | **graph** | 41 | 7,923 | CSR storage, topo sort, SCC, coloring, min-cut, matching, RCM, I/O, transforms |
 | **engine** | 8 | 1,483 | Bridges (graph→space, coloring→groups), instantiation, segmentation DP |
@@ -72,6 +72,7 @@ counter measurement, and SVR-based cost prediction.
 
 - `docs/architecture.docx` — Framework design and data flow
 - `docs/ctdp_architecture.md` — Architecture overview
+- `docs/design/sprint9_stage1_interval_solver_slice.md` — Sprint 9 Stage 1 interval solver substrate design
 - `docs/graph_library_reference.docx` — Graph API reference
 - `docs/ctdp_graph_user_guide.md` — Graph library user guide
 - `docs/design/epsilon_svr_design_note.md` — Epsilon-SVR implementation

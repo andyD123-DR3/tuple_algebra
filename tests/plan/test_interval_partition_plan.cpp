@@ -26,6 +26,41 @@ TEST(IntervalPartitionPlan, FactoryConstruction) {
     EXPECT_EQ(plan.right_ctx.end(), 20);
 }
 
+// Test: Runtime split construction
+TEST(IntervalPartitionPlan, FromSplitConstruction) {
+    interval_context ctx{10, 20};
+
+    auto plan = interval_partition_plan::from_split(ctx, 15);
+
+    EXPECT_EQ(plan.whole.start(), 10);
+    EXPECT_EQ(plan.whole.end(), 20);
+    EXPECT_EQ(plan.split, 15);
+    EXPECT_EQ(plan.left_ctx.start(), 10);
+    EXPECT_EQ(plan.left_ctx.end(), 15);
+    EXPECT_EQ(plan.right_ctx.start(), 15);
+    EXPECT_EQ(plan.right_ctx.end(), 20);
+}
+
+TEST(IntervalPartitionPlan, FromSplitMatchesDescriptorFactory) {
+    interval_context ctx{10, 20};
+    binary_cut_desc<10> desc;
+
+    for (size_t ord = 0; ord < desc.size(); ++ord) {
+        auto from_desc = interval_partition_plan::make(ctx, desc, ord);
+        auto from_split = interval_partition_plan::from_split(ctx, from_desc.split);
+
+        EXPECT_EQ(from_split.whole.start(), from_desc.whole.start());
+        EXPECT_EQ(from_split.whole.end(), from_desc.whole.end());
+        EXPECT_EQ(from_split.split, from_desc.split);
+        EXPECT_EQ(from_split.left_ctx.start(), from_desc.left_ctx.start());
+        EXPECT_EQ(from_split.left_ctx.end(), from_desc.left_ctx.end());
+        EXPECT_EQ(from_split.right_ctx.start(), from_desc.right_ctx.start());
+        EXPECT_EQ(from_split.right_ctx.end(), from_desc.right_ctx.end());
+        EXPECT_TRUE(from_split.is_legal());
+        EXPECT_TRUE(from_split.preserves_size());
+    }
+}
+
 // Test: Legality Invariant
 TEST(IntervalPartitionPlan, LegalityInvariant) {
     interval_context ctx{0, 10};
@@ -166,6 +201,17 @@ TEST(IntervalPartitionPlan, CompileTimeConstruction) {
     constexpr binary_cut_desc<10> desc;
     constexpr auto plan = interval_partition_plan::make(ctx, desc, 4);
     
+    static_assert(plan.split == 5, "Split should be at 5");
+    static_assert(plan.left_size() == 5, "Left size should be 5");
+    static_assert(plan.right_size() == 5, "Right size should be 5");
+    static_assert(plan.is_legal(), "Plan should be legal");
+    static_assert(plan.preserves_size(), "Size should be preserved");
+}
+
+TEST(IntervalPartitionPlan, CompileTimeFromSplit) {
+    constexpr interval_context ctx{0, 10};
+    constexpr auto plan = interval_partition_plan::from_split(ctx, 5);
+
     static_assert(plan.split == 5, "Split should be at 5");
     static_assert(plan.left_size() == 5, "Left size should be 5");
     static_assert(plan.right_size() == 5, "Right size should be 5");
