@@ -21,6 +21,8 @@
 
 #include "ctdp/space/concepts.h"
 #include "ctdp/space/feature_bridge.h"
+#include "ctdp/space/partition.h"
+#include "ctdp/space/permutation.h"
 #include "ctdp/space/space.h"
 
 #include <array>
@@ -339,7 +341,13 @@ struct descriptor_space {
         int result = -1;
         [&]<std::size_t... Is>(std::index_sequence<Is...>) {
             ((names[Is] == dim
-                ? (result = static_cast<int>(std::get<Is>(pt)), true)
+                ? [&]() {
+                    using elem_t = std::tuple_element_t<Is, point_type>;
+                    if constexpr (std::is_convertible_v<elem_t, int>) {
+                        result = static_cast<int>(std::get<Is>(pt));
+                    }
+                    return true;
+                }()
                 : false), ...);
         }(std::make_index_sequence<rank>{});
         return result;
@@ -379,8 +387,8 @@ struct descriptor_space {
     constexpr std::size_t feature_width() const {
         std::size_t w = 0;
         [&]<std::size_t... Is>(std::index_sequence<Is...>) {
-            ((w += (std::get<Is>(descs_).default_encoding() == encoding_hint::one_hot
-                    ? std::get<Is>(descs_).cardinality() : 1)), ...);
+            ((w += detail::feature_width_of(std::get<Is>(descs_),
+                    std::get<Is>(descs_).default_encoding())), ...);
         }(std::make_index_sequence<rank>{});
         return w;
     }
@@ -539,8 +547,7 @@ template <typename... Ds>
 constexpr std::size_t feat_width(const std::tuple<Ds...>& d) {
     std::size_t w = 0;
     [&]<std::size_t... Is>(std::index_sequence<Is...>) {
-        ((w += (std::get<Is>(d).default_encoding() == encoding_hint::one_hot
-                ? std::get<Is>(d).cardinality() : 1)), ...);
+        ((w += feature_width_of(std::get<Is>(d), std::get<Is>(d).default_encoding())), ...);
     }(std::index_sequence_for<Ds...>{});
     return w;
 }

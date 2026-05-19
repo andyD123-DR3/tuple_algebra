@@ -66,7 +66,8 @@ constexpr std::size_t feature_width_of(const D& d, encoding_hint enc) {
 //
 // Single source of truth for encoding a descriptor value to features.
 // Used by feature_bridge::write_dim and conditional_dim::write_features.
-// Does NOT handle dim_kind::partition (those have write_features).
+// Compound descriptors that provide write_features(...) are handled in
+// feature_bridge::write_dim, not here.
 
 template <typename D, typename V>
 void encode_scalar(const D& desc, V val, encoding_hint enc, double* out) {
@@ -145,7 +146,7 @@ struct feature_bridge {
         init_from_descs();
     }
 
-    std::size_t num_features() const { return total_features_; }
+    [[nodiscard]] std::size_t num_features() const { return total_features_; }
 
     // Override encoding for one dimension, returns new bridge.
     // NOTE: Only valid for scalar-encoded dimensions (int, enum, bool).
@@ -200,15 +201,12 @@ private:
 
     template <std::size_t I>
     void write_dim(const point_type& pt, double* out) const {
-        using D = std::remove_cvref_t<decltype(std::get<I>(descs_))>;
         const auto& desc = std::get<I>(descs_);
         auto enc = encodings_[I];
         auto val = std::get<I>(pt);
 
-        if constexpr (D::kind == dim_kind::partition) {
-            // Pairwise co-membership encoding: N*(N-1)/2 binary features.
-            static_assert(requires { desc.write_features(val, out); },
-                "partition dim_kind requires write_features(value_type, double*)");
+        if constexpr (std::remove_cvref_t<decltype(desc)>::kind == dim_kind::partition ||
+                      std::remove_cvref_t<decltype(desc)>::kind == dim_kind::permutation) {
             desc.write_features(val, out);
         } else {
             detail::encode_scalar(desc, val, enc, out);

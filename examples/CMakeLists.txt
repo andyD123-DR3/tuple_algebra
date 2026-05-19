@@ -116,6 +116,11 @@ add_executable(fix_parser_initial standalone/fix_parser_initial.cpp)
 add_executable(cache_line_layout framework/cache_line_layout.cpp)
 target_link_libraries(cache_line_layout PRIVATE ctdp_space)
 
+# -- Framework example: permutation descriptor search ---------------------------
+# Demonstrates first-class ordering search via descriptor_space + feature_bridge.
+add_executable(permutation_order_search framework/permutation_order_search.cpp)
+target_link_libraries(permutation_order_search PRIVATE ctdp_space)
+
 # -- Compiler options for v0.7.2 examples --------------------------------------
 if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
     target_compile_options(loop_nest_opt PRIVATE -O2 -mavx2 -mfma
@@ -127,6 +132,8 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
     target_compile_options(fix_parser_initial PRIVATE -O3 -march=native)
     target_compile_options(cache_line_layout PRIVATE -O2
         -fconstexpr-ops-limit=500000000
+        -Wno-conversion -Wno-sign-conversion)
+    target_compile_options(permutation_order_search PRIVATE -O2
         -Wno-conversion -Wno-sign-conversion)
 elseif(CMAKE_CXX_COMPILER_ID STREQUAL "Clang" OR
        CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
@@ -140,6 +147,8 @@ elseif(CMAKE_CXX_COMPILER_ID STREQUAL "Clang" OR
     target_compile_options(cache_line_layout PRIVATE -O2
         -fconstexpr-steps=500000000
         -Wno-conversion -Wno-sign-conversion)
+    target_compile_options(permutation_order_search PRIVATE -O2
+        -Wno-conversion -Wno-sign-conversion)
 elseif(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
     target_compile_options(loop_nest_opt PRIVATE /O2 /arch:AVX2)
     target_compile_options(dep_break_opt PRIVATE /O2 /arch:AVX2)
@@ -147,6 +156,7 @@ elseif(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
     target_compile_options(fix_parser_initial PRIVATE /O2 /arch:AVX2)
     target_compile_options(cache_line_layout PRIVATE /O2
         /constexpr:steps500000000)
+    target_compile_options(permutation_order_search PRIVATE /O2)
 endif()
 
 # ==============================================================================

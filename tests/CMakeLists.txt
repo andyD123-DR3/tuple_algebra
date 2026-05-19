@@ -145,6 +145,9 @@ ctdp_add_test(test_ordinal_fix test_ordinal_fix.cpp)
 # ══ Space layer: partition ordinate type (Sprint 3) ════════════════════════
 ctdp_add_test(test_partition test_partition.cpp)
 
+# ══ Space layer: permutation ordinate type (Sprint 7 rewrite) ═══════════════
+ctdp_add_test(test_permutation test_permutation.cpp)
+
 # ── Sprint 8: Binary cut descriptor and features ────────────────────────────
 ctdp_add_test(test_binary_cut_desc space/test_binary_cut_desc.cpp)
 ctdp_add_test(test_binary_cut_features space/test_binary_cut_features.cpp)
@@ -213,6 +216,7 @@ add_custom_target(check
             test_reduction_space
             test_ordinal_fix
             test_partition
+            test_permutation
             test_binary_cut_desc
             test_binary_cut_features
             test_interval_context
