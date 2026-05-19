@@ -7,6 +7,7 @@
 #include "../interval_context.h"
 #include "../plans/interval_partition_plan.h"
 #include "../policies/all_binary_splits.h"
+#include "../../core/solve_stats.h"
 
 #include <cassert>
 #include <concepts>
@@ -16,6 +17,12 @@
 #include <utility>
 
 namespace ctdp::solver::algorithms {
+
+template<class Value>
+struct interval_solve_result {
+    Value value;
+    ctdp::solve_stats stats;
+};
 
 template<class R>
 concept interval_recurrence =
@@ -47,6 +54,7 @@ requires interval_recurrence<Recurrence>
 class interval_solver {
 public:
     using value_type = typename Recurrence::value_type;
+    using result_type = interval_solve_result<value_type>;
 
     explicit interval_solver(Recurrence recurrence,
                              SplitPolicy split_policy = {},
@@ -59,14 +67,55 @@ public:
     requires interval_memo<Memo, value_type>
     [[nodiscard]] value_type solve(ctdp::solver::interval_context ctx,
                                    Memo& memo) const {
+        return solve_with_stats(ctx, memo).value;
+    }
+
+    template<class Memo>
+    requires interval_memo<Memo, value_type>
+    [[nodiscard]] result_type solve_with_stats(ctdp::solver::interval_context ctx,
+                                               Memo& memo) const {
         assert(ctx.i < ctx.j && "Empty interval not allowed");
 
+        ctdp::solve_stats stats{};
+        auto value = solve_impl(ctx, memo, stats, 1);
+
+        stats.subproblems_total = stats.subproblems_evaluated;
+        if constexpr (requires(Memo const& m) {
+            { m.size() } -> std::convertible_to<std::size_t>;
+        }) {
+            stats.memo_table_size = memo.size();
+            stats.subproblems_cached = memo.size();
+        }
+
+        return {std::move(value), stats};
+    }
+
+    [[nodiscard]] Recurrence const& recurrence() const { return recurrence_; }
+    [[nodiscard]] SplitPolicy const& split_policy() const { return split_policy_; }
+    [[nodiscard]] Compare const& compare() const { return compare_; }
+
+private:
+    template<class Memo>
+    requires interval_memo<Memo, value_type>
+    [[nodiscard]] value_type solve_impl(ctdp::solver::interval_context ctx,
+                                        Memo& memo,
+                                        ctdp::solve_stats& stats,
+                                        std::size_t depth) const {
+        if (depth > stats.max_recursion_depth) {
+            stats.max_recursion_depth = depth;
+        }
+
         if (auto cached = memo.lookup(ctx)) {
+            ++stats.memo_hits;
             return *cached;
         }
 
+        ++stats.memo_misses;
+        ++stats.subproblems_evaluated;
+
         if (auto base = recurrence_.base_case(ctx)) {
             memo.store(ctx, *base);
+            ++stats.subproblems_cached;
             return *base;
         }
 
@@ -75,8 +124,10 @@ public:
         split_policy_.for_each(ctx, [&](std::size_t k) {
             auto plan = ctdp::solver::plans::interval_partition_plan::from_split(ctx, k);
 
-            value_type left = solve(plan.left_ctx, memo);
-            value_type right = solve(plan.right_ctx, memo);
+            value_type left = solve_impl(plan.left_ctx, memo, stats, depth + 1);
+            value_type right = solve_impl(plan.right_ctx, memo, stats, depth + 1);
+            ++stats.candidates_total;
+            ++stats.candidates_evaluated;
             value_type candidate = recurrence_.combine(plan, left, right);
 
             if (!best || compare_(candidate, *best)) {
@@ -86,14 +137,10 @@ public:
 
         assert(best.has_value() && "No valid splits found - check split policy or base_case");
         memo.store(ctx, *best);
+        ++stats.subproblems_cached;
         return *best;
     }
 
-    [[nodiscard]] Recurrence const& recurrence() const { return recurrence_; }
-    [[nodiscard]] SplitPolicy const& split_policy() const { return split_policy_; }
-    [[nodiscard]] Compare const& compare() const { return compare_; }
-
-private:
     Recurrence recurrence_;
     SplitPolicy split_policy_;
     Compare compare_;
@@ -102,3 +149,4 @@ private:
 } // namespace ctdp::solver::algorithms
 
 #endif // CTDP_SOLVER_ALGORITHMS_INTERVAL_SOLVER_H
+

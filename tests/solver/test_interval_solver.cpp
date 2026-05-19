@@ -106,6 +106,28 @@ TEST(IntervalSolver, MatchesIntervalDPOnCormenMatrixChain) {
     EXPECT_DOUBLE_EQ(value, 15125.0);
 }
 
+TEST(IntervalSolver, SolveWithStatsTracksCanonicalCounts) {
+    constexpr std::array<std::size_t, 7> dims{30, 35, 15, 5, 10, 20, 25};
+
+    matrix_chain_recurrence recurrence{dims};
+    interval_solver<matrix_chain_recurrence> solver{recurrence};
+    triangular_memo<double> memo{6};
+
+    auto result = solver.solve_with_stats(interval_context{0, 6}, memo);
+
+    EXPECT_DOUBLE_EQ(result.value, 15125.0);
+    EXPECT_EQ(result.stats.subproblems_total, 21u);
+    EXPECT_EQ(result.stats.subproblems_evaluated, 21u);
+    EXPECT_EQ(result.stats.subproblems_cached, 21u);
+    EXPECT_EQ(result.stats.candidates_total, 35u);
+    EXPECT_EQ(result.stats.candidates_evaluated, 35u);
+    EXPECT_EQ(result.stats.candidates_pruned, 0u);
+    EXPECT_EQ(result.stats.memo_misses, 21u);
+    EXPECT_GT(result.stats.memo_hits, 0u);
+    EXPECT_EQ(result.stats.memo_table_size, 21u);
+    EXPECT_EQ(result.stats.max_recursion_depth, 6u);
+}
+
 TEST(IntervalSolver, CompareControlsOptimisationDirection) {
     left_size_score_recurrence recurrence;
 
@@ -134,6 +156,25 @@ TEST(IntervalSolver, CustomSplitPolicyRestrictsSearch) {
     EXPECT_EQ(value, 3);
 }
 
+TEST(IntervalSolver, CustomSplitPolicyStatsReflectRestrictedSearch) {
+    left_size_score_recurrence recurrence;
+    interval_solver<left_size_score_recurrence, leftmost_split_only> solver{recurrence};
+    triangular_memo<int> memo{4};
+
+    auto result = solver.solve_with_stats(interval_context{0, 4}, memo);
+
+    EXPECT_EQ(result.value, 3);
+    EXPECT_EQ(result.stats.subproblems_total, 7u);
+    EXPECT_EQ(result.stats.subproblems_evaluated, 7u);
+    EXPECT_EQ(result.stats.subproblems_cached, 7u);
+    EXPECT_EQ(result.stats.candidates_total, 3u);
+    EXPECT_EQ(result.stats.candidates_evaluated, 3u);
+    EXPECT_EQ(result.stats.memo_misses, 7u);
+    EXPECT_EQ(result.stats.memo_hits, 0u);
+    EXPECT_EQ(result.stats.memo_table_size, 7u);
+    EXPECT_EQ(result.stats.max_recursion_depth, 4u);
+}
+
 TEST(IntervalSolver, ReusesMemoizedRootAndSubproblems) {
     std::size_t base_calls = 0;
     std::size_t combine_calls = 0;
@@ -157,5 +198,38 @@ TEST(IntervalSolver, ReusesMemoizedRootAndSubproblems) {
     EXPECT_EQ(combine_calls, combine_after_first);
 }
 
+TEST(IntervalSolver, SolveWithStatsReportsRootMemoHitOnRepeatSolve) {
+    counting_recurrence recurrence{nullptr, nullptr};
+    interval_solver<counting_recurrence> solver{recurrence};
+    triangular_memo<int> memo{4};
+
+    std::size_t base_calls = 0;
+    std::size_t combine_calls = 0;
+    recurrence.base_calls = &base_calls;
+    recurrence.combine_calls = &combine_calls;
+    solver = interval_solver<counting_recurrence>{recurrence};
+
+    auto first = solver.solve_with_stats(interval_context{0, 4}, memo);
+    auto second = solver.solve_with_stats(interval_context{0, 4}, memo);
+
+    EXPECT_EQ(first.value, 4);
+    EXPECT_EQ(first.stats.subproblems_evaluated, 10u);
+    EXPECT_EQ(first.stats.memo_misses, 10u);
+    EXPECT_EQ(first.stats.candidates_evaluated, 10u);
+    EXPECT_EQ(first.stats.memo_table_size, 10u);
+
+    EXPECT_EQ(second.value, 4);
+    EXPECT_EQ(second.stats.subproblems_total, 0u);
+    EXPECT_EQ(second.stats.subproblems_evaluated, 0u);
+    EXPECT_EQ(second.stats.subproblems_cached, 10u);
+    EXPECT_EQ(second.stats.candidates_total, 0u);
+    EXPECT_EQ(second.stats.candidates_evaluated, 0u);
+    EXPECT_EQ(second.stats.memo_hits, 1u);
+    EXPECT_EQ(second.stats.memo_misses, 0u);
+    EXPECT_EQ(second.stats.memo_table_size, 10u);
+    EXPECT_EQ(second.stats.max_recursion_depth, 1u);
+}
+
 } // namespace
+
 
