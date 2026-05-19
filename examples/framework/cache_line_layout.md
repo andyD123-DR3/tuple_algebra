@@ -1,4 +1,4 @@
-# Cache-Line Layout Policy Search
+
 
 **Type:** Framework (uses `ctdp_space` — `descriptor_space`, `default_bridge`, `exhaustive_search_with_cost`)
 **Dimensions:** 4 policy dims (hot_line_w × mix_penalty × waste_w × conflict_w)
