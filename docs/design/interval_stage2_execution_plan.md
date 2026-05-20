@@ -126,6 +126,11 @@ Expand interval-family solver power only after public representation exists.
 
 Allow recurrences to return both value and reconstruction choice metadata.
 
+Companion scoping note:
+
+- `docs/design/phase_b1_interval_choice_tracking_scope.md`
+- `docs/design/phase_b1_interval_choice_tracking_cpp_api.md`
+
 Acceptance criteria:
 
 - narrow Stage 1 recurrence remains supported
@@ -278,5 +283,7 @@ Stage 2 should be considered coherent only when:
 - broader interval solver features serve those public values
 - integration contracts, if added, are interval-family-owned
 - coexistence with `interval_dp` is explicit rather than accidental
+
+
 
 

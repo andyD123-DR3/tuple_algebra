@@ -13,6 +13,7 @@ using ctdp::interval_dp;
 using ctdp::interval_split_space;
 using ctdp::make_chain_cost;
 using ctdp::solver::interval_context;
+using ctdp::solver::reconstruct_interval_rooted_plan;
 using ctdp::solver::memo::triangular_memo;
 using ctdp::solver::plans::interval_partition_plan;
 using ctdp::solver::algorithms::interval_memo;
@@ -106,6 +107,57 @@ TEST(IntervalSolver, MatchesIntervalDPOnCormenMatrixChain) {
     EXPECT_DOUBLE_EQ(value, 15125.0);
 }
 
+TEST(IntervalSolver, SolveRootedMatchesIntervalDpRootedReconstruction) {
+    constexpr std::array<std::size_t, 7> dims{30, 35, 15, 5, 10, 20, 25};
+
+    matrix_chain_recurrence recurrence{dims};
+    interval_solver<matrix_chain_recurrence> solver{recurrence};
+    triangular_memo<double> memo{6};
+
+    auto rooted = solver.solve_rooted<7>(interval_context{0, 6}, memo);
+
+    auto dp_result = interval_dp(interval_split_space<7>{.n = 6}, make_chain_cost(dims));
+    auto expected = reconstruct_interval_rooted_plan(dp_result);
+
+    EXPECT_EQ(rooted.params, expected.params);
+    EXPECT_TRUE(rooted.params.is_legal());
+    EXPECT_TRUE(rooted.params.is_canonical());
+    EXPECT_DOUBLE_EQ(rooted.predicted_cost, expected.predicted_cost);
+    EXPECT_EQ(rooted.stats.subproblems_total, 21u);
+    EXPECT_EQ(rooted.stats.subproblems_evaluated, 21u);
+    EXPECT_EQ(rooted.stats.candidates_total, 35u);
+    EXPECT_EQ(rooted.stats.candidates_evaluated, 35u);
+    EXPECT_EQ(rooted.params.split(0, 6), 3u);
+}
+
+TEST(IntervalSolver, SolveRootedRebasesNonZeroStartIntervalsToLocalRootedCoordinates) {
+    constexpr std::array<std::size_t, 5> sub_dims{35, 15, 5, 10, 20};
+    constexpr std::array<std::size_t, 7> full_dims{30, 35, 15, 5, 10, 20, 25};
+
+    matrix_chain_recurrence recurrence{full_dims};
+    interval_solver<matrix_chain_recurrence> solver{recurrence};
+    triangular_memo<double> memo{6};
+
+    auto rooted = solver.solve_rooted<5>(interval_context{1, 5}, memo);
+    auto expected = reconstruct_interval_rooted_plan(
+        interval_dp(interval_split_space<5>{.n = 4}, make_chain_cost(sub_dims)));
+
+    EXPECT_EQ(rooted.params, expected.params);
+    EXPECT_TRUE(rooted.params.is_legal());
+    EXPECT_TRUE(rooted.params.is_canonical());
+    EXPECT_EQ(rooted.params.root_interval().start(), 0u);
+    EXPECT_EQ(rooted.params.root_interval().end(), 4u);
+    EXPECT_DOUBLE_EQ(rooted.predicted_cost, 7125.0);
+    EXPECT_DOUBLE_EQ(rooted.predicted_cost, expected.predicted_cost);
+    EXPECT_EQ(rooted.stats.subproblems_total, 10u);
+    EXPECT_EQ(rooted.stats.subproblems_evaluated, 10u);
+    EXPECT_EQ(rooted.stats.candidates_total, 10u);
+    EXPECT_EQ(rooted.stats.candidates_evaluated, 10u);
+    EXPECT_EQ(rooted.params.split(0, 4), 2u);
+    EXPECT_EQ(rooted.params.split(0, 2), 1u);
+    EXPECT_EQ(rooted.params.split(2, 4), 3u);
+}
+
 TEST(IntervalSolver, SolveWithStatsTracksCanonicalCounts) {
     constexpr std::array<std::size_t, 7> dims{30, 35, 15, 5, 10, 20, 25};
 
@@ -144,6 +196,51 @@ TEST(IntervalSolver, CompareControlsOptimisationDirection) {
 
     EXPECT_EQ(min_value, 3);
     EXPECT_EQ(max_value, 6);
+}
+
+TEST(IntervalSolver, SolveRootedReflectsCompareDirectionAndSplitPolicy) {
+    left_size_score_recurrence recurrence;
+
+    interval_solver<left_size_score_recurrence, leftmost_split_only> leftmost_solver{recurrence};
+    triangular_memo<int> leftmost_memo{4};
+    auto leftmost = leftmost_solver.solve_rooted<4>(interval_context{0, 4}, leftmost_memo);
+
+    interval_solver<left_size_score_recurrence,
+                    ctdp::solver::policies::all_binary_splits,
+                    std::greater<>> max_solver{recurrence, {}, {}};
+    triangular_memo<int> max_memo{4};
+    auto maximum = max_solver.solve_rooted<4>(interval_context{0, 4}, max_memo);
+
+    EXPECT_DOUBLE_EQ(leftmost.predicted_cost, 3.0);
+    EXPECT_TRUE(leftmost.params.is_canonical());
+    EXPECT_EQ(leftmost.params.split(0, 4), 1u);
+    EXPECT_EQ(leftmost.params.split(1, 4), 2u);
+    EXPECT_EQ(leftmost.params.split(2, 4), 3u);
+
+    EXPECT_DOUBLE_EQ(maximum.predicted_cost, 6.0);
+    EXPECT_TRUE(maximum.params.is_canonical());
+    EXPECT_EQ(maximum.params.split(0, 4), 3u);
+    EXPECT_EQ(maximum.params.split(0, 3), 2u);
+    EXPECT_EQ(maximum.params.split(0, 2), 1u);
+}
+
+TEST(IntervalSolver, SolveRootedRebasesRestrictedPoliciesForNonZeroStartIntervals) {
+    left_size_score_recurrence recurrence;
+    interval_solver<left_size_score_recurrence, leftmost_split_only> solver{recurrence};
+    triangular_memo<int> memo{6};
+
+    auto rooted = solver.solve_rooted<4>(interval_context{2, 6}, memo);
+
+    EXPECT_DOUBLE_EQ(rooted.predicted_cost, 3.0);
+    EXPECT_TRUE(rooted.params.is_legal());
+    EXPECT_TRUE(rooted.params.is_canonical());
+    EXPECT_EQ(rooted.params.root_interval().start(), 0u);
+    EXPECT_EQ(rooted.params.root_interval().end(), 4u);
+    EXPECT_EQ(rooted.params.split(0, 4), 1u);
+    EXPECT_EQ(rooted.params.split(1, 4), 2u);
+    EXPECT_EQ(rooted.params.split(2, 4), 3u);
+    EXPECT_EQ(rooted.stats.subproblems_total, 7u);
+    EXPECT_EQ(rooted.stats.candidates_total, 3u);
 }
 
 TEST(IntervalSolver, CustomSplitPolicyRestrictsSearch) {
@@ -231,5 +328,9 @@ TEST(IntervalSolver, SolveWithStatsReportsRootMemoHitOnRepeatSolve) {
 }
 
 } // namespace
+
+
+
+
 
 

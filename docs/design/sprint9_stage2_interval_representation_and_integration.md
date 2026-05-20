@@ -12,6 +12,8 @@ This note now serves as the umbrella Stage 2 overview. The concrete follow-on do
 - `docs/adr_interval_rooted_representation_family.md` — ADR-style architectural decision for the interval-rooted sibling family
 - `docs/design/interval_stage2_execution_plan.md` — phased implementation/ticket plan for Stage 2
 - `docs/design/phase_a_interval_rooted_candidate.md` — Phase A specification for the first public interval-rooted candidate/plan shape
+- `docs/design/phase_b1_interval_choice_tracking_scope.md` — narrow Phase B1 scoping note for direct rooted output from `interval_solver`
+- `docs/design/phase_b1_interval_choice_tracking_cpp_api.md` — concrete API-shape note for the first rooted-output solve path on `interval_solver`
 
 ## 1. Purpose
 
@@ -374,5 +376,7 @@ That keeps the ADR intact, gives the deferred Sprint 9 work a coherent home, and
 
 - pretending interval-rooted and partition-rooted trees are the same thing
 - building more generic solver machinery before the interval family has a stable public representation.
+
+
 
 
