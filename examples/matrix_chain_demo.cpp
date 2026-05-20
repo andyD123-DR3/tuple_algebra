@@ -11,6 +11,8 @@
 //   Optimal cost: 15125 scalar multiplications
 //   Subproblems solved: 15
 //   Split-point evaluations: 35
+//   Root split: [0, 6) -> 3
+//   Interval-rooted preorder: [0,6) [0,3) [0,1) [1,3) [1,2) [2,3) [3,6) [3,5) [3,4) [4,5) [5,6)
 //   Compile-time verified: YES
 
 #include "ctdp/solver/solver.h"
@@ -26,6 +28,10 @@ constexpr auto solve_cormen() {
     return interval_dp(space, cost);
 }
 
+constexpr auto solve_cormen_rooted() {
+    return solver::reconstruct_interval_rooted_plan(solve_cormen());
+}
+
 // Compile-time verification — these are the acceptance criteria
 static_assert(solve_cormen().predicted_cost == 15125.0,
     "Cormen matrix chain: expected optimal cost 15125");
@@ -37,6 +43,14 @@ static_assert(solve_cormen().stats.subproblems_evaluated == 15,
     "interval_dp: 15 subproblems for 6 matrices");
 static_assert(solve_cormen().stats.candidates_evaluated == 35,
     "interval_dp: 35 split-point evaluations for 6 matrices");
+static_assert(solve_cormen_rooted().predicted_cost == 15125.0,
+    "interval-rooted reconstruction must preserve cost");
+static_assert(solve_cormen_rooted().params.is_legal(),
+    "interval-rooted reconstruction must be legal");
+static_assert(solve_cormen_rooted().params.is_canonical(),
+    "interval-rooted reconstruction must be canonical");
+static_assert(solve_cormen_rooted().params.split(0, 6) == 3,
+    "Cormen matrix chain rooted reconstruction: expected root split at 3");
 
 // Also verify via select_and_run dispatch
 constexpr auto solve_via_dispatch() {
@@ -51,12 +65,20 @@ static_assert(solve_via_dispatch().predicted_cost == 15125.0,
 
 int main() {
     constexpr auto result = solve_cormen();
+    constexpr auto rooted = solve_cormen_rooted();
 
     std::printf("Matrix chain multiplication — Cormen et al. (CLRS)\n");
     std::printf("Dimensions: [30, 35, 15, 5, 10, 20, 25]\n");
     std::printf("Optimal cost: %.0f scalar multiplications\n", result.predicted_cost);
     std::printf("Subproblems solved: %zu\n", result.stats.subproblems_evaluated);
     std::printf("Split-point evaluations: %zu\n", result.stats.candidates_evaluated);
+    std::printf("Root split: [0, 6) -> %zu\n", rooted.params.split(0, 6));
+    std::printf("Interval-rooted preorder:");
+    for (auto const& node : rooted.params.preorder()) {
+        auto interval = node.interval();
+        std::printf(" [%zu,%zu)", interval.start(), interval.end());
+    }
+    std::printf("\n");
     std::printf("Compile-time verified: YES\n");
 
     return 0;
