@@ -67,12 +67,24 @@ struct interval_rooted_candidate {
         return reachable_contains(0, n, i, j);
     }
 
+    [[nodiscard]] constexpr bool contains(interval_type ctx) const noexcept {
+        return contains(ctx.i, ctx.j);
+    }
+
     [[nodiscard]] constexpr bool is_leaf(std::size_t i, std::size_t j) const noexcept {
         return contains(i, j) && raw_code(i, j) == leaf_code;
     }
 
+    [[nodiscard]] constexpr bool is_leaf(interval_type ctx) const noexcept {
+        return is_leaf(ctx.i, ctx.j);
+    }
+
     [[nodiscard]] constexpr bool is_internal(std::size_t i, std::size_t j) const noexcept {
         return contains(i, j) && raw_code(i, j) >= leaf_code + 1;
+    }
+
+    [[nodiscard]] constexpr bool is_internal(interval_type ctx) const noexcept {
+        return is_internal(ctx.i, ctx.j);
     }
 
     [[nodiscard]] constexpr std::size_t split(std::size_t i, std::size_t j) const noexcept {
@@ -80,12 +92,24 @@ struct interval_rooted_candidate {
         return raw_code(i, j) - 2;
     }
 
+    [[nodiscard]] constexpr std::size_t split(interval_type ctx) const noexcept {
+        return split(ctx.i, ctx.j);
+    }
+
     [[nodiscard]] constexpr interval_type left_interval(std::size_t i, std::size_t j) const noexcept {
         return interval_type{i, split(i, j)};
     }
 
+    [[nodiscard]] constexpr interval_type left_interval(interval_type ctx) const noexcept {
+        return left_interval(ctx.i, ctx.j);
+    }
+
     [[nodiscard]] constexpr interval_type right_interval(std::size_t i, std::size_t j) const noexcept {
         return interval_type{split(i, j), j};
+    }
+
+    [[nodiscard]] constexpr interval_type right_interval(interval_type ctx) const noexcept {
+        return right_interval(ctx.i, ctx.j);
     }
 
     [[nodiscard]] constexpr std::optional<node_ref> find_node(std::size_t i, std::size_t j) const noexcept {
@@ -93,6 +117,10 @@ struct interval_rooted_candidate {
             return std::nullopt;
         }
         return node_ref{this, interval_type{i, j}};
+    }
+
+    [[nodiscard]] constexpr std::optional<node_ref> find_node(interval_type ctx) const noexcept {
+        return find_node(ctx.i, ctx.j);
     }
 
     [[nodiscard]] constexpr node_ref root() const noexcept {
@@ -516,6 +544,7 @@ template<std::size_t MaxN>
 } // namespace ctdp::solver
 
 #endif // CTDP_SOLVER_INTERVAL_ROOTED_CANDIDATE_H
+
 
 
 

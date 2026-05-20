@@ -219,6 +219,41 @@ TEST(IntervalRootedCandidate, FindNodeReturnsOptionalView) {
     EXPECT_EQ(root->split(), 2u);
 }
 
+TEST(IntervalRootedCandidate, IntervalContextOverloadsMatchCoordinateQueries) {
+    constexpr auto c = make_balanced_candidate();
+
+    constexpr interval_context root_ctx{0, 4};
+    constexpr interval_context left_ctx{0, 2};
+    constexpr interval_context leaf_ctx{0, 1};
+    constexpr interval_context missing_ctx{0, 3};
+
+    EXPECT_EQ(c.contains(root_ctx), c.contains(0, 4));
+    EXPECT_EQ(c.contains(left_ctx), c.contains(0, 2));
+    EXPECT_EQ(c.contains(leaf_ctx), c.contains(0, 1));
+    EXPECT_EQ(c.contains(missing_ctx), c.contains(0, 3));
+
+    EXPECT_EQ(c.is_internal(root_ctx), c.is_internal(0, 4));
+    EXPECT_EQ(c.is_internal(left_ctx), c.is_internal(0, 2));
+    EXPECT_EQ(c.is_leaf(leaf_ctx), c.is_leaf(0, 1));
+    EXPECT_EQ(c.split(root_ctx), c.split(0, 4));
+    EXPECT_EQ(c.left_interval(root_ctx).end(), c.left_interval(0, 4).end());
+    EXPECT_EQ(c.right_interval(root_ctx).start(), c.right_interval(0, 4).start());
+}
+
+TEST(IntervalRootedCandidate, FindNodeIntervalContextOverloadIsErgonomic) {
+    constexpr auto c = make_balanced_candidate();
+
+    auto root = c.find_node(interval_context{0, 4});
+    auto left = c.find_node(interval_context{0, 2});
+    auto missing = c.find_node(interval_context{0, 3});
+
+    ASSERT_TRUE(root.has_value());
+    ASSERT_TRUE(left.has_value());
+    EXPECT_FALSE(missing.has_value());
+    EXPECT_EQ(root->split(), 2u);
+    EXPECT_EQ(left->split(), 1u);
+}
+
 TEST(IntervalRootedCandidate, IllegalCandidatesAreRejected) {
     constexpr auto missing_child = make_illegal_missing_child_candidate();
     constexpr auto large_leaf = make_illegal_large_leaf_candidate();
@@ -415,6 +450,7 @@ TEST(IntervalRootedCandidate, ReconstructedCandidatePostorderMatchesCanonicalOrd
 }
 
 } // namespace
+
 
 
 
