@@ -11,14 +11,40 @@
 //   Optimal cost: 15125 scalar multiplications
 //   Subproblems solved: 15
 //   Split-point evaluations: 35
-//   Root split: [0, 6) -> 3
+//   Root split (interval_dp reconstruction): [0, 6) -> 3
+//   Root split (interval_solver rooted solve): [0, 6) -> 3
 //   Interval-rooted preorder: [0,6) [0,3) [0,1) [1,3) [1,2) [2,3) [3,6) [3,5) [3,4) [4,5) [5,6)
+//   Rooted outputs agree: YES
 //   Compile-time verified: YES
 
 #include "ctdp/solver/solver.h"
 #include <cstdio>
 
 using namespace ctdp;
+
+namespace {
+
+struct matrix_chain_recurrence {
+    using value_type = double;
+
+    std::array<std::size_t, 7> dims{};
+
+    [[nodiscard]] std::optional<double> base_case(solver::interval_context ctx) const {
+        if (ctx.size() == 1) {
+            return 0.0;
+        }
+        return std::nullopt;
+    }
+
+    [[nodiscard]] double combine(solver::plans::interval_partition_plan const& plan,
+                                 double left,
+                                 double right) const {
+        return left + right + static_cast<double>(
+            dims[plan.whole.start()] * dims[plan.split] * dims[plan.whole.end()]);
+    }
+};
+
+} // namespace
 
 // Full compile-time computation
 constexpr auto solve_cormen() {
@@ -67,18 +93,30 @@ int main() {
     constexpr auto result = solve_cormen();
     constexpr auto rooted = solve_cormen_rooted();
 
+    constexpr std::array<std::size_t, 7> dims{30, 35, 15, 5, 10, 20, 25};
+    solver::algorithms::interval_solver<matrix_chain_recurrence> rooted_solver{
+        matrix_chain_recurrence{dims}};
+    solver::memo::triangular_memo<double> rooted_memo{6};
+    auto rooted_via_solver = rooted_solver.solve_rooted_with_stats<7>(solver::interval_context{0, 6}, rooted_memo);
+
     std::printf("Matrix chain multiplication — Cormen et al. (CLRS)\n");
     std::printf("Dimensions: [30, 35, 15, 5, 10, 20, 25]\n");
     std::printf("Optimal cost: %.0f scalar multiplications\n", result.predicted_cost);
     std::printf("Subproblems solved: %zu\n", result.stats.subproblems_evaluated);
     std::printf("Split-point evaluations: %zu\n", result.stats.candidates_evaluated);
-    std::printf("Root split: [0, 6) -> %zu\n", rooted.params.split(0, 6));
+    std::printf("Root split (interval_dp reconstruction): [0, 6) -> %zu\n", rooted.params.split(0, 6));
+    std::printf("Root split (interval_solver rooted solve): [0, 6) -> %zu\n", rooted_via_solver.params.split(0, 6));
     std::printf("Interval-rooted preorder:");
-    for (auto const& node : rooted.params.preorder()) {
+    for (auto const& node : rooted_via_solver.params.preorder()) {
         auto interval = node.interval();
         std::printf(" [%zu,%zu)", interval.start(), interval.end());
     }
     std::printf("\n");
+    std::printf("Rooted outputs agree: %s\n",
+                (rooted_via_solver.params == rooted.params
+                 && rooted_via_solver.predicted_cost == rooted.predicted_cost)
+                    ? "YES"
+                    : "NO");
     std::printf("Compile-time verified: YES\n");
 
     return 0;

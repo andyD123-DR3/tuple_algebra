@@ -4,7 +4,7 @@
 
 | Example | Solver | Key lesson |
 |---------|--------|------------|
-| `matrix_chain_demo` | `interval_dp` + `reconstruct_interval_rooted_plan` | Classic DP, compile-time + runtime, plus Phase A interval-rooted public output |
+| `matrix_chain_demo` | `interval_dp` + `reconstruct_interval_rooted_plan` + `interval_solver::solve_rooted_with_stats` | Classic DP, compile-time + runtime, plus Phase A/B1 interval-rooted public output |
 | `per_element_demo` | `per_element_argmin` + `select_and_run` | Factored optimisation, additive cost, dynamic constraints |
 | `fix_cacheline` | Consteval subset DP | Cache-line layout for FIX protocol, 1.39× on hot path |
 | `spmv_benchmark` | Graph pipeline | Compile-time format selection, runtime validation |
