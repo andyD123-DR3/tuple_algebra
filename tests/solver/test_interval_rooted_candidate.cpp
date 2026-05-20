@@ -273,6 +273,39 @@ TEST(IntervalRootedCandidate, EqualityIgnoresUnreachableStorageButCanonicalityDo
     EXPECT_FALSE(noncanonical.is_canonical());
 }
 
+TEST(IntervalRootedCandidate, CanonicalizedRemovesUnreachableStorage) {
+    constexpr auto noncanonical = make_noncanonical_balanced_candidate();
+    constexpr auto canonical = make_balanced_candidate();
+
+    auto normalized = noncanonical.canonicalized();
+
+    EXPECT_EQ(normalized, canonical);
+    EXPECT_TRUE(normalized.is_canonical());
+    EXPECT_FALSE(noncanonical.is_canonical());
+}
+
+TEST(IntervalRootedCandidate, CanonicalizedIsNoOpForCanonicalCandidate) {
+    constexpr auto canonical = make_balanced_candidate();
+
+    auto normalized = canonical.canonicalized();
+
+    EXPECT_EQ(normalized, canonical);
+    EXPECT_TRUE(normalized.is_canonical());
+}
+
+TEST(IntervalRootedCandidate, CanonicalizedPreservesEmptyAndSingleLeafCandidates) {
+    constexpr auto empty = make_empty_interval_rooted_candidate<4>();
+    constexpr auto single = make_single_leaf_interval_rooted_candidate<4>();
+
+    auto normalized_empty = empty.canonicalized();
+    auto normalized_single = single.canonicalized();
+
+    EXPECT_EQ(normalized_empty, empty);
+    EXPECT_TRUE(normalized_empty.is_canonical());
+    EXPECT_EQ(normalized_single, single);
+    EXPECT_TRUE(normalized_single.is_canonical());
+}
+
 TEST(IntervalRootedCandidate, DifferentShapesAreNotEqual) {
     constexpr auto balanced = make_balanced_candidate();
     constexpr auto skewed = make_right_skewed_candidate();
@@ -450,6 +483,7 @@ TEST(IntervalRootedCandidate, ReconstructedCandidatePostorderMatchesCanonicalOrd
 }
 
 } // namespace
+
 
 
 

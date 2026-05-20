@@ -160,6 +160,8 @@ struct interval_rooted_candidate {
         return true;
     }
 
+    [[nodiscard]] constexpr interval_rooted_candidate canonicalized() const noexcept;
+
     [[nodiscard]] constexpr bool operator==(interval_rooted_candidate const& other) const noexcept {
         if (n != other.n) {
             return false;
@@ -364,6 +366,23 @@ using interval_rooted_plan = ctdp::plan<interval_rooted_candidate<MaxN>>;
 namespace detail {
 
 template<std::size_t MaxN>
+constexpr void copy_interval_rooted_subtree(interval_rooted_candidate<MaxN> const& src,
+                                            interval_rooted_candidate<MaxN>& dst,
+                                            std::size_t i,
+                                            std::size_t j)
+{
+    if (src.is_leaf(i, j)) {
+        dst.split_or_tag[i * (MaxN + 1) + j] = interval_rooted_candidate<MaxN>::leaf_code;
+        return;
+    }
+
+    auto k = src.split(i, j);
+    dst.split_or_tag[i * (MaxN + 1) + j] = k + 2;
+    copy_interval_rooted_subtree(src, dst, i, k);
+    copy_interval_rooted_subtree(src, dst, k, j);
+}
+
+template<std::size_t MaxN>
 constexpr void build_interval_rooted_preorder(
     interval_rooted_candidate<MaxN> const& c,
     std::size_t i,
@@ -482,6 +501,22 @@ constexpr auto interval_rooted_candidate<MaxN>::postorder() const noexcept -> po
 }
 
 template<std::size_t MaxN>
+constexpr auto interval_rooted_candidate<MaxN>::canonicalized() const noexcept
+    -> interval_rooted_candidate
+{
+    if (n == 0) {
+        return *this;
+    }
+
+    assert(is_legal() && "canonicalized requires a legal interval-rooted candidate");
+
+    interval_rooted_candidate out{};
+    out.n = n;
+    detail::copy_interval_rooted_subtree(*this, out, 0, n);
+    return out;
+}
+
+template<std::size_t MaxN>
 [[nodiscard]] constexpr auto make_empty_interval_rooted_candidate()
     -> interval_rooted_candidate<MaxN>
 {
@@ -544,6 +579,8 @@ template<std::size_t MaxN>
 } // namespace ctdp::solver
 
 #endif // CTDP_SOLVER_INTERVAL_ROOTED_CANDIDATE_H
+
+
 
 
 
