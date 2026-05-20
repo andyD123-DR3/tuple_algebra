@@ -46,6 +46,7 @@
 
 // Stage 1 interval solver substrate
 #include "interval_context.h"
+#include "interval_rooted_candidate.h"
 #include "plans/interval_partition_plan.h"
 #include "policies/all_binary_splits.h"
 

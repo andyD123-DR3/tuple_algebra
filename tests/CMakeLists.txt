@@ -35,6 +35,9 @@ ctdp_add_test(test_triangular_memo solver/test_triangular_memo.cpp)
 ctdp_add_test(test_interval_substrate_canonical solver/test_interval_substrate_canonical.cpp)
 ctdp_add_test(test_interval_solver solver/test_interval_solver.cpp)
 
+# ── Stage 2 Phase A: interval-rooted public candidate ───────────────────────
+ctdp_add_test(test_interval_rooted_candidate solver/test_interval_rooted_candidate.cpp)
+
 # ══ Solver I/O tests (cost table) ══════════════════════════════════════════
 ctdp_add_test(test_cost_table_io solver/test_cost_table_io.cpp)
 
@@ -230,6 +233,7 @@ add_custom_target(check
             test_triangular_memo
             test_interval_substrate_canonical
             test_interval_solver
+            test_interval_rooted_candidate
             test_interval_partition_plan
             test_matrix_chain_enumeration
     COMMENT "Running all CTDP tests"
