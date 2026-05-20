@@ -2,7 +2,10 @@
 
 #include <gtest/gtest.h>
 
+#include <array>
 #include <type_traits>
+#include <utility>
+#include <vector>
 
 namespace {
 
@@ -10,6 +13,9 @@ using ctdp::plan;
 using ctdp::solver::interval_context;
 using ctdp::solver::interval_rooted_candidate;
 using ctdp::solver::interval_rooted_plan;
+using ctdp::solver::make_empty_interval_rooted_candidate;
+using ctdp::solver::make_single_leaf_interval_rooted_candidate;
+using ctdp::solver::reconstruct_interval_rooted_candidate;
 
 template<std::size_t MaxN>
 constexpr std::size_t slot(std::size_t i, std::size_t j) {
@@ -92,6 +98,31 @@ static_assert(make_balanced_candidate().contains(0, 4));
 static_assert(make_balanced_candidate().is_internal(0, 4));
 static_assert(make_single_leaf_candidate().is_leaf(0, 1));
 static_assert(std::is_same_v<interval_rooted_plan<4>, plan<interval_rooted_candidate<4>>>);
+static_assert(make_empty_interval_rooted_candidate<4>().empty());
+static_assert(make_single_leaf_interval_rooted_candidate<4>().is_leaf(0, 1));
+
+constexpr auto reconstruct_balanced_from_callback() {
+    return reconstruct_interval_rooted_candidate<4>(4, [](std::size_t i, std::size_t j) constexpr {
+        if (i == 0 && j == 4) return std::size_t{2};
+        if (i == 0 && j == 2) return std::size_t{1};
+        return std::size_t{3};
+    });
+}
+
+constexpr auto reconstruct_right_skewed_from_callback() {
+    return reconstruct_interval_rooted_candidate<4>(4, [](std::size_t i, [[maybe_unused]] std::size_t j) constexpr {
+        return i + 1;
+    });
+}
+
+constexpr auto reconstruct_from_legacy_split_candidate() {
+    ctdp::interval_split_candidate<4> splits{};
+    splits.n = 4;
+    splits.optimal_split[0 * 4 + 3] = 1; // [0,4) -> k=2
+    splits.optimal_split[0 * 4 + 1] = 0; // [0,2) -> k=1
+    splits.optimal_split[2 * 4 + 3] = 2; // [2,4) -> k=3
+    return reconstruct_interval_rooted_candidate(splits);
+}
 
 TEST(IntervalRootedCandidate, EmptyCandidate) {
     constexpr interval_rooted_candidate<4> c{};
@@ -102,6 +133,18 @@ TEST(IntervalRootedCandidate, EmptyCandidate) {
     EXPECT_TRUE(c.is_legal());
     EXPECT_TRUE(c.is_canonical());
     EXPECT_FALSE(c.contains(0, 1));
+}
+
+TEST(IntervalRootedCandidate, FactoryHelpers) {
+    constexpr auto empty = make_empty_interval_rooted_candidate<4>();
+    constexpr auto single = make_single_leaf_interval_rooted_candidate<4>();
+
+    EXPECT_TRUE(empty.empty());
+    EXPECT_TRUE(empty.is_canonical());
+
+    EXPECT_EQ(single.size(), 1u);
+    EXPECT_TRUE(single.is_leaf(0, 1));
+    EXPECT_TRUE(single.is_canonical());
 }
 
 TEST(IntervalRootedCandidate, SingleLeafCandidate) {
@@ -202,5 +245,105 @@ TEST(IntervalRootedCandidate, DifferentShapesAreNotEqual) {
     EXPECT_NE(balanced, skewed);
 }
 
+TEST(IntervalRootedCandidate, CallbackReconstructionBuildsCanonicalBalancedTree) {
+    constexpr auto reconstructed = reconstruct_balanced_from_callback();
+    constexpr auto expected = make_balanced_candidate();
+
+    EXPECT_EQ(reconstructed, expected);
+    EXPECT_TRUE(reconstructed.is_legal());
+    EXPECT_TRUE(reconstructed.is_canonical());
+    EXPECT_EQ(reconstructed.split(0, 4), 2u);
+    EXPECT_EQ(reconstructed.split(0, 2), 1u);
+    EXPECT_EQ(reconstructed.split(2, 4), 3u);
+}
+
+TEST(IntervalRootedCandidate, CallbackReconstructionBuildsCanonicalRightSkewedTree) {
+    constexpr auto reconstructed = reconstruct_right_skewed_from_callback();
+    constexpr auto expected = make_right_skewed_candidate();
+
+    EXPECT_EQ(reconstructed, expected);
+    EXPECT_TRUE(reconstructed.is_canonical());
+}
+
+TEST(IntervalRootedCandidate, ReconstructionFromLegacySplitCandidate) {
+    constexpr auto reconstructed = reconstruct_from_legacy_split_candidate();
+    constexpr auto expected = make_balanced_candidate();
+
+    EXPECT_EQ(reconstructed, expected);
+    EXPECT_TRUE(reconstructed.is_canonical());
+}
+
+TEST(IntervalRootedCandidate, ReconstructionFromIntervalDpPlan) {
+    constexpr std::array<std::size_t, 5> dims{40, 20, 30, 10, 30};
+    constexpr auto dp_result = ctdp::interval_dp(ctdp::interval_split_space<5>{.n = 4},
+                                                 ctdp::make_chain_cost(dims));
+
+    auto reconstructed = reconstruct_interval_rooted_candidate(dp_result);
+
+    EXPECT_TRUE(reconstructed.is_legal());
+    EXPECT_TRUE(reconstructed.is_canonical());
+    EXPECT_EQ(reconstructed.size(), 4u);
+    EXPECT_EQ(reconstructed.split(0, 4), 3u);
+    EXPECT_EQ(reconstructed.split(0, 3), 1u);
+    EXPECT_EQ(reconstructed.split(1, 3), 2u);
+}
+
+TEST(IntervalRootedCandidate, EmptyPreorderTraversalIsEmpty) {
+    constexpr auto empty = make_empty_interval_rooted_candidate<4>();
+    auto preorder = empty.preorder();
+
+    EXPECT_EQ(preorder.count, 0u);
+    EXPECT_EQ(preorder.begin(), preorder.end());
+}
+
+TEST(IntervalRootedCandidate, BalancedPreorderTraversalIsDeterministic) {
+    constexpr auto candidate = make_balanced_candidate();
+
+    std::vector<std::pair<std::size_t, std::size_t>> seen;
+    for (auto const& node : candidate.preorder()) {
+        seen.emplace_back(node.interval().start(), node.interval().end());
+    }
+
+    std::vector<std::pair<std::size_t, std::size_t>> expected{
+        {0, 4}, {0, 2}, {0, 1}, {1, 2}, {2, 4}, {2, 3}, {3, 4}
+    };
+
+    EXPECT_EQ(seen, expected);
+}
+
+TEST(IntervalRootedCandidate, RightSkewedPreorderTraversalIsDeterministic) {
+    constexpr auto candidate = make_right_skewed_candidate();
+
+    std::vector<std::pair<std::size_t, std::size_t>> seen;
+    for (auto const& node : candidate.preorder()) {
+        seen.emplace_back(node.interval().start(), node.interval().end());
+    }
+
+    std::vector<std::pair<std::size_t, std::size_t>> expected{
+        {0, 4}, {0, 1}, {1, 4}, {1, 2}, {2, 4}, {2, 3}, {3, 4}
+    };
+
+    EXPECT_EQ(seen, expected);
+}
+
+TEST(IntervalRootedCandidate, ReconstructedCandidatePreorderMatchesCanonicalOrder) {
+    constexpr auto candidate = reconstruct_balanced_from_callback();
+
+    std::vector<std::pair<std::size_t, std::size_t>> seen;
+    for (auto const& node : candidate.preorder()) {
+        seen.emplace_back(node.interval().start(), node.interval().end());
+    }
+
+    std::vector<std::pair<std::size_t, std::size_t>> expected{
+        {0, 4}, {0, 2}, {0, 1}, {1, 2}, {2, 4}, {2, 3}, {3, 4}
+    };
+
+    EXPECT_EQ(seen, expected);
+}
+
 } // namespace
+
+
+
+
 

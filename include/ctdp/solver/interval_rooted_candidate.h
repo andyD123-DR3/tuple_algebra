@@ -6,11 +6,13 @@
 
 #include "../core/plan.h"
 #include "interval_context.h"
+#include "spaces/interval_split_space.h"
 
 #include <array>
 #include <cassert>
 #include <cstddef>
 #include <optional>
+#include <utility>
 
 namespace ctdp::solver {
 
@@ -18,9 +20,13 @@ template<std::size_t MaxN>
 struct interval_rooted_node_ref;
 
 template<std::size_t MaxN>
+struct interval_rooted_preorder_range;
+
+template<std::size_t MaxN>
 struct interval_rooted_candidate {
     using interval_type = interval_context;
     using node_ref = interval_rooted_node_ref<MaxN>;
+    using preorder_range = interval_rooted_preorder_range<MaxN>;
 
     static constexpr std::size_t max_size = MaxN;
     static constexpr std::size_t absent_code = 0;
@@ -85,6 +91,8 @@ struct interval_rooted_candidate {
         assert(n > 0 && contains(0, n) && "root requires a non-empty represented root interval");
         return node_ref{this, interval_type{0, n}};
     }
+
+    [[nodiscard]] constexpr preorder_range preorder() const noexcept;
 
     [[nodiscard]] constexpr bool is_legal() const noexcept {
         if (n > MaxN) {
@@ -262,9 +270,145 @@ struct interval_rooted_node_ref {
 };
 
 template<std::size_t MaxN>
+struct interval_rooted_preorder_range {
+    using node_ref = interval_rooted_node_ref<MaxN>;
+    static constexpr std::size_t capacity = (MaxN > 0) ? (2 * MaxN - 1) : 1;
+
+    std::array<node_ref, capacity> nodes{};
+    std::size_t count{};
+
+    [[nodiscard]] constexpr node_ref const* begin() const noexcept {
+        return nodes.data();
+    }
+
+    [[nodiscard]] constexpr node_ref const* end() const noexcept {
+        return nodes.data() + count;
+    }
+};
+
+template<std::size_t MaxN>
 using interval_rooted_plan = ctdp::plan<interval_rooted_candidate<MaxN>>;
+
+namespace detail {
+
+template<std::size_t MaxN>
+constexpr void build_interval_rooted_preorder(
+    interval_rooted_candidate<MaxN> const& c,
+    std::size_t i,
+    std::size_t j,
+    std::array<interval_rooted_node_ref<MaxN>, interval_rooted_preorder_range<MaxN>::capacity>& out,
+    std::size_t& count)
+{
+    out[count++] = interval_rooted_node_ref<MaxN>{&c, interval_context{i, j}};
+
+    if (c.is_leaf(i, j)) {
+        return;
+    }
+
+    auto k = c.split(i, j);
+    build_interval_rooted_preorder(c, i, k, out, count);
+    build_interval_rooted_preorder(c, k, j, out, count);
+}
+
+template<std::size_t MaxN, class SplitFn>
+constexpr void build_interval_rooted_subtree(interval_rooted_candidate<MaxN>& c,
+                                             std::size_t i,
+                                             std::size_t j,
+                                             SplitFn const& split_for) {
+    assert(i < j && j <= c.n && "Subtree interval must lie inside candidate bounds");
+
+    if (j == i + 1) {
+        c.split_or_tag[i * (MaxN + 1) + j] = interval_rooted_candidate<MaxN>::leaf_code;
+        return;
+    }
+
+    auto k = static_cast<std::size_t>(split_for(i, j));
+    assert(i < k && k < j && "Reconstruction split must be strictly interior");
+
+    c.split_or_tag[i * (MaxN + 1) + j] = k + 2;
+    build_interval_rooted_subtree(c, i, k, split_for);
+    build_interval_rooted_subtree(c, k, j, split_for);
+}
+
+} // namespace detail
+
+template<std::size_t MaxN>
+constexpr auto interval_rooted_candidate<MaxN>::preorder() const noexcept -> preorder_range {
+    preorder_range out{};
+
+    if (n == 0) {
+        return out;
+    }
+
+    assert(is_legal() && "preorder requires a legal interval-rooted candidate");
+    detail::build_interval_rooted_preorder(*this, 0, n, out.nodes, out.count);
+    return out;
+}
+
+template<std::size_t MaxN>
+[[nodiscard]] constexpr auto make_empty_interval_rooted_candidate()
+    -> interval_rooted_candidate<MaxN>
+{
+    return {};
+}
+
+template<std::size_t MaxN>
+[[nodiscard]] constexpr auto make_single_leaf_interval_rooted_candidate()
+    -> interval_rooted_candidate<MaxN>
+{
+    static_assert(MaxN >= 1, "Single-leaf candidate requires MaxN >= 1");
+
+    interval_rooted_candidate<MaxN> c{};
+    c.n = 1;
+    c.split_or_tag[0 * (MaxN + 1) + 1] = interval_rooted_candidate<MaxN>::leaf_code;
+    return c;
+}
+
+template<std::size_t MaxN, class SplitFn>
+[[nodiscard]] constexpr auto reconstruct_interval_rooted_candidate(std::size_t n,
+                                                                   SplitFn&& split_for)
+    -> interval_rooted_candidate<MaxN>
+{
+    assert(n <= MaxN && "Reconstruction size exceeds candidate capacity");
+
+    if (n == 0) {
+        return make_empty_interval_rooted_candidate<MaxN>();
+    }
+    if (n == 1) {
+        return make_single_leaf_interval_rooted_candidate<MaxN>();
+    }
+
+    interval_rooted_candidate<MaxN> c{};
+    c.n = n;
+    detail::build_interval_rooted_subtree(c, 0, n, split_for);
+    return c;
+}
+
+template<std::size_t MaxN>
+[[nodiscard]] constexpr auto reconstruct_interval_rooted_candidate(
+    ::ctdp::interval_split_candidate<MaxN> const& splits)
+    -> interval_rooted_candidate<MaxN>
+{
+    return reconstruct_interval_rooted_candidate<MaxN>(
+        splits.n,
+        [&splits](std::size_t i, std::size_t j) constexpr -> std::size_t {
+            assert(j >= i + 2 && "Legacy split lookup requires an internal interval");
+            return splits.split(i, j - 1) + 1;
+        });
+}
+
+template<std::size_t MaxN>
+[[nodiscard]] constexpr auto reconstruct_interval_rooted_candidate(
+    ::ctdp::plan<::ctdp::interval_split_candidate<MaxN>> const& result)
+    -> interval_rooted_candidate<MaxN>
+{
+    return reconstruct_interval_rooted_candidate(result.params);
+}
 
 } // namespace ctdp::solver
 
 #endif // CTDP_SOLVER_INTERVAL_ROOTED_CANDIDATE_H
+
+
+
 
