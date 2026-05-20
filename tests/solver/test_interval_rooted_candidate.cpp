@@ -16,6 +16,7 @@ using ctdp::solver::interval_rooted_plan;
 using ctdp::solver::make_empty_interval_rooted_candidate;
 using ctdp::solver::make_single_leaf_interval_rooted_candidate;
 using ctdp::solver::reconstruct_interval_rooted_candidate;
+using ctdp::solver::reconstruct_interval_rooted_plan;
 
 template<std::size_t MaxN>
 constexpr std::size_t slot(std::size_t i, std::size_t j) {
@@ -122,6 +123,22 @@ constexpr auto reconstruct_from_legacy_split_candidate() {
     splits.optimal_split[0 * 4 + 1] = 0; // [0,2) -> k=1
     splits.optimal_split[2 * 4 + 3] = 2; // [2,4) -> k=3
     return reconstruct_interval_rooted_candidate(splits);
+}
+
+constexpr auto make_legacy_interval_split_plan() {
+    ctdp::interval_split_candidate<4> splits{};
+    splits.n = 4;
+    splits.optimal_split[0 * 4 + 3] = 1; // [0,4) -> k=2
+    splits.optimal_split[0 * 4 + 1] = 0; // [0,2) -> k=1
+    splits.optimal_split[2 * 4 + 3] = 2; // [2,4) -> k=3
+
+    ctdp::solve_stats stats{};
+    stats.subproblems_total = 10;
+    stats.subproblems_evaluated = 6;
+    stats.candidates_total = 4;
+    stats.candidates_evaluated = 4;
+
+    return plan<ctdp::interval_split_candidate<4>>{splits, 123.5, stats};
 }
 
 TEST(IntervalRootedCandidate, EmptyCandidate) {
@@ -356,6 +373,38 @@ TEST(IntervalRootedCandidate, ReconstructionFromIntervalDpPlan) {
     EXPECT_EQ(reconstructed.split(1, 3), 2u);
 }
 
+TEST(IntervalRootedCandidate, PlanReconstructionPreservesCostAndStats) {
+    constexpr auto legacy_plan = make_legacy_interval_split_plan();
+
+    auto reconstructed = reconstruct_interval_rooted_plan(legacy_plan);
+
+    EXPECT_EQ(reconstructed.params, make_balanced_candidate());
+    EXPECT_DOUBLE_EQ(reconstructed.predicted_cost, legacy_plan.predicted_cost);
+    EXPECT_EQ(reconstructed.stats.subproblems_total, legacy_plan.stats.subproblems_total);
+    EXPECT_EQ(reconstructed.stats.subproblems_evaluated, legacy_plan.stats.subproblems_evaluated);
+    EXPECT_EQ(reconstructed.stats.candidates_total, legacy_plan.stats.candidates_total);
+    EXPECT_EQ(reconstructed.stats.candidates_evaluated, legacy_plan.stats.candidates_evaluated);
+}
+
+TEST(IntervalRootedCandidate, PlanReconstructionFromIntervalDpPreservesMetadata) {
+    constexpr std::array<std::size_t, 5> dims{40, 20, 30, 10, 30};
+    constexpr auto dp_result = ctdp::interval_dp(ctdp::interval_split_space<5>{.n = 4},
+                                                 ctdp::make_chain_cost(dims));
+
+    auto reconstructed = reconstruct_interval_rooted_plan(dp_result);
+
+    EXPECT_TRUE(reconstructed.params.is_legal());
+    EXPECT_TRUE(reconstructed.params.is_canonical());
+    EXPECT_DOUBLE_EQ(reconstructed.predicted_cost, dp_result.predicted_cost);
+    EXPECT_EQ(reconstructed.stats.subproblems_total, dp_result.stats.subproblems_total);
+    EXPECT_EQ(reconstructed.stats.subproblems_evaluated, dp_result.stats.subproblems_evaluated);
+    EXPECT_EQ(reconstructed.stats.candidates_total, dp_result.stats.candidates_total);
+    EXPECT_EQ(reconstructed.stats.candidates_evaluated, dp_result.stats.candidates_evaluated);
+    EXPECT_EQ(reconstructed.params.split(0, 4), 3u);
+    EXPECT_EQ(reconstructed.params.split(0, 3), 1u);
+    EXPECT_EQ(reconstructed.params.split(1, 3), 2u);
+}
+
 TEST(IntervalRootedCandidate, EmptyPreorderTraversalIsEmpty) {
     constexpr auto empty = make_empty_interval_rooted_candidate<4>();
     auto preorder = empty.preorder();
@@ -483,6 +532,7 @@ TEST(IntervalRootedCandidate, ReconstructedCandidatePostorderMatchesCanonicalOrd
 }
 
 } // namespace
+
 
 
 

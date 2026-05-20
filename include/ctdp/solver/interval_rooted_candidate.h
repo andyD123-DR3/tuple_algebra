@@ -576,9 +576,21 @@ template<std::size_t MaxN>
     return reconstruct_interval_rooted_candidate(result.params);
 }
 
+template<std::size_t MaxN>
+[[nodiscard]] constexpr auto reconstruct_interval_rooted_plan(
+    ::ctdp::plan<::ctdp::interval_split_candidate<MaxN>> const& result)
+    -> interval_rooted_plan<MaxN>
+{
+    return interval_rooted_plan<MaxN>{
+        reconstruct_interval_rooted_candidate(result.params),
+        result.predicted_cost,
+        result.stats};
+}
+
 } // namespace ctdp::solver
 
 #endif // CTDP_SOLVER_INTERVAL_ROOTED_CANDIDATE_H
+
 
 
 
