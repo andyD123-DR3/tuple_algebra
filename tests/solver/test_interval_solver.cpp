@@ -243,6 +243,40 @@ TEST(IntervalSolver, SolveRootedRebasesRestrictedPoliciesForNonZeroStartInterval
     EXPECT_EQ(rooted.stats.candidates_total, 3u);
 }
 
+TEST(IntervalSolver, SolveRootedWithStatsMatchesRootedSolveAndReportsRepeatMemoHit) {
+    constexpr std::array<std::size_t, 7> dims{30, 35, 15, 5, 10, 20, 25};
+
+    matrix_chain_recurrence recurrence{dims};
+    interval_solver<matrix_chain_recurrence> solver{recurrence};
+
+    triangular_memo<double> rooted_memo{6};
+    auto rooted = solver.solve_rooted_with_stats<7>(interval_context{0, 6}, rooted_memo);
+
+    triangular_memo<double> expected_memo{6};
+    auto expected = solver.solve_rooted<7>(interval_context{0, 6}, expected_memo);
+
+    EXPECT_EQ(rooted.params, expected.params);
+    EXPECT_DOUBLE_EQ(rooted.predicted_cost, expected.predicted_cost);
+    EXPECT_EQ(rooted.stats.subproblems_total, expected.stats.subproblems_total);
+    EXPECT_EQ(rooted.stats.subproblems_evaluated, expected.stats.subproblems_evaluated);
+    EXPECT_EQ(rooted.stats.candidates_total, expected.stats.candidates_total);
+    EXPECT_EQ(rooted.stats.candidates_evaluated, expected.stats.candidates_evaluated);
+    EXPECT_EQ(rooted.stats.memo_table_size, expected.stats.memo_table_size);
+
+    auto repeated = solver.solve_rooted_with_stats<7>(interval_context{0, 6}, rooted_memo);
+
+    EXPECT_EQ(repeated.params, rooted.params);
+    EXPECT_DOUBLE_EQ(repeated.predicted_cost, rooted.predicted_cost);
+    EXPECT_EQ(repeated.stats.subproblems_total, 0u);
+    EXPECT_EQ(repeated.stats.subproblems_evaluated, 0u);
+    EXPECT_EQ(repeated.stats.candidates_total, 0u);
+    EXPECT_EQ(repeated.stats.candidates_evaluated, 0u);
+    EXPECT_EQ(repeated.stats.memo_hits, 1u);
+    EXPECT_EQ(repeated.stats.memo_misses, 0u);
+    EXPECT_EQ(repeated.stats.memo_table_size, rooted.stats.memo_table_size);
+    EXPECT_EQ(repeated.stats.max_recursion_depth, 1u);
+}
+
 TEST(IntervalSolver, CustomSplitPolicyRestrictsSearch) {
     left_size_score_recurrence recurrence;
     interval_solver<left_size_score_recurrence, leftmost_split_only> solver{recurrence};
@@ -328,6 +362,7 @@ TEST(IntervalSolver, SolveWithStatsReportsRootMemoHitOnRepeatSolve) {
 }
 
 } // namespace
+
 
 
 

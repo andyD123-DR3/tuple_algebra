@@ -1,6 +1,6 @@
 # Phase B1 Concrete C++ API Shape — `interval_solver` Rooted Output
 
-**Status:** Draft  
+**Status:** Implemented slice reference note  
 **Date:** May 20, 2026  
 **Scope:** Concrete API shape for Stage 2 Phase B1 choice tracking  
 **Related:** `docs/design/phase_b1_interval_choice_tracking_scope.md`, `docs/design/interval_stage2_execution_plan.md`, `include/ctdp/solver/algorithms/interval_solver.h`, `include/ctdp/solver/interval_rooted_candidate.h`, `include/ctdp/solver/algorithms/interval_dp.h`
@@ -9,7 +9,7 @@
 
 This note refines the Phase B1 scope into a concrete API target.
 
-It does **not** implement B1.
+The corresponding implementation has now landed as an additive Stage 2 Phase B1 slice in `include/ctdp/solver/algorithms/interval_solver.h`; this note remains useful as the API-shape reference.
 
 Its job is to answer a narrower question than the scope note:
 
@@ -143,6 +143,15 @@ For the first implementation ticket, prefer:
 
 In other words, `solve_rooted_with_stats(...)` is optional in the concrete implementation.
 
+### Implementation status
+
+The current landed B1 slice now provides both rooted entry points:
+
+- `solve_rooted<MaxN>(...)`
+- `solve_rooted_with_stats<MaxN>(...)`
+
+Both return `ctdp::solver::interval_rooted_plan<MaxN>`.
+
 ## 7. Recommended internal helper types
 
 B1 likely needs one internal choice-tracking structure.
@@ -263,4 +272,5 @@ The preferred first B1 API shape is:
 - post-solve reconstruction through the landed Phase A rooted candidate machinery
 
 That is concrete enough to guide implementation without prematurely solving B2/B3/B4 or redesigning the Stage 1 recurrence contract.
+
 

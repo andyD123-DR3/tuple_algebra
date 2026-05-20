@@ -16,6 +16,7 @@
 #include <cstddef>
 #include <functional>
 #include <optional>
+#include <type_traits>
 #include <utility>
 
 namespace ctdp::solver::algorithms {
@@ -143,13 +144,7 @@ public:
         detail::no_choice_tracking choices{};
         auto value = solve_impl(ctx, memo, choices, stats, 1);
 
-        stats.subproblems_total = stats.subproblems_evaluated;
-        if constexpr (requires(Memo const& m) {
-            { m.size() } -> std::convertible_to<std::size_t>;
-        }) {
-            stats.memo_table_size = memo.size();
-            stats.subproblems_cached = memo.size();
-        }
+        finalize_stats(memo, stats);
 
         return {std::move(value), stats};
     }
@@ -161,19 +156,23 @@ public:
                                     Memo& memo) const
         -> ctdp::solver::interval_rooted_plan<MaxN>
     {
+        return solve_rooted_with_stats<MaxN>(ctx, memo);
+    }
+
+    template<std::size_t MaxN, class Memo>
+    requires interval_memo<Memo, value_type>
+          && std::convertible_to<value_type, double>
+    [[nodiscard]] auto solve_rooted_with_stats(ctdp::solver::interval_context ctx,
+                                               Memo& memo) const
+        -> ctdp::solver::interval_rooted_plan<MaxN>
+    {
         assert(ctx.size() <= MaxN && "solve_rooted requires MaxN to cover the rooted interval size");
 
         ctdp::solve_stats stats{};
         detail::rebased_choice_tracker<MaxN> choices{ctx.i};
         auto value = solve_impl(ctx, memo, choices, stats, 1);
 
-        stats.subproblems_total = stats.subproblems_evaluated;
-        if constexpr (requires(Memo const& m) {
-            { m.size() } -> std::convertible_to<std::size_t>;
-        }) {
-            stats.memo_table_size = memo.size();
-            stats.subproblems_cached = memo.size();
-        }
+        finalize_stats(memo, stats);
 
         auto rooted = detail::reconstruct_rooted_candidate<MaxN>(ctx, choices);
         return ctdp::solver::interval_rooted_plan<MaxN>{
@@ -187,6 +186,18 @@ public:
     [[nodiscard]] Compare const& compare() const { return compare_; }
 
 private:
+    template<class Memo>
+    static constexpr void finalize_stats(Memo const& memo,
+                                         ctdp::solve_stats& stats) {
+        stats.subproblems_total = stats.subproblems_evaluated;
+        if constexpr (requires(Memo const& m) {
+            { m.size() } -> std::convertible_to<std::size_t>;
+        }) {
+            stats.memo_table_size = memo.size();
+            stats.subproblems_cached = memo.size();
+        }
+    }
+
     template<class Memo, class ChoiceTracker>
     requires interval_memo<Memo, value_type>
     [[nodiscard]] value_type solve_impl(ctdp::solver::interval_context ctx,
@@ -200,6 +211,9 @@ private:
 
         if (auto cached = memo.lookup(ctx)) {
             ++stats.memo_hits;
+            if constexpr (!std::same_as<ChoiceTracker, detail::no_choice_tracking>) {
+                rebuild_choices_from_memo(ctx, memo, choices);
+            }
             return *cached;
         }
 
@@ -238,6 +252,40 @@ private:
         return *best;
     }
 
+    template<class Memo, class ChoiceTracker>
+    requires interval_memo<Memo, value_type>
+    constexpr void rebuild_choices_from_memo(ctdp::solver::interval_context ctx,
+                                             Memo const& memo,
+                                             ChoiceTracker& choices) const {
+        if (ctx.size() == 1) {
+            return;
+        }
+
+        std::optional<value_type> best;
+        std::optional<std::size_t> best_split;
+
+        split_policy_.for_each(ctx, [&](std::size_t k) {
+            auto plan = ctdp::solver::plans::interval_partition_plan::from_split(ctx, k);
+
+            auto left = memo.lookup(plan.left_ctx);
+            auto right = memo.lookup(plan.right_ctx);
+            assert(left.has_value() && right.has_value()
+                && "Rebuilding rooted choices requires memoized child values");
+
+            value_type candidate = recurrence_.combine(plan, *left, *right);
+            if (!best || compare_(candidate, *best)) {
+                best = std::move(candidate);
+                best_split = k;
+            }
+        });
+
+        assert(best_split.has_value() && "Memoized internal interval must reconstruct a winning split");
+        auto chosen_plan = ctdp::solver::plans::interval_partition_plan::from_split(ctx, *best_split);
+        choices.store(ctx.i, ctx.j, *best_split);
+        rebuild_choices_from_memo(chosen_plan.left_ctx, memo, choices);
+        rebuild_choices_from_memo(chosen_plan.right_ctx, memo, choices);
+    }
+
     Recurrence recurrence_;
     SplitPolicy split_policy_;
     Compare compare_;
@@ -246,6 +294,8 @@ private:
 } // namespace ctdp::solver::algorithms
 
 #endif // CTDP_SOLVER_ALGORITHMS_INTERVAL_SOLVER_H
+
+
 
 
 
