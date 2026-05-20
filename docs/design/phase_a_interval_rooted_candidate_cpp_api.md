@@ -1,19 +1,19 @@
 # Phase A / A1 Concrete C++ API Shape — `interval_rooted_candidate`
 
-**Status:** Draft  
+**Status:** Implemented slice reference note  
 **Date:** May 20, 2026  
 **Scope:** Concrete header/API shape for Stage 2 Phase A / A1  
 **Related:** `docs/design/phase_a_interval_rooted_candidate.md`, `docs/design/interval_stage2_execution_plan.md`, `docs/adr_interval_rooted_representation_family.md`, `include/ctdp/solver/spaces/interval_split_space.h`, `include/ctdp/solver/interval_context.h`
 
 ## 1. Purpose
 
-This note refines the Phase A candidate specification into a concrete proposed C++ header/API shape.
+This note refines the Phase A candidate specification into a concrete C++ header/API shape.
 
-It is intentionally still a design artifact, not an implementation commit.
+The corresponding implementation has now landed in the canonical solver headers and tests; this note remains useful as the design rationale and API-shape reference.
 
 The purpose is to answer the practical question:
 
-> If Phase A / A1 were implemented next, what exact public header and type signatures should we aim for?
+> What exact public header and type signatures did Phase A / A1 aim for, and how should we read the landed implementation surface?
 
 ## 2. Recommended header placement
 
@@ -358,4 +358,5 @@ with:
 - deterministic view-based tree access
 
 That is concrete enough to implement without overcommitting to later Phase B/C/D concerns.
+
 

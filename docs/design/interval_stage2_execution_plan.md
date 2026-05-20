@@ -43,6 +43,19 @@ Make interval-rooted solutions first-class public values.
 - invariants and tests for legal interval-rooted structure
 - `plan<interval_rooted_candidate<...>>` usage or alias documentation
 
+### Status snapshot (May 20, 2026)
+
+The current implementation has landed the core Phase A public surface:
+
+- canonical header `include/ctdp/solver/interval_rooted_candidate.h`
+- umbrella exposure via `include/ctdp/solver/solver.h`
+- legality / canonicality / equality semantics with deterministic traversal helpers
+- reconstruction from callback, legacy split tables, and `plan<interval_split_candidate<MaxN>>`
+- `reconstruct_interval_rooted_plan(...)` adapter preserving cost and stats
+- public example path in `examples/matrix_chain_demo.cpp`
+
+Phase A can now be treated as functionally landed, with only optional ergonomic/docs follow-ups remaining.
+
 ### Tickets
 
 #### A1. Candidate contract
@@ -56,6 +69,8 @@ Acceptance criteria:
 - root semantics agreed
 - canonical equality semantics documented
 
+Current status: **landed**
+
 #### A2. Storage and views
 
 Choose the storage strategy and view API.
@@ -65,6 +80,8 @@ Acceptance criteria:
 - candidate storage remains value-semantic and testable
 - leaf/internal node queries are deterministic
 - no dependency on partition-tree types
+
+Current status: **landed**
 
 #### A3. Reconstruction helpers
 
@@ -76,6 +93,8 @@ Acceptance criteria:
 - reachable intervals are exactly the represented tree
 - no stray represented intervals remain in canonical output
 
+Current status: **landed**
+
 #### A4. Traversal and testing
 
 Add traversal and validation support.
@@ -85,6 +104,8 @@ Acceptance criteria:
 - preorder/inorder/postorder or equivalent deterministic traversal exists
 - structural legality tests cover balanced and unbalanced trees
 - reconstruction laws are tested on small examples
+
+Current status: **landed**
 
 ## 4. Phase B — Broader solver, recurrence, and memo support
 
@@ -241,11 +262,10 @@ The following ordering constraints should be treated as hard rules.
 
 The best near-term backlog is:
 
-1. A1 — candidate contract
-2. A2 — storage and views
-3. A3 — reconstruction helpers
-4. A4 — traversal and tests
-5. B1 — recurrence-with-choice
+1. B1 — recurrence-with-choice
+2. B2 — sparse memo backend (only if justified)
+3. B3 — partial / infeasible branch handling
+4. B4 — additional split policies (only where semantically real)
 
 That sequence keeps Stage 2 product-shaped rather than infrastructure-shaped.
 
@@ -258,4 +278,5 @@ Stage 2 should be considered coherent only when:
 - broader interval solver features serve those public values
 - integration contracts, if added, are interval-family-owned
 - coexistence with `interval_dp` is explicit rather than accidental
+
 

@@ -1,6 +1,6 @@
 # Phase A Specification — `interval_rooted_candidate`
 
-**Status:** Draft  
+**Status:** Implemented slice (Phase A public surface landed; note retained as specification/reference)  
 **Date:** May 20, 2026  
 **Scope:** Stage 2 Phase A public type specification  
 **Related:** `docs/adr_interval_rooted_representation_family.md`, `docs/design/interval_stage2_execution_plan.md`, `docs/design/phase_a_interval_rooted_candidate_cpp_api.md`, `include/ctdp/core/plan.h`, `include/ctdp/solver/algorithms/interval_solver.h`
@@ -10,6 +10,28 @@
 This specification now has a concrete companion API-shape note:
 
 - `docs/design/phase_a_interval_rooted_candidate_cpp_api.md` — proposed header placement, type names, fields, method signatures, and companion node-ref/view API for Phase A / A1 implementation
+
+## Implementation status snapshot
+
+The following public Phase A surface is now implemented in the canonical solver headers:
+
+- `include/ctdp/solver/interval_rooted_candidate.h`
+- `include/ctdp/solver/solver.h`
+- `tests/solver/test_interval_rooted_candidate.cpp`
+
+The landed slice includes:
+
+- `interval_rooted_candidate<MaxN>`
+- `interval_rooted_node_ref<MaxN>`
+- `interval_rooted_plan<MaxN>` as an alias to `ctdp::plan<...>`
+- reconstruction from callback, legacy `interval_split_candidate`, and `plan<interval_split_candidate<MaxN>>`
+- deterministic preorder / inorder / postorder traversal helpers
+- `interval_context` query overloads
+- `canonicalized()` for reachability-normalized storage
+
+The public example-facing usage path is now demonstrated in:
+
+- `examples/matrix_chain_demo.cpp`
 
 ## 1. Purpose
 
@@ -282,6 +304,13 @@ Compatibility with `interval_dp` should come through reconstruction helpers or a
 
 The specialized `interval_split_candidate<MaxN>` should remain valid, but it should not block introduction of the richer public interval-rooted candidate.
 
+That compatibility path is now concretely available through:
+
+- `reconstruct_interval_rooted_candidate(plan<interval_split_candidate<MaxN>>)`
+- `reconstruct_interval_rooted_plan(plan<interval_split_candidate<MaxN>>)`
+
+The latter preserves `predicted_cost` and `stats` while replacing the split-table payload with the materialized interval-rooted public candidate.
+
 ### 11.3 With `plan<Candidate>`
 
 The framework should continue using:
@@ -289,6 +318,10 @@ The framework should continue using:
 - `ctdp::plan<interval_rooted_candidate<MaxN>>`
 
 rather than inventing a new parallel result vocabulary.
+
+For readability, the canonical alias remains:
+
+- `ctdp::solver::interval_rooted_plan<MaxN>`
 
 ## 12. Non-goals for Phase A
 
@@ -330,5 +363,6 @@ with:
 - reuse of `ctdp::plan<Candidate>` for full-plan results
 
 That gives Stage 2 a real interval-rooted public solution type without forcing interval work back through partition-rooted tree abstractions.
+
 
 
