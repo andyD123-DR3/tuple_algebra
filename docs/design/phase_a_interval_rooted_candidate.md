@@ -3,7 +3,13 @@
 **Status:** Draft  
 **Date:** May 20, 2026  
 **Scope:** Stage 2 Phase A public type specification  
-**Related:** `docs/adr_interval_rooted_representation_family.md`, `docs/design/interval_stage2_execution_plan.md`, `include/ctdp/core/plan.h`, `include/ctdp/solver/algorithms/interval_solver.h`
+**Related:** `docs/adr_interval_rooted_representation_family.md`, `docs/design/interval_stage2_execution_plan.md`, `docs/design/phase_a_interval_rooted_candidate_cpp_api.md`, `include/ctdp/core/plan.h`, `include/ctdp/solver/algorithms/interval_solver.h`
+
+## Follow-on note
+
+This specification now has a concrete companion API-shape note:
+
+- `docs/design/phase_a_interval_rooted_candidate_cpp_api.md` — proposed header placement, type names, fields, method signatures, and companion node-ref/view API for Phase A / A1 implementation
 
 ## 1. Purpose
 
@@ -324,4 +330,5 @@ with:
 - reuse of `ctdp::plan<Candidate>` for full-plan results
 
 That gives Stage 2 a real interval-rooted public solution type without forcing interval work back through partition-rooted tree abstractions.
+
 
