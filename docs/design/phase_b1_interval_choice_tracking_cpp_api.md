@@ -152,6 +152,15 @@ The current landed B1 slice now provides both rooted entry points:
 
 Both return `ctdp::solver::interval_rooted_plan<MaxN>`.
 
+The current direct public demo path is:
+
+- `examples/matrix_chain_demo.cpp`
+
+That example now shows both:
+
+- `interval_dp` + `reconstruct_interval_rooted_plan(...)`
+- direct rooted solve via `interval_solver::solve_rooted_with_stats(...)`
+
 ## 7. Recommended internal helper types
 
 B1 likely needs one internal choice-tracking structure.
@@ -272,5 +281,6 @@ The preferred first B1 API shape is:
 - post-solve reconstruction through the landed Phase A rooted candidate machinery
 
 That is concrete enough to guide implementation without prematurely solving B2/B3/B4 or redesigning the Stage 1 recurrence contract.
+
 
 

@@ -1,6 +1,6 @@
 # Phase B1 Scope — `interval_solver` Choice Tracking for Rooted Output
 
-**Status:** Draft  
+**Status:** Implemented slice reference note  
 **Date:** May 20, 2026  
 **Scope:** Stage 2 Phase B1 scoping note  
 **Related:** `docs/design/interval_stage2_execution_plan.md`, `docs/design/phase_a_interval_rooted_candidate.md`, `include/ctdp/solver/algorithms/interval_solver.h`, `include/ctdp/solver/interval_rooted_candidate.h`, `include/ctdp/solver/algorithms/interval_dp.h`
@@ -8,6 +8,8 @@
 ## 1. Purpose
 
 This note scopes the smallest useful follow-on after the landed Phase A interval-rooted public surface.
+
+The corresponding first B1 implementation slice has now landed in `include/ctdp/solver/algorithms/interval_solver.h`; this note remains useful as the scope/rationale record for that work.
 
 The goal is **not** to redesign the interval solver into a grand universal DP abstraction.
 
@@ -166,6 +168,15 @@ The B1 path should be a new capability for users who want:
 - direct materialized interval-rooted output
 - preserved `predicted_cost` and `stats`
 
+That additive path is now present through:
+
+- `interval_solver::solve_rooted<MaxN>(...)`
+- `interval_solver::solve_rooted_with_stats<MaxN>(...)`
+
+The current public example-facing path is demonstrated in:
+
+- `examples/matrix_chain_demo.cpp`
+
 ## 7. What B1 should not do yet
 
 To keep the slice narrow, B1 should defer the following.
@@ -243,4 +254,5 @@ The smallest useful B1 is:
 > keep the current value recurrence contract, let the solver record winning split choices, and reconstruct `interval_rooted_plan<MaxN>` through the already-landed Phase A public representation surface.
 
 That is enough to connect Stage 1 solving to Stage 2 rooted output without prematurely broadening memo, infeasibility, or dispatch concerns.
+
 

@@ -137,6 +137,15 @@ Acceptance criteria:
 - richer recurrence path can drive materialized interval-rooted output
 - compatibility story is documented
 
+Current status: **implemented slice landed**
+
+The currently landed B1 surface includes:
+
+- `interval_solver::solve_rooted<MaxN>(...)`
+- `interval_solver::solve_rooted_with_stats<MaxN>(...)`
+- rooted-output tests in `tests/solver/test_interval_solver.cpp`
+- a direct public example path in `examples/matrix_chain_demo.cpp`
+
 #### B2. Sparse memo backend
 
 Introduce a sparse or map-based memo only if a concrete use case requires it.
@@ -283,6 +292,7 @@ Stage 2 should be considered coherent only when:
 - broader interval solver features serve those public values
 - integration contracts, if added, are interval-family-owned
 - coexistence with `interval_dp` is explicit rather than accidental
+
 
 
 
