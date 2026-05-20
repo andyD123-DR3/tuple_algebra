@@ -23,10 +23,18 @@ template<std::size_t MaxN>
 struct interval_rooted_preorder_range;
 
 template<std::size_t MaxN>
+struct interval_rooted_inorder_range;
+
+template<std::size_t MaxN>
+struct interval_rooted_postorder_range;
+
+template<std::size_t MaxN>
 struct interval_rooted_candidate {
     using interval_type = interval_context;
     using node_ref = interval_rooted_node_ref<MaxN>;
     using preorder_range = interval_rooted_preorder_range<MaxN>;
+    using inorder_range = interval_rooted_inorder_range<MaxN>;
+    using postorder_range = interval_rooted_postorder_range<MaxN>;
 
     static constexpr std::size_t max_size = MaxN;
     static constexpr std::size_t absent_code = 0;
@@ -93,6 +101,8 @@ struct interval_rooted_candidate {
     }
 
     [[nodiscard]] constexpr preorder_range preorder() const noexcept;
+    [[nodiscard]] constexpr inorder_range inorder() const noexcept;
+    [[nodiscard]] constexpr postorder_range postorder() const noexcept;
 
     [[nodiscard]] constexpr bool is_legal() const noexcept {
         if (n > MaxN) {
@@ -287,6 +297,40 @@ struct interval_rooted_preorder_range {
 };
 
 template<std::size_t MaxN>
+struct interval_rooted_inorder_range {
+    using node_ref = interval_rooted_node_ref<MaxN>;
+    static constexpr std::size_t capacity = interval_rooted_preorder_range<MaxN>::capacity;
+
+    std::array<node_ref, capacity> nodes{};
+    std::size_t count{};
+
+    [[nodiscard]] constexpr node_ref const* begin() const noexcept {
+        return nodes.data();
+    }
+
+    [[nodiscard]] constexpr node_ref const* end() const noexcept {
+        return nodes.data() + count;
+    }
+};
+
+template<std::size_t MaxN>
+struct interval_rooted_postorder_range {
+    using node_ref = interval_rooted_node_ref<MaxN>;
+    static constexpr std::size_t capacity = interval_rooted_preorder_range<MaxN>::capacity;
+
+    std::array<node_ref, capacity> nodes{};
+    std::size_t count{};
+
+    [[nodiscard]] constexpr node_ref const* begin() const noexcept {
+        return nodes.data();
+    }
+
+    [[nodiscard]] constexpr node_ref const* end() const noexcept {
+        return nodes.data() + count;
+    }
+};
+
+template<std::size_t MaxN>
 using interval_rooted_plan = ctdp::plan<interval_rooted_candidate<MaxN>>;
 
 namespace detail {
@@ -308,6 +352,44 @@ constexpr void build_interval_rooted_preorder(
     auto k = c.split(i, j);
     build_interval_rooted_preorder(c, i, k, out, count);
     build_interval_rooted_preorder(c, k, j, out, count);
+}
+
+template<std::size_t MaxN>
+constexpr void build_interval_rooted_inorder(
+    interval_rooted_candidate<MaxN> const& c,
+    std::size_t i,
+    std::size_t j,
+    std::array<interval_rooted_node_ref<MaxN>, interval_rooted_inorder_range<MaxN>::capacity>& out,
+    std::size_t& count)
+{
+    if (c.is_leaf(i, j)) {
+        out[count++] = interval_rooted_node_ref<MaxN>{&c, interval_context{i, j}};
+        return;
+    }
+
+    auto k = c.split(i, j);
+    build_interval_rooted_inorder(c, i, k, out, count);
+    out[count++] = interval_rooted_node_ref<MaxN>{&c, interval_context{i, j}};
+    build_interval_rooted_inorder(c, k, j, out, count);
+}
+
+template<std::size_t MaxN>
+constexpr void build_interval_rooted_postorder(
+    interval_rooted_candidate<MaxN> const& c,
+    std::size_t i,
+    std::size_t j,
+    std::array<interval_rooted_node_ref<MaxN>, interval_rooted_postorder_range<MaxN>::capacity>& out,
+    std::size_t& count)
+{
+    if (c.is_leaf(i, j)) {
+        out[count++] = interval_rooted_node_ref<MaxN>{&c, interval_context{i, j}};
+        return;
+    }
+
+    auto k = c.split(i, j);
+    build_interval_rooted_postorder(c, i, k, out, count);
+    build_interval_rooted_postorder(c, k, j, out, count);
+    out[count++] = interval_rooted_node_ref<MaxN>{&c, interval_context{i, j}};
 }
 
 template<std::size_t MaxN, class SplitFn>
@@ -342,6 +424,32 @@ constexpr auto interval_rooted_candidate<MaxN>::preorder() const noexcept -> pre
 
     assert(is_legal() && "preorder requires a legal interval-rooted candidate");
     detail::build_interval_rooted_preorder(*this, 0, n, out.nodes, out.count);
+    return out;
+}
+
+template<std::size_t MaxN>
+constexpr auto interval_rooted_candidate<MaxN>::inorder() const noexcept -> inorder_range {
+    inorder_range out{};
+
+    if (n == 0) {
+        return out;
+    }
+
+    assert(is_legal() && "inorder requires a legal interval-rooted candidate");
+    detail::build_interval_rooted_inorder(*this, 0, n, out.nodes, out.count);
+    return out;
+}
+
+template<std::size_t MaxN>
+constexpr auto interval_rooted_candidate<MaxN>::postorder() const noexcept -> postorder_range {
+    postorder_range out{};
+
+    if (n == 0) {
+        return out;
+    }
+
+    assert(is_legal() && "postorder requires a legal interval-rooted candidate");
+    detail::build_interval_rooted_postorder(*this, 0, n, out.nodes, out.count);
     return out;
 }
 
@@ -408,6 +516,7 @@ template<std::size_t MaxN>
 } // namespace ctdp::solver
 
 #endif // CTDP_SOLVER_INTERVAL_ROOTED_CANDIDATE_H
+
 
 
 

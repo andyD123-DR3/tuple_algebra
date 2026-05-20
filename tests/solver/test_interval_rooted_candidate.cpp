@@ -341,7 +341,81 @@ TEST(IntervalRootedCandidate, ReconstructedCandidatePreorderMatchesCanonicalOrde
     EXPECT_EQ(seen, expected);
 }
 
+TEST(IntervalRootedCandidate, EmptyInorderAndPostorderTraversalsAreEmpty) {
+    constexpr auto empty = make_empty_interval_rooted_candidate<4>();
+    auto inorder = empty.inorder();
+    auto postorder = empty.postorder();
+
+    EXPECT_EQ(inorder.count, 0u);
+    EXPECT_EQ(inorder.begin(), inorder.end());
+    EXPECT_EQ(postorder.count, 0u);
+    EXPECT_EQ(postorder.begin(), postorder.end());
+}
+
+TEST(IntervalRootedCandidate, BalancedInorderTraversalIsDeterministic) {
+    constexpr auto candidate = make_balanced_candidate();
+
+    std::vector<std::pair<std::size_t, std::size_t>> seen;
+    for (auto const& node : candidate.inorder()) {
+        seen.emplace_back(node.interval().start(), node.interval().end());
+    }
+
+    std::vector<std::pair<std::size_t, std::size_t>> expected{
+        {0, 1}, {0, 2}, {1, 2}, {0, 4}, {2, 3}, {2, 4}, {3, 4}
+    };
+
+    EXPECT_EQ(seen, expected);
+}
+
+TEST(IntervalRootedCandidate, BalancedPostorderTraversalIsDeterministic) {
+    constexpr auto candidate = make_balanced_candidate();
+
+    std::vector<std::pair<std::size_t, std::size_t>> seen;
+    for (auto const& node : candidate.postorder()) {
+        seen.emplace_back(node.interval().start(), node.interval().end());
+    }
+
+    std::vector<std::pair<std::size_t, std::size_t>> expected{
+        {0, 1}, {1, 2}, {0, 2}, {2, 3}, {3, 4}, {2, 4}, {0, 4}
+    };
+
+    EXPECT_EQ(seen, expected);
+    ASSERT_FALSE(seen.empty());
+    EXPECT_EQ(seen.back(), std::make_pair(0u, 4u));
+}
+
+TEST(IntervalRootedCandidate, RightSkewedPostorderTraversalIsDeterministic) {
+    constexpr auto candidate = make_right_skewed_candidate();
+
+    std::vector<std::pair<std::size_t, std::size_t>> seen;
+    for (auto const& node : candidate.postorder()) {
+        seen.emplace_back(node.interval().start(), node.interval().end());
+    }
+
+    std::vector<std::pair<std::size_t, std::size_t>> expected{
+        {0, 1}, {1, 2}, {2, 3}, {3, 4}, {2, 4}, {1, 4}, {0, 4}
+    };
+
+    EXPECT_EQ(seen, expected);
+}
+
+TEST(IntervalRootedCandidate, ReconstructedCandidatePostorderMatchesCanonicalOrder) {
+    constexpr auto candidate = reconstruct_balanced_from_callback();
+
+    std::vector<std::pair<std::size_t, std::size_t>> seen;
+    for (auto const& node : candidate.postorder()) {
+        seen.emplace_back(node.interval().start(), node.interval().end());
+    }
+
+    std::vector<std::pair<std::size_t, std::size_t>> expected{
+        {0, 1}, {1, 2}, {0, 2}, {2, 3}, {3, 4}, {2, 4}, {0, 4}
+    };
+
+    EXPECT_EQ(seen, expected);
+}
+
 } // namespace
+
 
 
 
