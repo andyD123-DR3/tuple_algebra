@@ -1,0 +1,93 @@
+#include "spmv_design_space/search.hpp"
+
+#include "test_support.hpp"
+#include <iostream>
+#include <string>
+
+int main() {
+    using namespace ctdp::spmv_dsl;
+
+    const auto problem = make_stencil_problem(10, 10);
+    const auto reference = execute_strict_reference(problem, 0.125);
+
+    plan_descriptor csr{
+        .name = "csr strict",
+        .storage = storage_kind::csr,
+        .preconditioner = preconditioner_kind::fixed_diagonal_jacobi,
+        .executor = executor_kind::csr_executor
+    };
+    const auto csr_result = execute_plan(problem, csr, 0.125);
+    SPMV_REQUIRE(conforms_to_reference(csr_result, reference, csr));
+
+    plan_descriptor mf{
+        .name = "matrix free strict",
+        .storage = storage_kind::matrix_free_stencil,
+        .decomposition = decomposition_kind::recursive_grid_bisection,
+        .preconditioner = preconditioner_kind::fixed_diagonal_jacobi,
+        .executor = executor_kind::matrix_free_executor
+    };
+    const auto mf_result = execute_plan(problem, mf, 0.125);
+    SPMV_REQUIRE(conforms_to_reference(mf_result, reference, mf));
+
+
+    persistent_row_pool pool{2};
+    execution_context ctx{.pool = &pool, .task_grain = 16};
+
+    plan_descriptor red_black{
+        .name = "matrix free red-black strict",
+        .storage = storage_kind::matrix_free_stencil,
+        .decomposition = decomposition_kind::blocked_rows,
+        .colouring = colouring_kind::red_black_stencil,
+        .preconditioner = preconditioner_kind::fixed_diagonal_jacobi,
+        .threading = threading_kind::colour_phases,
+        .simd = simd_kind::lanes8,
+        .executor = executor_kind::matrix_free_executor
+    };
+    const auto rb_result = execute_plan(problem, red_black, 0.125, &ctx);
+    SPMV_REQUIRE(conforms_to_reference(rb_result, reference, red_black));
+    SPMV_REQUIRE(!rb_result.visited_rows.empty());
+    SPMV_REQUIRE(rb_result.visited_rows[0] == 0);
+    SPMV_REQUIRE(rb_result.visited_rows[1] != 1); // red-black phase order is not plain row-major order.
+    SPMV_REQUIRE(rb_result.execution_path.find("red_black_stencil") != std::string::npos);
+    SPMV_REQUIRE(rb_result.execution_path.find("colour_phases(2T)") != std::string::npos);
+    SPMV_REQUIRE(rb_result.execution_path.find("lanes8(8 lanes)") != std::string::npos);
+    SPMV_REQUIRE(rb_result.worker_count == 2);
+    SPMV_REQUIRE(rb_result.simd_lanes == 8);
+
+    const expression_contract contract{};
+    search_options options;
+    options.iterations = 5;
+    options.warmup = 1;
+    options.threads = 2;
+    options.task_grain = 16;
+    const auto results = run_design_space_search(problem, contract, 0.125, options);
+    SPMV_REQUIRE(!results.empty());
+    SPMV_REQUIRE(select_best_legal(results) != nullptr);
+
+    bool saw_illegal = false;
+    bool saw_legal_conforming = false;
+    for (const auto& r : results) {
+        saw_illegal = saw_illegal || !r.legality.legal();
+        saw_legal_conforming = saw_legal_conforming || (r.legality.legal() && r.conformance_passed);
+    }
+    SPMV_REQUIRE(saw_illegal);
+    SPMV_REQUIRE(saw_legal_conforming);
+
+
+    const auto larger_problem = make_stencil_problem(64, 64);
+    search_options large_options;
+    large_options.iterations = 3;
+    large_options.warmup = 1;
+    large_options.threads = 2;
+    large_options.task_grain = 512;
+    const auto larger_results = run_design_space_search(larger_problem, contract, 0.125, large_options);
+    SPMV_REQUIRE(select_best_legal(larger_results) != nullptr);
+    bool saw_threaded_candidate = false;
+    for (const auto& r : larger_results) {
+        saw_threaded_candidate = saw_threaded_candidate ||
+            (r.legality.legal() && uses_parallel_threading(r.plan.threading));
+    }
+    SPMV_REQUIRE(saw_threaded_candidate);
+
+    std::cout << "executor tests PASS\n";
+}
