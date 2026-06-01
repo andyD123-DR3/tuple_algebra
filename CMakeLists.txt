@@ -1,9 +1,9 @@
 cmake_minimum_required(VERSION 3.20...3.30)
 
 project(ctdp
-    VERSION     0.8.0
-    DESCRIPTION "Compile-Time Dynamic Programming Framework"
-    LANGUAGES   CXX
+        VERSION     0.8.0
+        DESCRIPTION "Compile-Time Dynamic Programming Framework"
+        LANGUAGES   CXX
 )
 
 # ── C++20 Standard ───────────────────────────────────────────────────────────
@@ -15,13 +15,16 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 option(CTDP_BUILD_TESTS    "Build unit tests"              ON)
 option(CTDP_BUILD_EXAMPLES "Build example programs"        ON)
 option(CTDP_BUILD_EXPERIMENTS "Build fix_calibration experiment programs" OFF)
+option(CTDP_BUILD_SPMV_DESIGN_SPACE
+        "Build SpMV design-space demonstrator"
+        ON)
 option(CTDP_ASAN           "Enable AddressSanitizer"      OFF)
 option(CTDP_SKIP_HW_TIMING_TESTS
-    "Skip timing-accuracy assertions that require stable hardware (set OFF to enable tight validation locally)"
-    ON)
+        "Skip timing-accuracy assertions that require stable hardware (set OFF to enable tight validation locally)"
+        ON)
 option(CTDP_VTUNE
-    "Enable Intel VTune ITT instrumentation (requires Intel oneAPI VTune SDK)"
-    OFF)
+        "Enable Intel VTune ITT instrumentation (requires Intel oneAPI VTune SDK)"
+        OFF)
 
 if(CTDP_VTUNE)
     list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
@@ -34,23 +37,23 @@ endif()
 # Raise constexpr evaluation limits (compile-time DP needs this)
 if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
     add_compile_options(
-        -Wall -Wextra -Wpedantic
-        -Wconversion -Wsign-conversion
-        -fconstexpr-ops-limit=100000000
-        -fconstexpr-loop-limit=1000000
+            -Wall -Wextra -Wpedantic
+            -Wconversion -Wsign-conversion
+            -fconstexpr-ops-limit=100000000
+            -fconstexpr-loop-limit=1000000
     )
 elseif(CMAKE_CXX_COMPILER_ID STREQUAL "Clang" OR
-       CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
+        CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
     add_compile_options(
-        -Wall -Wextra -Wpedantic
-        -Wconversion -Wsign-conversion
-        -fconstexpr-steps=100000000
+            -Wall -Wextra -Wpedantic
+            -Wconversion -Wsign-conversion
+            -fconstexpr-steps=100000000
     )
 elseif(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
     add_compile_options(
-        /W4 /permissive-
-        /constexpr:steps10000000
-        /Zc:__cplusplus           # Report correct __cplusplus value
+            /W4 /permissive-
+            /constexpr:steps10000000
+            /Zc:__cplusplus           # Report correct __cplusplus value
     )
 endif()
 
@@ -63,17 +66,17 @@ endif()
 # Core: foundational constexpr containers and concepts
 add_library(ctdp_core INTERFACE)
 target_include_directories(ctdp_core INTERFACE
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/ctdp/core>
-    $<INSTALL_INTERFACE:include/ctdp/core>
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/ctdp/core>
+        $<INSTALL_INTERFACE:include/ctdp/core>
 )
 
 # Solver: DP engine (plan, algorithms, spaces, cost_models, memo)
 add_library(ctdp_solver INTERFACE)
 target_include_directories(ctdp_solver INTERFACE
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/ctdp/solver>
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-    $<INSTALL_INTERFACE:include/ctdp/solver>
-    $<INSTALL_INTERFACE:include>
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/ctdp/solver>
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+        $<INSTALL_INTERFACE:include/ctdp/solver>
+        $<INSTALL_INTERFACE:include>
 )
 target_link_libraries(ctdp_solver INTERFACE ctdp_core)
 
@@ -81,64 +84,74 @@ target_link_libraries(ctdp_solver INTERFACE ctdp_core)
 # Uses ct_dp::algebra namespace and #include "ct_dp/algebra/..." paths
 add_library(ctdp_algebra INTERFACE)
 target_include_directories(ctdp_algebra INTERFACE
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-    $<INSTALL_INTERFACE:include>
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+        $<INSTALL_INTERFACE:include>
 )
 
 # Graph: compile-time graph algorithms and analysis
 add_library(ctdp_graph INTERFACE)
 target_include_directories(ctdp_graph INTERFACE
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/ctdp/graph>
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-    $<INSTALL_INTERFACE:include/ctdp/graph>
-    $<INSTALL_INTERFACE:include>
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/ctdp/graph>
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+        $<INSTALL_INTERFACE:include/ctdp/graph>
+        $<INSTALL_INTERFACE:include>
 )
 target_link_libraries(ctdp_graph INTERFACE ctdp_core)
 
 # Engine: bridge between graph and solver tiers
 add_library(ctdp_engine INTERFACE)
 target_include_directories(ctdp_engine INTERFACE
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/ctdp/engine/bridge>
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-    $<INSTALL_INTERFACE:include/ctdp/engine/bridge>
-    $<INSTALL_INTERFACE:include>
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/ctdp/engine/bridge>
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+        $<INSTALL_INTERFACE:include/ctdp/engine/bridge>
+        $<INSTALL_INTERFACE:include>
 )
 target_link_libraries(ctdp_engine INTERFACE ctdp_graph ctdp_solver)
 
 # Domain: application-specific code (SpMV, FIX, etc.)
 add_library(ctdp_domain INTERFACE)
 target_include_directories(ctdp_domain INTERFACE
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/ctdp/domain>
-    $<INSTALL_INTERFACE:include/ctdp/domain>
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/ctdp/domain>
+        $<INSTALL_INTERFACE:include/ctdp/domain>
 )
 target_link_libraries(ctdp_domain INTERFACE ctdp_engine ctdp_graph ctdp_solver)
 
 # Space: descriptor-based search spaces (v0.7.2)
 add_library(ctdp_space INTERFACE)
 target_include_directories(ctdp_space INTERFACE
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-    $<INSTALL_INTERFACE:include>
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+        $<INSTALL_INTERFACE:include>
 )
 target_link_libraries(ctdp_space INTERFACE ctdp_solver)
 
 # Bench: measurement infrastructure (zero CT-DP knowledge)
 add_library(ctdp_bench INTERFACE)
 target_include_directories(ctdp_bench INTERFACE
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-    $<INSTALL_INTERFACE:include>
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+        $<INSTALL_INTERFACE:include>
 )
 
 # Calibrator: framework-facing calibration harness (depends on bench)
 add_library(ctdp_calibrator INTERFACE)
 target_include_directories(ctdp_calibrator INTERFACE
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-    $<INSTALL_INTERFACE:include>
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+        $<INSTALL_INTERFACE:include>
 )
 target_link_libraries(ctdp_calibrator INTERFACE ctdp_bench)
 
 # Convenience target: all libraries
 add_library(ctdp_all INTERFACE)
-target_link_libraries(ctdp_all INTERFACE ctdp_core ctdp_solver ctdp_algebra ctdp_graph ctdp_engine ctdp_domain ctdp_space ctdp_bench ctdp_calibrator)
+target_link_libraries(ctdp_all INTERFACE
+        ctdp_core
+        ctdp_solver
+        ctdp_algebra
+        ctdp_graph
+        ctdp_engine
+        ctdp_domain
+        ctdp_space
+        ctdp_bench
+        ctdp_calibrator
+)
 
 # ── Namespaced aliases (for ctdp::foo syntax in sub-projects) ────────────────
 add_library(ctdp::core       ALIAS ctdp_core)
@@ -152,7 +165,7 @@ add_library(ctdp::bench      ALIAS ctdp_bench)
 add_library(ctdp::calibrator ALIAS ctdp_calibrator)
 
 # ── Subdirectories ───────────────────────────────────────────────────────────
-if(CTDP_BUILD_TESTS OR CTDP_BUILD_EXPERIMENTS)
+if(CTDP_BUILD_TESTS OR CTDP_BUILD_EXPERIMENTS OR CTDP_BUILD_SPMV_DESIGN_SPACE)
     enable_testing()
 endif()
 
@@ -164,6 +177,12 @@ if(CTDP_BUILD_EXAMPLES)
     add_subdirectory(examples)
 endif()
 
+# The SpMV design-space demonstrator is deliberately wired separately from the
+# examples directory so it can be built and benchmarked even if examples are off.
+if(CTDP_BUILD_SPMV_DESIGN_SPACE)
+    add_subdirectory(examples/framework/spmv_design_space)
+endif()
+
 if(CTDP_BUILD_EXPERIMENTS)
     add_subdirectory(experiments/fix_calibration)
 endif()
@@ -172,8 +191,20 @@ endif()
 include(GNUInstallDirs)
 install(DIRECTORY include/ctdp/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/ctdp)
 install(DIRECTORY include/ct_dp/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/ct_dp)
-install(TARGETS ctdp_core ctdp_solver ctdp_algebra ctdp_graph ctdp_engine ctdp_domain ctdp_space ctdp_bench ctdp_calibrator ctdp_all
-    EXPORT ctdpTargets)
+install(TARGETS
+        ctdp_core
+        ctdp_solver
+        ctdp_algebra
+        ctdp_graph
+        ctdp_engine
+        ctdp_domain
+        ctdp_space
+        ctdp_bench
+        ctdp_calibrator
+        ctdp_all
+        EXPORT ctdpTargets
+)
 install(EXPORT ctdpTargets
-    NAMESPACE ctdp::
-    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/ctdp)
+        NAMESPACE ctdp::
+        DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/ctdp
+)
