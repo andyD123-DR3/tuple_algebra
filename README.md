@@ -97,3 +97,9 @@ See `examples/matrix_chain_demo.cpp` for a public end-to-end example that shows 
 - `interval_dp` + `reconstruct_interval_rooted_plan(...)`
 - direct rooted solve via `interval_solver`
 
+### Which interval path should you use?
+
+- Use `interval_dp(...)` when you want the compact specialized interval DP path and primarily care about optimal cost plus the classic split-table result.
+- Use `reconstruct_interval_rooted_plan(...)` when you already have an `interval_dp` result and want to materialize the rooted public candidate/plan surface without changing solver choice.
+- Use `interval_solver::solve_rooted<MaxN>(...)` or `solve_rooted_with_stats<MaxN>(...)` when you want direct rooted output from the generic interval recurrence path, especially for custom recurrences, custom split policies, or non-zero-start subinterval solves.
+

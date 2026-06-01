@@ -498,7 +498,7 @@ TEST(IntervalRootedCandidate, BalancedPostorderTraversalIsDeterministic) {
 
     EXPECT_EQ(seen, expected);
     ASSERT_FALSE(seen.empty());
-    EXPECT_EQ(seen.back(), std::make_pair(0u, 4u));
+    EXPECT_EQ(seen.back(), (std::pair<std::size_t, std::size_t>{0u, 4u}));
 }
 
 TEST(IntervalRootedCandidate, RightSkewedPostorderTraversalIsDeterministic) {
@@ -532,6 +532,7 @@ TEST(IntervalRootedCandidate, ReconstructedCandidatePostorderMatchesCanonicalOrd
 }
 
 } // namespace
+
 
 
 

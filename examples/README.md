@@ -11,6 +11,12 @@
 | `variadic_reduce` | Tuple algebra | 7-lane single-pass statistics (P3666R2) |
 | `gemm_tile_optimisation` | ML cost model | Calibration: preprocess → train → search |
 
+For interval-rooted work, `matrix_chain_demo` now illustrates three distinct usage levels:
+
+- `interval_dp(...)` for the specialized matrix-chain DP path
+- `reconstruct_interval_rooted_plan(...)` when you want rooted public output from an existing DP result
+- `interval_solver::solve_rooted_with_stats(...)` when you want direct rooted output from the generic interval recurrence path
+
 ## Standalone Examples (pure C++20, no framework imports)
 
 These demonstrate the CT-DP **pattern** — constexpr search → NTTP dispatch → zero-cost executor — without importing framework types. They prove the architecture works and serve as the specification for what the framework must support.
