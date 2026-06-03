@@ -113,6 +113,8 @@ inline std::string execution_path_for(const plan_descriptor& plan,
     out += std::string(to_string(plan.simd));
     out += "(" + std::to_string(lanes) + " lanes)";
     out += "/";
+    out += std::string(to_string(plan.fusion));
+    out += "/";
     out += std::string(to_string(plan.reduction));
     return out;
 }
@@ -200,6 +202,18 @@ inline double dot_for_plan(const plan_descriptor& plan,
     throw std::invalid_argument("unknown reduction");
 }
 
+inline double preconditioner_value(const plan_descriptor& plan, double residual) {
+    switch (plan.preconditioner) {
+    case preconditioner_kind::fixed_diagonal_jacobi:
+        return residual / 4.0;
+    case preconditioner_kind::none_solver_family:
+        return residual;
+    case preconditioner_kind::coloured_smoother_solver_family:
+        return 0.75 * residual / 4.0;
+    }
+    return residual;
+}
+
 template<std::size_t W>
 inline void apply_preconditioner_range(
     const plan_descriptor& plan,
@@ -280,6 +294,9 @@ inline void apply_preconditioner(
 inline double apply_operator_at(const stencil_problem& problem, const plan_descriptor& plan, std::size_t row) {
     if (plan.executor == executor_kind::csr_executor) {
         return apply_csr_at(problem.csr, problem.x, row);
+    }
+    if (plan.executor == executor_kind::dia_executor) {
+        return apply_dia_at(problem, row);
     }
     if (plan.executor == executor_kind::matrix_free_executor ||
         plan.executor == executor_kind::reference) {
@@ -414,6 +431,122 @@ inline void update_x(
     }
 }
 
+template<std::size_t W>
+inline void compute_fused_range(
+    const stencil_problem& problem,
+    const plan_descriptor& plan,
+    const std::vector<std::size_t>& rows,
+    std::vector<double>& residual,
+    std::vector<double>& z,
+    std::vector<double>& x_next,
+    std::vector<double>& products,
+    double alpha,
+    std::size_t first,
+    std::size_t last) {
+    std::size_t k = first;
+    for (; k + W <= last; k += W) {
+        fixed_block<double, W> xx{};
+        fixed_block<double, W> bb{};
+        fixed_block<double, W> ax{};
+        fixed_block<double, W> rr{};
+        fixed_block<double, W> zz{};
+        for (std::size_t lane = 0; lane < W; ++lane) {
+            const auto row = rows[k + lane];
+            xx[lane] = problem.x[row];
+            bb[lane] = problem.b[row];
+            ax[lane] = apply_operator_at(problem, plan, row);
+        }
+        rr = fixed_binary(bb, ax, [](double x, double y) noexcept { return x - y; });
+        for (std::size_t lane = 0; lane < W; ++lane) {
+            zz[lane] = preconditioner_value(plan, rr[lane]);
+        }
+        for (std::size_t lane = 0; lane < W; ++lane) {
+            const auto row = rows[k + lane];
+            residual[row] = rr[lane];
+            z[row] = zz[lane];
+            products[row] = rr[lane] * zz[lane];
+            x_next[row] = xx[lane] + alpha * zz[lane];
+        }
+    }
+    for (; k < last; ++k) {
+        const auto row = rows[k];
+        const auto ri = problem.b[row] - apply_operator_at(problem, plan, row);
+        const auto zi = preconditioner_value(plan, ri);
+        residual[row] = ri;
+        z[row] = zi;
+        products[row] = ri * zi;
+        x_next[row] = problem.x[row] + alpha * zi;
+    }
+}
+
+inline void compute_fused(
+    const stencil_problem& problem,
+    const plan_descriptor& plan,
+    const std::vector<std::size_t>& rows,
+    std::vector<double>& residual,
+    std::vector<double>& z,
+    std::vector<double>& x_next,
+    std::vector<double>& products,
+    double alpha,
+    std::size_t lanes,
+    execution_context* ctx) {
+    residual.resize(problem.size());
+    z.resize(problem.size());
+    x_next.resize(problem.size());
+    products.assign(problem.size(), 0.0);
+
+    const auto body = [&](std::size_t first, std::size_t last) {
+        if (lanes >= 8) {
+            compute_fused_range<8>(problem, plan, rows, residual, z, x_next, products, alpha, first, last);
+        } else if (lanes >= 4) {
+            compute_fused_range<4>(problem, plan, rows, residual, z, x_next, products, alpha, first, last);
+        } else {
+            compute_fused_range<1>(problem, plan, rows, residual, z, x_next, products, alpha, first, last);
+        }
+    };
+
+    if (ctx != nullptr && ctx->pool != nullptr && uses_parallel_threading(plan.threading)) {
+        if (plan.threading == threading_kind::colour_phases &&
+            plan.colouring == colouring_kind::red_black_stencil) {
+            const auto colours = red_black_colours(problem);
+            auto first_black = rows.size();
+            for (std::size_t i = 0; i < rows.size(); ++i) {
+                if (colours[rows[i]] == 1) {
+                    first_black = i;
+                    break;
+                }
+            }
+            const auto red_tasks = make_row_tasks(first_black, ctx->task_grain);
+            ctx->pool->run(red_tasks, body);
+
+            auto black_tasks = make_row_tasks(rows.size() - first_black, ctx->task_grain);
+            for (auto& task : black_tasks) {
+                task.first += first_black;
+                task.last += first_black;
+            }
+            ctx->pool->run(black_tasks, body);
+        } else {
+            const auto tasks = make_row_tasks(rows.size(), ctx->task_grain);
+            ctx->pool->run(tasks, body);
+        }
+    } else {
+        body(0, rows.size());
+    }
+}
+
+inline double rho_from_products_or_witness(const plan_descriptor& plan,
+                                           const std::vector<double>& residual,
+                                           const std::vector<double>& z,
+                                           const std::vector<double>& products) {
+    switch (plan.reduction) {
+    case reduction_kind::canonical_pairwise:
+        return canonical_pairwise_sum(products, 0, products.size());
+    case reduction_kind::thread_local_unordered_witness:
+        return thread_local_unordered_dot_witness(residual, z);
+    }
+    throw std::invalid_argument("unknown reduction");
+}
+
 inline execution_result execute_plan(const stencil_problem& problem,
                                      const plan_descriptor& plan,
                                      double alpha,
@@ -427,10 +560,16 @@ inline execution_result execute_plan(const stencil_problem& problem,
         : 1;
     r.execution_path = execution_path_for(plan, r.worker_count, r.simd_lanes);
 
-    compute_residual(problem, plan, r.visited_rows, r.residual, r.simd_lanes, ctx);
-    apply_preconditioner(plan, r.residual, r.z, r.simd_lanes, ctx);
-    r.rho = dot_for_plan(plan, r.residual, r.z, r.simd_lanes);
-    update_x(problem, plan, r.z, r.x_next, alpha, r.simd_lanes, ctx);
+    if (plan.fusion == fusion_kind::row_local_fused) {
+        std::vector<double> products;
+        compute_fused(problem, plan, r.visited_rows, r.residual, r.z, r.x_next, products, alpha, r.simd_lanes, ctx);
+        r.rho = rho_from_products_or_witness(plan, r.residual, r.z, products);
+    } else {
+        compute_residual(problem, plan, r.visited_rows, r.residual, r.simd_lanes, ctx);
+        apply_preconditioner(plan, r.residual, r.z, r.simd_lanes, ctx);
+        r.rho = dot_for_plan(plan, r.residual, r.z, r.simd_lanes);
+        update_x(problem, plan, r.z, r.x_next, alpha, r.simd_lanes, ctx);
+    }
 
     return r;
 }

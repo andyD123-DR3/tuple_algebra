@@ -78,8 +78,9 @@ inline std::vector<candidate_result> run_design_space_search(
                     throw std::runtime_error("empty execution result");
                 }
             }, options.iterations, options.warmup);
+            result.best_ns = timings.best_ns;
             result.median_ns = timings.median_ns;
-            result.p99_ns = timings.p99_ns;
+            result.mean_ns = timings.mean_ns;
         }
 
         results.push_back(result);
@@ -105,11 +106,11 @@ inline const candidate_result* select_best_legal(const std::vector<candidate_res
         if (!r.legality.legal() || !r.conformance_passed) {
             continue;
         }
-        if (best_any == nullptr || r.p99_ns < best_any->p99_ns) {
+        if (best_any == nullptr || r.median_ns < best_any->median_ns) {
             best_any = &r;
         }
         if (r.plan.contract == contract_level::strict_expression &&
-            (best_strict == nullptr || r.p99_ns < best_strict->p99_ns)) {
+            (best_strict == nullptr || r.median_ns < best_strict->median_ns)) {
             best_strict = &r;
         }
     }
@@ -155,7 +156,7 @@ inline void print_report(
     os << "  estimated_colour_count: " << facts.estimated_colour_count << "\n\n";
 
     os << "Selection rule:\n";
-    os << "  best = lowest measured p99 among legal, conforming, strict-expression candidates\n";
+    os << "  best = lowest measured median among legal, conforming, strict-expression candidates\n";
     os << "  This proves optimality only over the generated candidate set and measured objective.\n\n";
 
     os << "Candidates:\n";
@@ -168,8 +169,9 @@ inline void print_report(
         print_indented_block(os, "recursive_search_trace", r.recursive_search_trace);
         if (r.legality.legal()) {
             os << "      conformance: " << (r.conformance_passed ? "PASS" : "FAIL") << "\n";
+            os << "      best_ns: " << std::fixed << std::setprecision(1) << r.best_ns << "\n";
             os << "      median_ns: " << std::fixed << std::setprecision(1) << r.median_ns << "\n";
-            os << "      p99_ns: " << std::fixed << std::setprecision(1) << r.p99_ns << "\n";
+            os << "      mean_ns: " << std::fixed << std::setprecision(1) << r.mean_ns << "\n";
             os << "      rho: " << std::setprecision(17) << r.rho << "\n";
             os << "      executed_by: " << r.execution_path << "\n";
         }
@@ -178,7 +180,7 @@ inline void print_report(
     if (const auto* best = select_best_legal(results)) {
         os << "\nSelected:\n";
         os << "  " << describe_plan(best->plan) << "\n";
-        os << "  selected_by: lowest measured p99 among legal conforming strict-expression candidates\n";
+        os << "  selected_by: lowest measured median among legal conforming strict-expression candidates\n";
         os << "  uses_threads: " << (uses_parallel_threading(best->plan.threading) ? "yes" : "no") << "\n";
     } else {
         os << "\nSelected:\n  no legal conforming candidate\n";

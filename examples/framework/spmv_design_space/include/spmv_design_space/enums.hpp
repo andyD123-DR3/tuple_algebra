@@ -14,6 +14,7 @@ enum class contract_level {
 
 enum class storage_kind {
     csr,
+    dia,
     matrix_free_stencil
 };
 
@@ -58,9 +59,15 @@ enum class reduction_kind {
     thread_local_unordered_witness
 };
 
+enum class fusion_kind {
+    none,
+    row_local_fused
+};
+
 enum class executor_kind {
     reference,
     csr_executor,
+    dia_executor,
     matrix_free_executor
 };
 
@@ -78,6 +85,7 @@ constexpr std::string_view to_string(contract_level v) noexcept {
 constexpr std::string_view to_string(storage_kind v) noexcept {
     switch (v) {
     case storage_kind::csr: return "csr";
+    case storage_kind::dia: return "dia";
     case storage_kind::matrix_free_stencil: return "matrix_free_stencil";
     }
     return "unknown";
@@ -145,10 +153,19 @@ constexpr std::string_view to_string(reduction_kind v) noexcept {
     return "unknown";
 }
 
+constexpr std::string_view to_string(fusion_kind v) noexcept {
+    switch (v) {
+    case fusion_kind::none: return "none";
+    case fusion_kind::row_local_fused: return "row_local_fused";
+    }
+    return "unknown";
+}
+
 constexpr std::string_view to_string(executor_kind v) noexcept {
     switch (v) {
     case executor_kind::reference: return "reference";
     case executor_kind::csr_executor: return "csr_executor";
+    case executor_kind::dia_executor: return "dia_executor";
     case executor_kind::matrix_free_executor: return "matrix_free_executor";
     }
     return "unknown";

@@ -19,6 +19,31 @@ int main() {
     const auto csr_result = execute_plan(problem, csr, 0.125);
     SPMV_REQUIRE(conforms_to_reference(csr_result, reference, csr));
 
+
+    plan_descriptor dia{
+        .name = "dia strict",
+        .storage = storage_kind::dia,
+        .preconditioner = preconditioner_kind::fixed_diagonal_jacobi,
+        .simd = simd_kind::lanes4,
+        .executor = executor_kind::dia_executor
+    };
+    const auto dia_result = execute_plan(problem, dia, 0.125);
+    SPMV_REQUIRE(conforms_to_reference(dia_result, reference, dia));
+    SPMV_REQUIRE(dia_result.execution_path.find("dia_executor") != std::string::npos);
+
+    plan_descriptor fused{
+        .name = "matrix free fused strict",
+        .storage = storage_kind::matrix_free_stencil,
+        .decomposition = decomposition_kind::blocked_rows,
+        .preconditioner = preconditioner_kind::fixed_diagonal_jacobi,
+        .simd = simd_kind::lanes8,
+        .fusion = fusion_kind::row_local_fused,
+        .executor = executor_kind::matrix_free_executor
+    };
+    const auto fused_result = execute_plan(problem, fused, 0.125);
+    SPMV_REQUIRE(conforms_to_reference(fused_result, reference, fused));
+    SPMV_REQUIRE(fused_result.execution_path.find("row_local_fused") != std::string::npos);
+
     plan_descriptor mf{
         .name = "matrix free strict",
         .storage = storage_kind::matrix_free_stencil,
@@ -66,12 +91,23 @@ int main() {
 
     bool saw_illegal = false;
     bool saw_legal_conforming = false;
+    bool saw_dia_candidate = false;
+    bool saw_fused_candidate = false;
     for (const auto& r : results) {
         saw_illegal = saw_illegal || !r.legality.legal();
+        saw_dia_candidate = saw_dia_candidate || (r.plan.storage == storage_kind::dia && r.conformance_passed);
+        saw_fused_candidate = saw_fused_candidate || (r.plan.fusion == fusion_kind::row_local_fused && r.conformance_passed);
         saw_legal_conforming = saw_legal_conforming || (r.legality.legal() && r.conformance_passed);
+        if (r.legality.legal() && r.conformance_passed) {
+        SPMV_REQUIRE(r.best_ns >= 0.0);
+        SPMV_REQUIRE(r.median_ns >= 0.0);
+        SPMV_REQUIRE(r.mean_ns >= 0.0);
+        }
     }
     SPMV_REQUIRE(saw_illegal);
     SPMV_REQUIRE(saw_legal_conforming);
+    SPMV_REQUIRE(saw_dia_candidate);
+    SPMV_REQUIRE(saw_fused_candidate);
 
 
     const auto larger_problem = make_stencil_problem(64, 64);
