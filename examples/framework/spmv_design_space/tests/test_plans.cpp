@@ -12,17 +12,29 @@ int main() {
     const expression_contract strict{};
     const auto plans = generate_candidate_plans(facts);
 
-    SPMV_REQUIRE(plans.size() >= 20);
+    SPMV_REQUIRE(plans.size() >= 70);
 
     const auto has_dia = std::any_of(plans.begin(), plans.end(), [](const plan_descriptor& p) {
         return p.storage == storage_kind::dia && p.executor == executor_kind::dia_executor;
     });
     SPMV_REQUIRE(has_dia);
 
-    const auto has_fused = std::any_of(plans.begin(), plans.end(), [](const plan_descriptor& p) {
-        return p.fusion == fusion_kind::row_local_fused;
-    });
-    SPMV_REQUIRE(has_fused);
+    const fusion_kind partitions[] = {
+        fusion_kind::r_z_p_u,
+        fusion_kind::rz_p_u,
+        fusion_kind::r_zp_u,
+        fusion_kind::r_z_pu,
+        fusion_kind::rzp_u,
+        fusion_kind::rz_pu,
+        fusion_kind::r_zpu,
+        fusion_kind::rzpu
+    };
+    for (const auto partition : partitions) {
+        const auto has_partition = std::any_of(plans.begin(), plans.end(), [partition](const plan_descriptor& p) {
+            return p.fusion == partition;
+        });
+        SPMV_REQUIRE(has_partition);
+    }
 
     const auto has_all_widths =
         std::any_of(plans.begin(), plans.end(), [](const plan_descriptor& p) { return p.simd == simd_kind::scalar; }) &&

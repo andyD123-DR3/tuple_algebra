@@ -37,12 +37,36 @@ int main() {
         .decomposition = decomposition_kind::blocked_rows,
         .preconditioner = preconditioner_kind::fixed_diagonal_jacobi,
         .simd = simd_kind::lanes8,
-        .fusion = fusion_kind::row_local_fused,
+        .fusion = fusion_kind::rzpu,
         .executor = executor_kind::matrix_free_executor
     };
     const auto fused_result = execute_plan(problem, fused, 0.125);
     SPMV_REQUIRE(conforms_to_reference(fused_result, reference, fused));
-    SPMV_REQUIRE(fused_result.execution_path.find("row_local_fused") != std::string::npos);
+    SPMV_REQUIRE(fused_result.execution_path.find("[RZPU]") != std::string::npos);
+
+    const fusion_kind partitions[] = {
+        fusion_kind::r_z_p_u,
+        fusion_kind::rz_p_u,
+        fusion_kind::r_zp_u,
+        fusion_kind::r_z_pu,
+        fusion_kind::rzp_u,
+        fusion_kind::rz_pu,
+        fusion_kind::r_zpu,
+        fusion_kind::rzpu
+    };
+    for (const auto partition : partitions) {
+        plan_descriptor partition_plan{
+            .name = "matrix free fusion partition strict",
+            .storage = storage_kind::matrix_free_stencil,
+            .decomposition = decomposition_kind::blocked_rows,
+            .preconditioner = preconditioner_kind::fixed_diagonal_jacobi,
+            .simd = simd_kind::lanes4,
+            .fusion = partition,
+            .executor = executor_kind::matrix_free_executor
+        };
+        const auto partition_result = execute_plan(problem, partition_plan, 0.125);
+        SPMV_REQUIRE(conforms_to_reference(partition_result, reference, partition_plan));
+    }
 
     plan_descriptor mf{
         .name = "matrix free strict",
@@ -96,7 +120,7 @@ int main() {
     for (const auto& r : results) {
         saw_illegal = saw_illegal || !r.legality.legal();
         saw_dia_candidate = saw_dia_candidate || (r.plan.storage == storage_kind::dia && r.conformance_passed);
-        saw_fused_candidate = saw_fused_candidate || (r.plan.fusion == fusion_kind::row_local_fused && r.conformance_passed);
+        saw_fused_candidate = saw_fused_candidate || (r.plan.fusion == fusion_kind::rzpu && r.conformance_passed);
         saw_legal_conforming = saw_legal_conforming || (r.legality.legal() && r.conformance_passed);
         if (r.legality.legal() && r.conformance_passed) {
         SPMV_REQUIRE(r.best_ns >= 0.0);

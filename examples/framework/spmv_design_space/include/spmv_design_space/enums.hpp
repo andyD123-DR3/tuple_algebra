@@ -60,8 +60,14 @@ enum class reduction_kind {
 };
 
 enum class fusion_kind {
-    none,
-    row_local_fused
+    r_z_p_u,   // [R] [Z] [P] [U]
+    rz_p_u,    // [R Z] [P] [U]
+    r_zp_u,    // [R] [Z P] [U]
+    r_z_pu,    // [R] [Z] [P U]
+    rzp_u,     // [R Z P] [U]
+    rz_pu,     // [R Z] [P U]
+    r_zpu,     // [R] [Z P U]
+    rzpu       // [R Z P U]
 };
 
 enum class executor_kind {
@@ -155,8 +161,14 @@ constexpr std::string_view to_string(reduction_kind v) noexcept {
 
 constexpr std::string_view to_string(fusion_kind v) noexcept {
     switch (v) {
-    case fusion_kind::none: return "none";
-    case fusion_kind::row_local_fused: return "row_local_fused";
+    case fusion_kind::r_z_p_u: return "[R][Z][P][U]";
+    case fusion_kind::rz_p_u: return "[RZ][P][U]";
+    case fusion_kind::r_zp_u: return "[R][ZP][U]";
+    case fusion_kind::r_z_pu: return "[R][Z][PU]";
+    case fusion_kind::rzp_u: return "[RZP][U]";
+    case fusion_kind::rz_pu: return "[RZ][PU]";
+    case fusion_kind::r_zpu: return "[R][ZPU]";
+    case fusion_kind::rzpu: return "[RZPU]";
     }
     return "unknown";
 }
