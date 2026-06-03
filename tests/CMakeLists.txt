@@ -16,7 +16,13 @@ include(GoogleTest)
 function(ctdp_add_test target source)
     add_executable(${target} ${source})
     target_link_libraries(${target} PRIVATE ctdp_all GTest::gtest GTest::gtest_main)
-    gtest_discover_tests(${target})
+    # Increase test discovery timeout for debug builds (template-heavy code)
+    # Debug builds with -g flag generate large executables that take time to load
+    if(CMAKE_BUILD_TYPE STREQUAL "Debug" OR NOT CMAKE_BUILD_TYPE)
+        gtest_discover_tests(${target} DISCOVERY_TIMEOUT 60)
+    else()
+        gtest_discover_tests(${target} DISCOVERY_TIMEOUT 15)
+    endif()
 endfunction()
 
 # ══ Core library tests ══════════════════════════════════════════════════════
