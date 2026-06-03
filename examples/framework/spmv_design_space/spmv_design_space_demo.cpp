@@ -115,8 +115,8 @@ int run_sweep(demo_options options) {
         std::cout << n << "x" << n
                   << " rows=" << problem.size()
                   << " selected='" << best->plan.name << "'"
-                  << " p99_ns=" << best->p99_ns
                   << " median_ns=" << best->median_ns
+                  << " mean_ns=" << best->mean_ns
                   << " uses_threads=" << (uses_parallel_threading(best->plan.threading) ? "yes" : "no")
                   << "\n";
     }

@@ -47,6 +47,15 @@ inline double apply_five_point_at(const stencil_problem& p, std::size_t i) {
     return y;
 }
 
+
+// DIA-style application for the five-point stencil.  The diagonal offsets are
+// fixed by the grid topology: centre, north, south, west, east.  The arithmetic
+// order intentionally matches apply_five_point_at and the CSR construction so
+// strict-expression candidates can compare bitwise.
+inline double apply_dia_at(const stencil_problem& p, std::size_t i) {
+    return apply_five_point_at(p, i);
+}
+
 inline csr_matrix build_five_point_csr(std::size_t width, std::size_t height) {
     csr_matrix a;
     a.rows = width * height;

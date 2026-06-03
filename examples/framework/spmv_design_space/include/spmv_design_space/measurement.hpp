@@ -9,8 +9,9 @@
 namespace ctdp::spmv_dsl {
 
 struct timing_summary {
+    double best_ns = 0.0;
     double median_ns = 0.0;
-    double p99_ns = 0.0;
+    double mean_ns = 0.0;
 };
 
 template<class Fn>
@@ -34,8 +35,13 @@ timing_summary measure(Fn&& fn, std::size_t iterations = 31, std::size_t warmup 
 
     std::sort(samples.begin(), samples.end());
     const auto mid = samples.size() / 2;
-    const auto p99_index = std::min(samples.size() - 1, static_cast<std::size_t>(samples.size() * 99 / 100));
-    return {.median_ns = samples[mid], .p99_ns = samples[p99_index]};
+    double total = 0.0;
+    for (const auto x : samples) {
+        total += x;
+    }
+    return {.best_ns = samples.front(),
+            .median_ns = samples[mid],
+            .mean_ns = total / static_cast<double>(samples.size())};
 }
 
 } // namespace ctdp::spmv_dsl

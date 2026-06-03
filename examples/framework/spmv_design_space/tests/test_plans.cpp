@@ -12,7 +12,24 @@ int main() {
     const expression_contract strict{};
     const auto plans = generate_candidate_plans(facts);
 
-    SPMV_REQUIRE(plans.size() >= 5);
+    SPMV_REQUIRE(plans.size() >= 20);
+
+    const auto has_dia = std::any_of(plans.begin(), plans.end(), [](const plan_descriptor& p) {
+        return p.storage == storage_kind::dia && p.executor == executor_kind::dia_executor;
+    });
+    SPMV_REQUIRE(has_dia);
+
+    const auto has_fused = std::any_of(plans.begin(), plans.end(), [](const plan_descriptor& p) {
+        return p.fusion == fusion_kind::row_local_fused;
+    });
+    SPMV_REQUIRE(has_fused);
+
+    const auto has_all_widths =
+        std::any_of(plans.begin(), plans.end(), [](const plan_descriptor& p) { return p.simd == simd_kind::scalar; }) &&
+        std::any_of(plans.begin(), plans.end(), [](const plan_descriptor& p) { return p.simd == simd_kind::lanes4; }) &&
+        std::any_of(plans.begin(), plans.end(), [](const plan_descriptor& p) { return p.simd == simd_kind::lanes8; });
+    SPMV_REQUIRE(has_all_widths);
+
     const auto has_recursive = std::any_of(plans.begin(), plans.end(), [](const plan_descriptor& p) {
         return p.decomposition == decomposition_kind::recursive_grid_bisection &&
                p.storage == storage_kind::matrix_free_stencil;
