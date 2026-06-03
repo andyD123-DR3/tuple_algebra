@@ -2,11 +2,16 @@
 
 #include "spmv_design_space/executor.hpp"
 #include "spmv_design_space/measurement.hpp"
+#include "spmv_design_space/plan_tree.hpp"
+#include "spmv_design_space/recursive_search.hpp"
 
 #include <algorithm>
 #include <cstddef>
 #include <iomanip>
 #include <ostream>
+#include <sstream>
+#include <string>
+#include <string_view>
 #include <thread>
 #include <vector>
 
@@ -17,6 +22,7 @@ struct search_options {
     std::size_t warmup = 3;
     std::size_t threads = 0; // 0 means choose a sensible demonstrator default.
     std::size_t task_grain = 2048;
+    recursive_search_options recursive{};
 };
 
 inline std::size_t default_worker_count() {
@@ -50,6 +56,15 @@ inline std::vector<candidate_result> run_design_space_search(
         candidate_result result;
         result.plan = plan;
         result.legality = analyse_legality(contract, facts, plan);
+
+        if (plan.contract == contract_level::strict_expression &&
+            plan.storage == storage_kind::matrix_free_stencil &&
+            plan.decomposition == decomposition_kind::recursive_grid_bisection) {
+            const auto recursive = search_recursive_spmv_plan(facts, options.recursive);
+            result.plan_tree = plan_tree::to_string<plan_tree::matrix_free_recursive_candidate>();
+            result.recursive_search_tree = recursive_tree_string(recursive);
+            result.recursive_search_trace = recursive_trace_string(recursive);
+        }
 
         if (result.legality.legal()) {
             auto last = execute_plan(problem, plan, alpha, &threaded_ctx);
@@ -106,6 +121,17 @@ inline bool selected_plan_uses_threads(const std::vector<candidate_result>& resu
     return best != nullptr && uses_parallel_threading(best->plan.threading);
 }
 
+inline void print_indented_block(std::ostream& os, std::string_view label, const std::string& text) {
+    if (text.empty()) {
+        return;
+    }
+    os << "      " << label << ":\n";
+    std::istringstream in(text);
+    for (std::string line; std::getline(in, line);) {
+        os << "        " << line << "\n";
+    }
+}
+
 inline void print_report(
     std::ostream& os,
     const stencil_problem& problem,
@@ -137,6 +163,9 @@ inline void print_report(
         os << "  - " << describe_plan(r.plan) << "\n";
         os << "      legal: " << (r.legality.legal() ? "yes" : "no") << "\n";
         os << "      reason: " << r.legality.reason << "\n";
+        print_indented_block(os, "plan_tree", r.plan_tree);
+        print_indented_block(os, "recursive_search_tree", r.recursive_search_tree);
+        print_indented_block(os, "recursive_search_trace", r.recursive_search_trace);
         if (r.legality.legal()) {
             os << "      conformance: " << (r.conformance_passed ? "PASS" : "FAIL") << "\n";
             os << "      median_ns: " << std::fixed << std::setprecision(1) << r.median_ns << "\n";

@@ -31,6 +31,9 @@ struct candidate_result {
     double p99_ns = 0.0;
     double rho = 0.0;
     std::string execution_path;
+    std::string plan_tree;
+    std::string recursive_search_tree;
+    std::string recursive_search_trace;
 };
 
 inline std::string describe_plan(const plan_descriptor& p) {
