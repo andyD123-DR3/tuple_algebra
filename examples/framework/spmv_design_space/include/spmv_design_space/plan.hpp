@@ -19,7 +19,7 @@ struct plan_descriptor {
     preconditioner_kind preconditioner = preconditioner_kind::fixed_diagonal_jacobi;
     threading_kind threading = threading_kind::serial;
     simd_kind simd = simd_kind::scalar;
-    fusion_kind fusion = fusion_kind::none;
+    fusion_kind fusion = fusion_kind::r_z_p_u;
     reduction_kind reduction = reduction_kind::canonical_pairwise;
     executor_kind executor = executor_kind::csr_executor;
 };
@@ -119,8 +119,14 @@ inline std::string simd_suffix(simd_kind simd) {
 
 inline std::string fusion_suffix(fusion_kind fusion) {
     switch (fusion) {
-    case fusion_kind::none: return "unfused";
-    case fusion_kind::row_local_fused: return "fused";
+    case fusion_kind::r_z_p_u: return "R_Z_P_U";
+    case fusion_kind::rz_p_u: return "RZ_P_U";
+    case fusion_kind::r_zp_u: return "R_ZP_U";
+    case fusion_kind::r_z_pu: return "R_Z_PU";
+    case fusion_kind::rzp_u: return "RZP_U";
+    case fusion_kind::rz_pu: return "RZ_PU";
+    case fusion_kind::r_zpu: return "R_ZPU";
+    case fusion_kind::rzpu: return "RZPU";
     }
     return "fusion?";
 }
@@ -132,7 +138,16 @@ inline void add_width_and_fusion_candidates(std::vector<plan_descriptor>& out,
                                             decomposition_kind decomposition = decomposition_kind::flat_rows,
                                             threading_kind threading = threading_kind::serial) {
     const simd_kind widths[] = {simd_kind::scalar, simd_kind::lanes4, simd_kind::lanes8};
-    const fusion_kind fusions[] = {fusion_kind::none, fusion_kind::row_local_fused};
+    const fusion_kind fusions[] = {
+        fusion_kind::r_z_p_u,
+        fusion_kind::rz_p_u,
+        fusion_kind::r_zp_u,
+        fusion_kind::r_z_pu,
+        fusion_kind::rzp_u,
+        fusion_kind::rz_pu,
+        fusion_kind::r_zpu,
+        fusion_kind::rzpu
+    };
     for (const auto width : widths) {
         for (const auto fusion : fusions) {
             out.push_back({
@@ -176,7 +191,7 @@ inline std::vector<plan_descriptor> generate_candidate_plans(const sparse_facts&
             .preconditioner = preconditioner_kind::fixed_diagonal_jacobi,
             .threading = threading_kind::recursive_tasks,
             .simd = simd_kind::lanes4,
-            .fusion = fusion_kind::none,
+            .fusion = fusion_kind::r_z_p_u,
             .executor = executor_kind::matrix_free_executor
         });
 
@@ -188,7 +203,7 @@ inline std::vector<plan_descriptor> generate_candidate_plans(const sparse_facts&
             .preconditioner = preconditioner_kind::fixed_diagonal_jacobi,
             .threading = threading_kind::recursive_tasks,
             .simd = simd_kind::lanes8,
-            .fusion = fusion_kind::row_local_fused,
+            .fusion = fusion_kind::rzpu,
             .executor = executor_kind::matrix_free_executor
         });
 
@@ -200,7 +215,7 @@ inline std::vector<plan_descriptor> generate_candidate_plans(const sparse_facts&
             .preconditioner = preconditioner_kind::fixed_diagonal_jacobi,
             .threading = threading_kind::colour_phases,
             .simd = simd_kind::lanes8,
-            .fusion = fusion_kind::row_local_fused,
+            .fusion = fusion_kind::rzpu,
             .executor = executor_kind::matrix_free_executor
         });
 
@@ -225,12 +240,12 @@ inline std::vector<plan_descriptor> generate_candidate_plans(const sparse_facts&
     });
 
     out.push_back({
-        .name = "illegal/fused-thread-local-unordered-rho-merge",
+        .name = "illegal/fused-RZPU-thread-local-unordered-rho-merge",
         .storage = storage_kind::csr,
         .decomposition = decomposition_kind::blocked_rows,
         .preconditioner = preconditioner_kind::fixed_diagonal_jacobi,
         .simd = simd_kind::lanes4,
-        .fusion = fusion_kind::row_local_fused,
+        .fusion = fusion_kind::rzpu,
         .reduction = reduction_kind::thread_local_unordered_witness,
         .executor = executor_kind::csr_executor
     });
