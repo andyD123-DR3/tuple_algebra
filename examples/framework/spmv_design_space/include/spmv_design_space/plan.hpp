@@ -2,6 +2,7 @@
 
 #include "spmv_design_space/contracts.hpp"
 #include "spmv_design_space/facts.hpp"
+#include "spmv_design_space/hardware.hpp"
 
 #include <sstream>
 #include <string>
@@ -64,12 +65,36 @@ inline std::string describe_plan(const plan_descriptor& p) {
 inline legality_result analyse_legality(
     const expression_contract& expr,
     const sparse_facts& facts,
-    const plan_descriptor& p) {
+    const plan_descriptor& p,
+    const hardware_profile& hardware) {
 
-    if ((p.storage == storage_kind::matrix_free_stencil || p.storage == storage_kind::dia) &&
+    if (declared_lanes_for(p.simd) > hardware.max_simd_lanes) {
+        return {.target_legal = false,
+                .reason = "SIMD lane width exceeds declared hardware profile"};
+    }
+
+    if (declared_parallel_threading(p.threading) &&
+        (!hardware.allow_parallel_candidates || !hardware.task_runtime_available)) {
+        return {.target_legal = false,
+                .reason = "threaded candidate rejected by declared hardware profile"};
+    }
+
+    if (hardware.max_worker_threads == 1 && declared_parallel_threading(p.threading)) {
+        return {.target_legal = false,
+                .reason = "threaded candidate rejected by single-worker hardware profile"};
+    }
+
+    if ((p.storage == storage_kind::matrix_free_stencil || p.storage == storage_kind::dia ||
+         p.storage == storage_kind::dia_csr_remainder) &&
         !facts.stencil_like) {
         return {.structurally_legal = false,
-                .reason = "DIA and matrix-free stencil layouts require recognised stencil facts"};
+                .reason = "DIA, DIA+CSR-remainder, and matrix-free stencil layouts require recognised stencil facts"};
+    }
+
+    if (facts.has_irregular_remainder &&
+        (p.storage == storage_kind::dia || p.storage == storage_kind::matrix_free_stencil)) {
+        return {.structurally_legal = false,
+                .reason = "regular DIA/matrix-free stencil would drop the irregular CSR remainder"};
     }
 
     if (p.colouring == colouring_kind::red_black_stencil && !facts.stencil_like) {
@@ -111,7 +136,26 @@ inline legality_result analyse_legality(
                 .reason = "matrix-free executor requires matrix-free stencil storage"};
     }
 
+    if (p.executor == executor_kind::hybrid_dia_csr_executor &&
+        p.storage != storage_kind::dia_csr_remainder) {
+        return {.structurally_legal = false,
+                .reason = "hybrid DIA+CSR executor requires DIA+CSR-remainder storage"};
+    }
+
+    if (p.storage == storage_kind::dia_csr_remainder &&
+        p.executor != executor_kind::hybrid_dia_csr_executor) {
+        return {.structurally_legal = false,
+                .reason = "DIA+CSR-remainder storage requires the hybrid executor"};
+    }
+
     return {};
+}
+
+inline legality_result analyse_legality(
+    const expression_contract& expr,
+    const sparse_facts& facts,
+    const plan_descriptor& p) {
+    return analyse_legality(expr, facts, p, hardware_profile{});
 }
 
 inline std::string simd_suffix(simd_kind simd) {
@@ -188,6 +232,13 @@ inline std::vector<plan_descriptor> generate_candidate_plans(const sparse_facts&
                                         "strict/matrix-free/flat",
                                         storage_kind::matrix_free_stencil,
                                         executor_kind::matrix_free_executor);
+
+        if (facts.has_irregular_remainder) {
+            add_width_and_fusion_candidates(out,
+                                            "strict/dia+csr-remainder/flat",
+                                            storage_kind::dia_csr_remainder,
+                                            executor_kind::hybrid_dia_csr_executor);
+        }
 
         out.push_back({
             .name = "strict/matrix-free/recursive/block4/unfused/jacobi/canonical",

@@ -17,6 +17,8 @@ struct sparse_facts {
     bool square = false;
     bool stencil_like = false;
     bool diagonal_preconditioner_available = false;
+    bool has_irregular_remainder = false;
+    std::size_t irregular_remainder_nnz = 0;
     std::size_t min_nnz_per_row = 0;
     std::size_t max_nnz_per_row = 0;
     double mean_nnz_per_row = 0.0;
@@ -33,6 +35,8 @@ inline sparse_facts analyse_problem(const stencil_problem& p) {
     f.square = f.rows == f.cols;
     f.stencil_like = true;
     f.diagonal_preconditioner_available = true;
+    f.has_irregular_remainder = p.has_irregular_remainder();
+    f.irregular_remainder_nnz = p.irregular_remainder_nnz;
 
     f.min_nnz_per_row = static_cast<std::size_t>(-1);
     f.max_nnz_per_row = 0;

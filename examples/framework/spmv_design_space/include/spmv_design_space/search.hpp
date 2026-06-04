@@ -25,6 +25,7 @@ struct search_options {
     std::size_t task_grain = 2048;
     recursive_search_options recursive{};
     candidate_scope scope = candidate_scope::strict_conforming_only;
+    hardware_profile hardware{};
 };
 
 inline bool relaxed_search_enabled(const search_options& options) noexcept {
@@ -60,6 +61,10 @@ inline std::vector<candidate_result> run_design_space_search(
 
     const auto facts = analyse_problem(problem);
     const auto reference = execute_strict_reference(problem, alpha);
+    auto hardware = options.hardware;
+    if (hardware.max_worker_threads == 0) {
+        hardware.max_worker_threads = effective_worker_count(options);
+    }
     persistent_row_pool pool{effective_worker_count(options)};
     execution_context threaded_ctx{.pool = &pool, .task_grain = std::max<std::size_t>(1, options.task_grain)};
     auto plans = generate_candidate_plans(facts);
@@ -70,7 +75,7 @@ inline std::vector<candidate_result> run_design_space_search(
         const auto contract = contract_for_plan(base_contract, plan.contract);
         candidate_result result;
         result.plan = plan;
-        result.legality = analyse_legality(contract, facts, plan);
+        result.legality = analyse_legality(contract, facts, plan, hardware);
 
         if (plan.contract == contract_level::strict_expression &&
             plan.storage == storage_kind::matrix_free_stencil &&
@@ -81,7 +86,8 @@ inline std::vector<candidate_result> run_design_space_search(
             result.recursive_search_trace = recursive_trace_string(recursive);
         }
 
-        result.relaxed_executable = result.legality.structurally_legal && result.legality.numerically_legal;
+        result.relaxed_executable = result.legality.structurally_legal &&
+            result.legality.numerically_legal && result.legality.target_legal;
         const bool should_execute = result.legality.legal() ||
             (relaxed_search_enabled(options) && result.relaxed_executable);
 
@@ -179,11 +185,42 @@ inline void print_indented_block(std::ostream& os, std::string_view label, const
     }
 }
 
+inline std::string wisdom_symbol(fusion_kind fusion) {
+    switch (fusion) {
+    case fusion_kind::r_z_p_u: return "r_z_p_u";
+    case fusion_kind::rz_p_u: return "rz_p_u";
+    case fusion_kind::r_zp_u: return "r_zp_u";
+    case fusion_kind::r_z_pu: return "r_z_pu";
+    case fusion_kind::rzp_u: return "rzp_u";
+    case fusion_kind::rz_pu: return "rz_pu";
+    case fusion_kind::r_zpu: return "r_zpu";
+    case fusion_kind::rzpu: return "rzpu";
+    }
+    return "unknown";
+}
+
+inline std::string emit_plan_wisdom(const plan_descriptor& p) {
+    std::ostringstream os;
+    os << "using selected_spmv_plan = spmv_plan<\n"
+       << "    storage::" << to_string(p.storage) << ",\n"
+       << "    decomposition::" << to_string(p.decomposition) << ",\n"
+       << "    ordering::" << to_string(p.ordering) << ",\n"
+       << "    colouring::" << to_string(p.colouring) << ",\n"
+       << "    preconditioner::" << to_string(p.preconditioner) << ",\n"
+       << "    threading::" << to_string(p.threading) << ",\n"
+       << "    simd::" << to_string(p.simd) << ",\n"
+       << "    fusion::" << wisdom_symbol(p.fusion) << ",\n"
+       << "    reduction::" << to_string(p.reduction) << ",\n"
+       << "    executor::" << to_string(p.executor) << ">;";
+    return os.str();
+}
+
 inline void print_report(
     std::ostream& os,
     const stencil_problem& problem,
     const sparse_facts& facts,
-    const std::vector<candidate_result>& results) {
+    const std::vector<candidate_result>& results,
+    const search_options& options = {}) {
 
     os << "Sparse Expression Decomposition DSL Demonstrator\n";
     os << "================================================\n\n";
@@ -199,23 +236,42 @@ inline void print_report(
     os << "  nnz: " << facts.nnz << "\n";
     os << "  stencil_like: " << (facts.stencil_like ? "yes" : "no") << "\n";
     os << "  connected_components: " << facts.connected_components << "\n";
-    os << "  estimated_colour_count: " << facts.estimated_colour_count << "\n\n";
+    os << "  estimated_colour_count: " << facts.estimated_colour_count << "\n";
+    os << "  irregular_remainder_nnz: " << facts.irregular_remainder_nnz << "\n\n";
+
+    auto reported_hardware = options.hardware;
+    if (reported_hardware.max_worker_threads == 0) {
+        reported_hardware.max_worker_threads = effective_worker_count(options);
+    }
+    os << "Hardware profile:\n";
+    os << "  " << describe_hardware_profile(reported_hardware) << "\n\n";
+
+    os << "Objective and gates:\n";
+    os << "  objective: minimise measured median_ns\n";
+    os << "  structural gate: matrix facts must make the storage/evaluator legal\n";
+    os << "  target gate: SIMD/threading must fit the declared hardware profile\n";
+    os << "  numerical gate: strict contracts preserve preconditioner binding and observed reduction\n";
+    os << "  conformance gate: executed strict candidates must match the reference result bitwise\n\n";
 
     const bool relaxed_candidates_executed = std::any_of(results.begin(), results.end(), [](const candidate_result& r) {
         return r.executed && !r.legality.legal() && r.relaxed_executable;
     });
 
     os << "Selection rule:\n";
-    os << "  strict_best = lowest measured median among strict-conforming candidates\n";
+    os << "  strict_best = lowest measured median_ns among candidates passing all gates\n";
     if (relaxed_candidates_executed) {
         os << "  relaxed comparison = executable non-strict candidates are measured but cannot win strict_best\n";
     }
-    os << "  This proves optimality only over the generated candidate set and measured objective.\n\n";
+    os << "  optimality_scope = generated candidates x declared hardware profile x measured objective\n\n";
 
     os << "Candidates:\n";
     for (const auto& r : results) {
         os << "  - " << describe_plan(r.plan) << "\n";
         os << "      legal: " << (r.legality.legal() ? "yes" : "no") << "\n";
+        os << "      legality_gates: structural=" << (r.legality.structurally_legal ? "pass" : "fail")
+           << " target=" << (r.legality.target_legal ? "pass" : "fail")
+           << " numerical=" << (r.legality.numerically_legal ? "pass" : "fail")
+           << " observation=" << (r.legality.observation_legal ? "pass" : "fail") << "\n";
         os << "      reason: " << r.legality.reason << "\n";
         print_indented_block(os, "plan_tree", r.plan_tree);
         print_indented_block(os, "recursive_search_tree", r.recursive_search_tree);
@@ -239,8 +295,14 @@ inline void print_report(
     if (const auto* best = select_best_legal(results)) {
         os << "\nStrict selected:\n";
         os << "  " << describe_plan(best->plan) << "\n";
-        os << "  selected_by: lowest measured median among strict-conforming candidates\n";
+        os << "  selected_by: lowest measured median_ns among strict-conforming candidates\n";
+        os << "  median_ns: " << std::fixed << std::setprecision(1) << best->median_ns << "\n";
         os << "  uses_threads: " << (uses_parallel_threading(best->plan.threading) ? "yes" : "no") << "\n";
+        os << "  generated_wisdom:\n";
+        std::istringstream wisdom(emit_plan_wisdom(best->plan));
+        for (std::string line; std::getline(wisdom, line);) {
+            os << "    " << line << "\n";
+        }
     } else {
         os << "\nStrict selected:\n  no strict-conforming candidate\n";
     }

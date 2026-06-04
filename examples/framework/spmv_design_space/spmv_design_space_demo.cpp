@@ -12,6 +12,8 @@ struct demo_options {
     std::size_t height = 512;
     ctdp::spmv_dsl::search_options search{};
     bool sweep = false;
+    bool hybrid = false;
+    std::size_t remainder_period = 17;
 };
 
 std::size_t parse_size(const char* s) {
@@ -22,13 +24,17 @@ void print_usage(const char* exe) {
     std::cout
         << "usage: " << exe << " [width height]\n"
         << "       " << exe << " [--size N | --width W --height H] [--iterations N] [--warmup N]\n"
-        << "              [--threads N] [--grain N] [--relaxed] [--sweep]\n\n"
+        << "              [--threads N] [--grain N] [--relaxed] [--sweep]\n"
+        << "              [--hybrid] [--remainder-period N] [--max-simd-lanes N]\n"
+        << "              [--single-thread-target] [--no-task-runtime]\n\n"
         << "defaults are tuned to show threaded candidates on a non-trivial matrix:\n"
         << "  --size 512 --iterations 31 --warmup 3 --threads auto --grain 2048\n\n"
         << "examples:\n"
         << "  " << exe << " --size 512 --iterations 41 --threads 4 --grain 4096\n"
         << "  " << exe << " --size 512 --iterations 17 --threads 4 --relaxed\n"
-        << "  " << exe << " --sweep --iterations 17 --threads 4\n";
+        << "  " << exe << " --sweep --iterations 17 --threads 4\n"
+        << "  " << exe << " --hybrid --size 256 --iterations 17 --threads 4\n"
+        << "  " << exe << " --size 256 --max-simd-lanes 4 --single-thread-target\n";
 }
 
 demo_options parse_args(int argc, char** argv) {
@@ -68,6 +74,17 @@ demo_options parse_args(int argc, char** argv) {
             options.search.threads = parse_size(need_value("--threads"));
         } else if (arg == "--grain") {
             options.search.task_grain = parse_size(need_value("--grain"));
+        } else if (arg == "--max-simd-lanes") {
+            options.search.hardware.max_simd_lanes = parse_size(need_value("--max-simd-lanes"));
+        } else if (arg == "--single-thread-target") {
+            options.search.hardware.allow_parallel_candidates = false;
+            options.search.hardware.max_worker_threads = 1;
+        } else if (arg == "--no-task-runtime") {
+            options.search.hardware.task_runtime_available = false;
+        } else if (arg == "--hybrid") {
+            options.hybrid = true;
+        } else if (arg == "--remainder-period") {
+            options.remainder_period = parse_size(need_value("--remainder-period"));
         } else if (arg == "--relaxed") {
             options.search.scope = ctdp::spmv_dsl::candidate_scope::strict_and_relaxed_executable;
         } else if (arg == "--strict-only") {
@@ -86,11 +103,13 @@ demo_options parse_args(int argc, char** argv) {
 int run_single(const demo_options& options) {
     using namespace ctdp::spmv_dsl;
 
-    const auto problem = make_stencil_problem(options.width, options.height);
+    const auto problem = options.hybrid
+        ? make_stencil_with_remainder_problem(options.width, options.height, options.remainder_period)
+        : make_stencil_problem(options.width, options.height);
     const auto facts = analyse_problem(problem);
     const expression_contract contract{};
     const auto results = run_design_space_search(problem, contract, 0.125, options.search);
-    print_report(std::cout, problem, facts, results);
+    print_report(std::cout, problem, facts, results, options.search);
     return select_best_legal(results) == nullptr ? 1 : 0;
 }
 
@@ -107,10 +126,14 @@ int run_sweep(demo_options options) {
               << " warmup=" << options.search.warmup
               << " threads=" << effective_worker_count(options.search)
               << " grain=" << options.search.task_grain
-              << " scope=" << to_string(options.search.scope) << "\n\n";
+              << " scope=" << to_string(options.search.scope)
+              << " hybrid=" << (options.hybrid ? "yes" : "no")
+              << " hardware={" << describe_hardware_profile(options.search.hardware) << "}" << "\n\n";
 
     for (const auto n : sizes) {
-        const auto problem = make_stencil_problem(n, n);
+        const auto problem = options.hybrid
+            ? make_stencil_with_remainder_problem(n, n, options.remainder_period)
+            : make_stencil_problem(n, n);
         const auto results = run_design_space_search(problem, contract, 0.125, options.search);
         const auto* best = select_best_legal(results);
         if (best == nullptr) {
