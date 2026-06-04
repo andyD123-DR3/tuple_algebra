@@ -22,11 +22,12 @@ void print_usage(const char* exe) {
     std::cout
         << "usage: " << exe << " [width height]\n"
         << "       " << exe << " [--size N | --width W --height H] [--iterations N] [--warmup N]\n"
-        << "              [--threads N] [--grain N] [--sweep]\n\n"
+        << "              [--threads N] [--grain N] [--relaxed] [--sweep]\n\n"
         << "defaults are tuned to show threaded candidates on a non-trivial matrix:\n"
         << "  --size 512 --iterations 31 --warmup 3 --threads auto --grain 2048\n\n"
         << "examples:\n"
         << "  " << exe << " --size 512 --iterations 41 --threads 4 --grain 4096\n"
+        << "  " << exe << " --size 512 --iterations 17 --threads 4 --relaxed\n"
         << "  " << exe << " --sweep --iterations 17 --threads 4\n";
 }
 
@@ -67,6 +68,10 @@ demo_options parse_args(int argc, char** argv) {
             options.search.threads = parse_size(need_value("--threads"));
         } else if (arg == "--grain") {
             options.search.task_grain = parse_size(need_value("--grain"));
+        } else if (arg == "--relaxed") {
+            options.search.scope = ctdp::spmv_dsl::candidate_scope::strict_and_relaxed_executable;
+        } else if (arg == "--strict-only") {
+            options.search.scope = ctdp::spmv_dsl::candidate_scope::strict_conforming_only;
         } else if (arg == "--sweep") {
             options.sweep = true;
         } else {
@@ -101,7 +106,8 @@ int run_sweep(demo_options options) {
     std::cout << "iterations=" << options.search.iterations
               << " warmup=" << options.search.warmup
               << " threads=" << effective_worker_count(options.search)
-              << " grain=" << options.search.task_grain << "\n\n";
+              << " grain=" << options.search.task_grain
+              << " scope=" << to_string(options.search.scope) << "\n\n";
 
     for (const auto n : sizes) {
         const auto problem = make_stencil_problem(n, n);

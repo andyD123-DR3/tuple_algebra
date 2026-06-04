@@ -121,17 +121,47 @@ int main() {
         saw_illegal = saw_illegal || !r.legality.legal();
         saw_dia_candidate = saw_dia_candidate || (r.plan.storage == storage_kind::dia && r.conformance_passed);
         saw_fused_candidate = saw_fused_candidate || (r.plan.fusion == fusion_kind::rzpu && r.conformance_passed);
-        saw_legal_conforming = saw_legal_conforming || (r.legality.legal() && r.conformance_passed);
-        if (r.legality.legal() && r.conformance_passed) {
-        SPMV_REQUIRE(r.best_ns >= 0.0);
-        SPMV_REQUIRE(r.median_ns >= 0.0);
-        SPMV_REQUIRE(r.mean_ns >= 0.0);
+        saw_legal_conforming = saw_legal_conforming || r.strict_conforming;
+        if (r.strict_conforming) {
+            SPMV_REQUIRE(r.executed);
+            SPMV_REQUIRE(r.best_ns >= 0.0);
+            SPMV_REQUIRE(r.median_ns >= 0.0);
+            SPMV_REQUIRE(r.mean_ns >= 0.0);
         }
     }
     SPMV_REQUIRE(saw_illegal);
     SPMV_REQUIRE(saw_legal_conforming);
     SPMV_REQUIRE(saw_dia_candidate);
     SPMV_REQUIRE(saw_fused_candidate);
+
+    search_options relaxed_options = options;
+    relaxed_options.scope = candidate_scope::strict_and_relaxed_executable;
+    const auto relaxed_results = run_design_space_search(problem, contract, 0.125, relaxed_options);
+    SPMV_REQUIRE(select_best_legal(relaxed_results) != nullptr);
+    SPMV_REQUIRE(select_fastest_executed(relaxed_results) != nullptr);
+    SPMV_REQUIRE(select_fastest_non_strict_executed(relaxed_results) != nullptr);
+
+    bool saw_executed_unordered_witness = false;
+    bool saw_unexecuted_structural_rejection = false;
+    for (const auto& r : relaxed_results) {
+        if (r.plan.reduction == reduction_kind::thread_local_unordered_witness) {
+            saw_executed_unordered_witness = saw_executed_unordered_witness ||
+                (r.executed && r.relaxed_executable && !r.strict_conforming);
+            SPMV_REQUIRE(!r.legality.legal());
+            SPMV_REQUIRE(!r.legality.observation_legal);
+        }
+        if (r.plan.preconditioner == preconditioner_kind::coloured_smoother_solver_family) {
+            saw_unexecuted_structural_rejection = saw_unexecuted_structural_rejection ||
+                (!r.executed && !r.relaxed_executable);
+        }
+        if (r.executed && !r.strict_conforming) {
+            SPMV_REQUIRE(r.best_ns >= 0.0);
+            SPMV_REQUIRE(r.median_ns >= 0.0);
+            SPMV_REQUIRE(r.x_next_max_abs_delta >= 0.0);
+        }
+    }
+    SPMV_REQUIRE(saw_executed_unordered_witness);
+    SPMV_REQUIRE(saw_unexecuted_structural_rejection);
 
 
     const auto larger_problem = make_stencil_problem(64, 64);

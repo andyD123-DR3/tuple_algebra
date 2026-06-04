@@ -77,6 +77,11 @@ enum class executor_kind {
     matrix_free_executor
 };
 
+enum class candidate_scope {
+    strict_conforming_only,
+    strict_and_relaxed_executable
+};
+
 constexpr std::string_view to_string(contract_level v) noexcept {
     switch (v) {
     case contract_level::strict_expression: return "strict_expression";
@@ -169,6 +174,14 @@ constexpr std::string_view to_string(fusion_kind v) noexcept {
     case fusion_kind::rz_pu: return "[RZ][PU]";
     case fusion_kind::r_zpu: return "[R][ZPU]";
     case fusion_kind::rzpu: return "[RZPU]";
+    }
+    return "unknown";
+}
+
+constexpr std::string_view to_string(candidate_scope v) noexcept {
+    switch (v) {
+    case candidate_scope::strict_conforming_only: return "strict_conforming_only";
+    case candidate_scope::strict_and_relaxed_executable: return "strict_and_relaxed_executable";
     }
     return "unknown";
 }
