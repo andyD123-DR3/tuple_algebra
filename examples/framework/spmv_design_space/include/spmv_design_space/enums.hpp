@@ -4,6 +4,11 @@
 
 namespace ctdp::spmv_dsl {
 
+enum class problem_kind {
+    stencil_2d,
+    tridiagonal_banded_1d
+};
+
 enum class contract_level {
     strict_expression,
     expression_family,
@@ -81,6 +86,14 @@ enum class candidate_scope {
     strict_conforming_only,
     strict_and_relaxed_executable
 };
+
+constexpr std::string_view to_string(problem_kind v) noexcept {
+    switch (v) {
+    case problem_kind::stencil_2d: return "stencil_2d";
+    case problem_kind::tridiagonal_banded_1d: return "tridiagonal_banded_1d";
+    }
+    return "unknown";
+}
 
 constexpr std::string_view to_string(contract_level v) noexcept {
     switch (v) {

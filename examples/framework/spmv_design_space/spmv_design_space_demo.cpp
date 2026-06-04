@@ -8,6 +8,7 @@
 namespace {
 
 struct demo_options {
+    ctdp::spmv_dsl::problem_kind problem = ctdp::spmv_dsl::problem_kind::stencil_2d;
     std::size_t width = 512;
     std::size_t height = 512;
     ctdp::spmv_dsl::search_options search{};
@@ -54,8 +55,23 @@ demo_options parse_args(int argc, char** argv) {
         if (arg == "--help" || arg == "-h") {
             print_usage(argv[0]);
             std::exit(0);
+        } else if (arg == "--problem") {
+            const std::string value = need_value("--problem");
+            if (value == "stencil" || value == "stencil_2d") {
+                options.problem = ctdp::spmv_dsl::problem_kind::stencil_2d;
+            } else if (value == "banded" || value == "tridiagonal" || value == "tridiagonal_banded_1d") {
+                options.problem = ctdp::spmv_dsl::problem_kind::tridiagonal_banded_1d;
+                options.height = 1;
+            } else {
+                std::cerr << "unknown problem kind: " << value << "\n";
+                print_usage(argv[0]);
+                std::exit(2);
+            }
         } else if (arg == "--size") {
             options.width = options.height = parse_size(need_value("--size"));
+            if (options.problem == ctdp::spmv_dsl::problem_kind::tridiagonal_banded_1d) {
+                options.height = 1;
+            }
         } else if (arg == "--width") {
             options.width = parse_size(need_value("--width"));
         } else if (arg == "--height") {
@@ -80,13 +96,27 @@ demo_options parse_args(int argc, char** argv) {
             std::exit(2);
         }
     }
+    if (options.problem == ctdp::spmv_dsl::problem_kind::tridiagonal_banded_1d) {
+        options.height = 1;
+    }
     return options;
+}
+
+ctdp::spmv_dsl::stencil_problem make_demo_problem(const demo_options& options) {
+    using namespace ctdp::spmv_dsl;
+    switch (options.problem) {
+    case problem_kind::stencil_2d:
+        return make_stencil_problem(options.width, options.height);
+    case problem_kind::tridiagonal_banded_1d:
+        return make_tridiagonal_banded_problem(options.width);
+    }
+    return make_stencil_problem(options.width, options.height);
 }
 
 int run_single(const demo_options& options) {
     using namespace ctdp::spmv_dsl;
 
-    const auto problem = make_stencil_problem(options.width, options.height);
+    const auto problem = make_demo_problem(options);
     const auto facts = analyse_problem(problem);
     const expression_contract contract{};
     const auto results = run_design_space_search(problem, contract, 0.125, options.search);

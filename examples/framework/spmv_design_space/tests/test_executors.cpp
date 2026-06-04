@@ -164,6 +164,46 @@ int main() {
     SPMV_REQUIRE(saw_unexecuted_structural_rejection);
 
 
+    const auto banded_problem = make_tridiagonal_banded_problem(64);
+    const auto banded_reference = execute_strict_reference(banded_problem, 0.125);
+    const auto banded_facts = analyse_problem(banded_problem);
+    SPMV_REQUIRE(banded_facts.banded);
+    SPMV_REQUIRE(banded_facts.lower_bandwidth == 1);
+    SPMV_REQUIRE(banded_facts.upper_bandwidth == 1);
+
+    plan_descriptor banded_dia{
+        .name = "banded dia strict",
+        .storage = storage_kind::dia,
+        .preconditioner = preconditioner_kind::fixed_diagonal_jacobi,
+        .simd = simd_kind::lanes8,
+        .fusion = fusion_kind::rzpu,
+        .executor = executor_kind::dia_executor
+    };
+    const auto banded_dia_result = execute_plan(banded_problem, banded_dia, 0.125);
+    SPMV_REQUIRE(conforms_to_reference(banded_dia_result, banded_reference, banded_dia));
+
+    plan_descriptor banded_mf{
+        .name = "banded matrix-free strict",
+        .storage = storage_kind::matrix_free_stencil,
+        .preconditioner = preconditioner_kind::fixed_diagonal_jacobi,
+        .simd = simd_kind::lanes8,
+        .fusion = fusion_kind::rzpu,
+        .executor = executor_kind::matrix_free_executor
+    };
+    const auto banded_mf_result = execute_plan(banded_problem, banded_mf, 0.125);
+    SPMV_REQUIRE(conforms_to_reference(banded_mf_result, banded_reference, banded_mf));
+
+    const auto banded_results = run_design_space_search(banded_problem, contract, 0.125, options);
+    SPMV_REQUIRE(select_best_legal(banded_results) != nullptr);
+    bool saw_banded_dia = false;
+    bool saw_banded_mf = false;
+    for (const auto& r : banded_results) {
+        saw_banded_dia = saw_banded_dia || (r.strict_conforming && r.plan.storage == storage_kind::dia);
+        saw_banded_mf = saw_banded_mf || (r.strict_conforming && r.plan.storage == storage_kind::matrix_free_stencil);
+    }
+    SPMV_REQUIRE(saw_banded_dia);
+    SPMV_REQUIRE(saw_banded_mf);
+
     const auto larger_problem = make_stencil_problem(64, 64);
     search_options large_options;
     large_options.iterations = 3;

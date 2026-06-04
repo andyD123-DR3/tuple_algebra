@@ -11,11 +11,17 @@
 namespace ctdp::spmv_dsl {
 
 struct sparse_facts {
+    problem_kind kind = problem_kind::stencil_2d;
     std::size_t rows = 0;
     std::size_t cols = 0;
     std::size_t nnz = 0;
     bool square = false;
     bool stencil_like = false;
+    bool banded = false;
+    bool tridiagonal = false;
+    std::size_t lower_bandwidth = 0;
+    std::size_t upper_bandwidth = 0;
+    std::size_t num_diagonals = 0;
     bool diagonal_preconditioner_available = false;
     std::size_t min_nnz_per_row = 0;
     std::size_t max_nnz_per_row = 0;
@@ -27,11 +33,14 @@ struct sparse_facts {
 
 inline sparse_facts analyse_problem(const stencil_problem& p) {
     sparse_facts f;
+    f.kind = p.kind;
     f.rows = p.csr.rows;
     f.cols = p.csr.cols;
     f.nnz = p.csr.values.size();
     f.square = f.rows == f.cols;
     f.stencil_like = true;
+    f.banded = p.kind == problem_kind::tridiagonal_banded_1d;
+    f.tridiagonal = p.kind == problem_kind::tridiagonal_banded_1d;
     f.diagonal_preconditioner_available = true;
 
     f.min_nnz_per_row = static_cast<std::size_t>(-1);
@@ -47,6 +56,24 @@ inline sparse_facts analyse_problem(const stencil_problem& p) {
     }
     f.mean_nnz_per_row = sum / static_cast<double>(f.rows);
     f.row_length_variance = sum2 / static_cast<double>(f.rows) - f.mean_nnz_per_row * f.mean_nnz_per_row;
+
+    std::vector<std::ptrdiff_t> offsets;
+    offsets.reserve(f.nnz);
+    for (std::size_t r = 0; r < f.rows; ++r) {
+        for (auto k = p.csr.row_ptr[r]; k < p.csr.row_ptr[r + 1]; ++k) {
+            const auto c = p.csr.col_idx[k];
+            if (c <= r) {
+                f.lower_bandwidth = std::max(f.lower_bandwidth, r - c);
+            } else {
+                f.upper_bandwidth = std::max(f.upper_bandwidth, c - r);
+            }
+            offsets.push_back(static_cast<std::ptrdiff_t>(c) - static_cast<std::ptrdiff_t>(r));
+        }
+    }
+    std::sort(offsets.begin(), offsets.end());
+    offsets.erase(std::unique(offsets.begin(), offsets.end()), offsets.end());
+    f.num_diagonals = offsets.size();
+
     f.connected_components = 1;
     f.estimated_colour_count = 2;
     return f;

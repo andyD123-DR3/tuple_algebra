@@ -300,7 +300,7 @@ inline double apply_operator_at(const stencil_problem& problem, const plan_descr
     }
     if (plan.executor == executor_kind::matrix_free_executor ||
         plan.executor == executor_kind::reference) {
-        return apply_five_point_at(problem, row);
+        return apply_matrix_free_at(problem, row);
     }
     throw std::invalid_argument("unknown executor");
 }

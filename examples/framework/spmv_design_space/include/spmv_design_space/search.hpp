@@ -194,10 +194,20 @@ inline void print_report(
     os << "  x'   = x + alpha*z\n\n";
 
     os << "Facts:\n";
-    os << "  grid: " << problem.width << " x " << problem.height << "\n";
+    os << "  problem_kind: " << to_string(problem.kind) << "\n";
+    if (problem.kind == problem_kind::tridiagonal_banded_1d) {
+        os << "  banded_rows: " << problem.size() << "\n";
+    } else {
+        os << "  grid: " << problem.width << " x " << problem.height << "\n";
+    }
     os << "  rows: " << facts.rows << "\n";
     os << "  nnz: " << facts.nnz << "\n";
     os << "  stencil_like: " << (facts.stencil_like ? "yes" : "no") << "\n";
+    os << "  banded: " << (facts.banded ? "yes" : "no") << "\n";
+    os << "  tridiagonal: " << (facts.tridiagonal ? "yes" : "no") << "\n";
+    os << "  lower_bandwidth: " << facts.lower_bandwidth << "\n";
+    os << "  upper_bandwidth: " << facts.upper_bandwidth << "\n";
+    os << "  num_diagonals: " << facts.num_diagonals << "\n";
     os << "  connected_components: " << facts.connected_components << "\n";
     os << "  estimated_colour_count: " << facts.estimated_colour_count << "\n\n";
 
