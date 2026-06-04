@@ -27,11 +27,17 @@ struct plan_descriptor {
 struct candidate_result {
     plan_descriptor plan;
     legality_result legality;
+    bool executed = false;
     bool conformance_passed = false;
+    bool strict_conforming = false;
+    bool relaxed_executable = false;
     double best_ns = 0.0;
     double median_ns = 0.0;
     double mean_ns = 0.0;
     double rho = 0.0;
+    double rho_abs_delta = 0.0;
+    double rho_rel_delta = 0.0;
+    double x_next_max_abs_delta = 0.0;
     std::string execution_path;
     std::string plan_tree;
     std::string recursive_search_tree;

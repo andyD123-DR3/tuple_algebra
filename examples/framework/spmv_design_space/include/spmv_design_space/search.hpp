@@ -6,6 +6,7 @@
 #include "spmv_design_space/recursive_search.hpp"
 
 #include <algorithm>
+#include <cmath>
 #include <cstddef>
 #include <iomanip>
 #include <ostream>
@@ -23,7 +24,21 @@ struct search_options {
     std::size_t threads = 0; // 0 means choose a sensible demonstrator default.
     std::size_t task_grain = 2048;
     recursive_search_options recursive{};
+    candidate_scope scope = candidate_scope::strict_conforming_only;
 };
+
+inline bool relaxed_search_enabled(const search_options& options) noexcept {
+    return options.scope == candidate_scope::strict_and_relaxed_executable;
+}
+
+inline double max_abs_delta(const std::vector<double>& a, const std::vector<double>& b) {
+    const auto n = std::min(a.size(), b.size());
+    double out = 0.0;
+    for (std::size_t i = 0; i < n; ++i) {
+        out = std::max(out, std::abs(a[i] - b[i]));
+    }
+    return out;
+}
 
 inline std::size_t default_worker_count() {
     const auto hw = std::thread::hardware_concurrency();
@@ -66,11 +81,21 @@ inline std::vector<candidate_result> run_design_space_search(
             result.recursive_search_trace = recursive_trace_string(recursive);
         }
 
-        if (result.legality.legal()) {
+        result.relaxed_executable = result.legality.structurally_legal && result.legality.numerically_legal;
+        const bool should_execute = result.legality.legal() ||
+            (relaxed_search_enabled(options) && result.relaxed_executable);
+
+        if (should_execute) {
             auto last = execute_plan(problem, plan, alpha, &threaded_ctx);
+            result.executed = true;
             result.rho = last.rho;
+            result.rho_abs_delta = std::abs(last.rho - reference.rho);
+            result.rho_rel_delta = reference.rho == 0.0 ? result.rho_abs_delta : result.rho_abs_delta / std::abs(reference.rho);
+            result.x_next_max_abs_delta = max_abs_delta(last.x_next, reference.x_next);
             result.execution_path = last.execution_path;
             result.conformance_passed = conforms_to_reference(last, reference, plan);
+            result.strict_conforming = plan.contract == contract_level::strict_expression &&
+                result.legality.legal() && result.conformance_passed;
             const auto timings = measure([&] {
                 auto r = execute_plan(problem, plan, alpha, &threaded_ctx);
                 // Prevent the call from being trivially discarded.
@@ -101,20 +126,41 @@ inline std::vector<candidate_result> run_design_space_search(
 
 inline const candidate_result* select_best_legal(const std::vector<candidate_result>& results) {
     const candidate_result* best_strict = nullptr;
-    const candidate_result* best_any = nullptr;
     for (const auto& r : results) {
-        if (!r.legality.legal() || !r.conformance_passed) {
+        if (!r.strict_conforming) {
             continue;
         }
-        if (best_any == nullptr || r.median_ns < best_any->median_ns) {
-            best_any = &r;
-        }
-        if (r.plan.contract == contract_level::strict_expression &&
-            (best_strict == nullptr || r.median_ns < best_strict->median_ns)) {
+        if (best_strict == nullptr || r.median_ns < best_strict->median_ns) {
             best_strict = &r;
         }
     }
-    return best_strict != nullptr ? best_strict : best_any;
+    return best_strict;
+}
+
+inline const candidate_result* select_fastest_executed(const std::vector<candidate_result>& results) {
+    const candidate_result* best = nullptr;
+    for (const auto& r : results) {
+        if (!r.executed) {
+            continue;
+        }
+        if (best == nullptr || r.median_ns < best->median_ns) {
+            best = &r;
+        }
+    }
+    return best;
+}
+
+inline const candidate_result* select_fastest_non_strict_executed(const std::vector<candidate_result>& results) {
+    const candidate_result* best = nullptr;
+    for (const auto& r : results) {
+        if (!r.executed || r.strict_conforming) {
+            continue;
+        }
+        if (best == nullptr || r.median_ns < best->median_ns) {
+            best = &r;
+        }
+    }
+    return best;
 }
 
 inline bool selected_plan_uses_threads(const std::vector<candidate_result>& results) {
@@ -155,8 +201,15 @@ inline void print_report(
     os << "  connected_components: " << facts.connected_components << "\n";
     os << "  estimated_colour_count: " << facts.estimated_colour_count << "\n\n";
 
+    const bool relaxed_candidates_executed = std::any_of(results.begin(), results.end(), [](const candidate_result& r) {
+        return r.executed && !r.legality.legal() && r.relaxed_executable;
+    });
+
     os << "Selection rule:\n";
-    os << "  best = lowest measured median among legal, conforming, strict-expression candidates\n";
+    os << "  strict_best = lowest measured median among strict-conforming candidates\n";
+    if (relaxed_candidates_executed) {
+        os << "  relaxed comparison = executable non-strict candidates are measured but cannot win strict_best\n";
+    }
     os << "  This proves optimality only over the generated candidate set and measured objective.\n\n";
 
     os << "Candidates:\n";
@@ -167,23 +220,46 @@ inline void print_report(
         print_indented_block(os, "plan_tree", r.plan_tree);
         print_indented_block(os, "recursive_search_tree", r.recursive_search_tree);
         print_indented_block(os, "recursive_search_trace", r.recursive_search_trace);
-        if (r.legality.legal()) {
+        os << "      relaxed_executable: " << (r.relaxed_executable ? "yes" : "no") << "\n";
+        os << "      executed: " << (r.executed ? "yes" : "no") << "\n";
+        if (r.executed) {
+            os << "      strict_conforming: " << (r.strict_conforming ? "yes" : "no") << "\n";
             os << "      conformance: " << (r.conformance_passed ? "PASS" : "FAIL") << "\n";
             os << "      best_ns: " << std::fixed << std::setprecision(1) << r.best_ns << "\n";
             os << "      median_ns: " << std::fixed << std::setprecision(1) << r.median_ns << "\n";
             os << "      mean_ns: " << std::fixed << std::setprecision(1) << r.mean_ns << "\n";
             os << "      rho: " << std::setprecision(17) << r.rho << "\n";
+            os << "      rho_abs_delta: " << std::setprecision(17) << r.rho_abs_delta << "\n";
+            os << "      rho_rel_delta: " << std::setprecision(17) << r.rho_rel_delta << "\n";
+            os << "      x_next_max_abs_delta: " << std::setprecision(17) << r.x_next_max_abs_delta << "\n";
             os << "      executed_by: " << r.execution_path << "\n";
         }
     }
 
     if (const auto* best = select_best_legal(results)) {
-        os << "\nSelected:\n";
+        os << "\nStrict selected:\n";
         os << "  " << describe_plan(best->plan) << "\n";
-        os << "  selected_by: lowest measured median among legal conforming strict-expression candidates\n";
+        os << "  selected_by: lowest measured median among strict-conforming candidates\n";
         os << "  uses_threads: " << (uses_parallel_threading(best->plan.threading) ? "yes" : "no") << "\n";
     } else {
-        os << "\nSelected:\n  no legal conforming candidate\n";
+        os << "\nStrict selected:\n  no strict-conforming candidate\n";
+    }
+
+    if (const auto* fastest = select_fastest_executed(results)) {
+        os << "\nFastest executed candidate:\n";
+        os << "  " << describe_plan(fastest->plan) << "\n";
+        os << "  median_ns: " << std::fixed << std::setprecision(1) << fastest->median_ns << "\n";
+        os << "  strict_conforming: " << (fastest->strict_conforming ? "yes" : "no") << "\n";
+    }
+
+    if (relaxed_candidates_executed) {
+        if (const auto* non_strict = select_fastest_non_strict_executed(results)) {
+            os << "\nFastest non-strict executed candidate:\n";
+            os << "  " << describe_plan(non_strict->plan) << "\n";
+            os << "  median_ns: " << std::fixed << std::setprecision(1) << non_strict->median_ns << "\n";
+            os << "  rho_abs_delta: " << std::setprecision(17) << non_strict->rho_abs_delta << "\n";
+            os << "  x_next_max_abs_delta: " << std::setprecision(17) << non_strict->x_next_max_abs_delta << "\n";
+        }
     }
 }
 
