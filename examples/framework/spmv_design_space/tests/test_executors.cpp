@@ -1,4 +1,5 @@
 #include "spmv_design_space/search.hpp"
+#include "spmv_design_space/plan_tree.hpp"
 
 #include "test_support.hpp"
 #include <iostream>
@@ -125,7 +126,14 @@ int main() {
     options.task_grain = 16;
     const auto results = run_design_space_search(problem, contract, 0.125, options);
     SPMV_REQUIRE(!results.empty());
-    SPMV_REQUIRE(select_best_legal(results) != nullptr);
+    const auto* selected = select_best_legal(results);
+    SPMV_REQUIRE(selected != nullptr);
+    const auto selected_tree = plan_tree::as_plan_tree(selected->plan);
+    SPMV_REQUIRE(plan_tree::get_leaf<plan_tree::role::storage>(selected_tree).value == selected->plan.storage);
+    SPMV_REQUIRE(plan_tree::get_leaf<plan_tree::role::fusion>(selected_tree).value == selected->plan.fusion);
+    SPMV_REQUIRE(plan_tree::get_leaf<plan_tree::role::reduction>(selected_tree).value == selected->plan.reduction);
+    SPMV_REQUIRE(!selected->plan_tree.empty());
+    SPMV_REQUIRE(selected->plan_tree.find("leaf<storage::") != std::string::npos);
 
     bool saw_illegal = false;
     bool saw_legal_conforming = false;

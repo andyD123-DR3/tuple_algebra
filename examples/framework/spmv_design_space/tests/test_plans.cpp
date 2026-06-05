@@ -1,4 +1,5 @@
 #include "spmv_design_space/search.hpp"
+#include "spmv_design_space/plan_tree.hpp"
 
 #include <algorithm>
 #include "test_support.hpp"
@@ -131,6 +132,33 @@ int main() {
     const auto threaded_rejected = analyse_legality(strict, hybrid_facts, threaded, single_thread);
     SPMV_REQUIRE(!threaded_rejected.legal());
     SPMV_REQUIRE(!threaded_rejected.target_legal);
+
+
+    plan_descriptor tree_plan{
+        .name = "tree view candidate",
+        .storage = storage_kind::matrix_free_stencil,
+        .decomposition = decomposition_kind::blocked_rows,
+        .colouring = colouring_kind::red_black_stencil,
+        .preconditioner = preconditioner_kind::fixed_diagonal_jacobi,
+        .threading = threading_kind::colour_phases,
+        .simd = simd_kind::lanes8,
+        .fusion = fusion_kind::rzpu,
+        .reduction = reduction_kind::canonical_pairwise,
+        .executor = executor_kind::matrix_free_executor
+    };
+    const auto tree = plan_tree::as_plan_tree(tree_plan);
+    SPMV_REQUIRE(plan_tree::get_leaf<plan_tree::role::storage>(tree).value == storage_kind::matrix_free_stencil);
+    SPMV_REQUIRE(plan_tree::get_leaf<plan_tree::role::decomposition>(tree).value == decomposition_kind::blocked_rows);
+    SPMV_REQUIRE(plan_tree::get_leaf<plan_tree::role::colouring>(tree).value == colouring_kind::red_black_stencil);
+    SPMV_REQUIRE(plan_tree::get_leaf<plan_tree::role::threading>(tree).value == threading_kind::colour_phases);
+    SPMV_REQUIRE(plan_tree::get_leaf<plan_tree::role::simd>(tree).value == simd_kind::lanes8);
+    SPMV_REQUIRE(plan_tree::get_leaf<plan_tree::role::fusion>(tree).value == fusion_kind::rzpu);
+    SPMV_REQUIRE(plan_tree::get_leaf<plan_tree::role::reduction>(tree).value == reduction_kind::canonical_pairwise);
+    SPMV_REQUIRE(plan_tree::get_leaf<plan_tree::role::lowering>(tree).value == executor_kind::matrix_free_executor);
+    const auto tree_report = plan_tree::to_string(tree);
+    SPMV_REQUIRE(tree_report.find("leaf<storage::matrix_free_stencil>") != std::string::npos);
+    SPMV_REQUIRE(tree_report.find("leaf<fusion::[RZPU]>") != std::string::npos);
+    SPMV_REQUIRE(tree_report.find("leaf<lowering::matrix_free_executor>") != std::string::npos);
 
     const auto wisdom = emit_plan_wisdom(hybrid_ok);
     SPMV_REQUIRE(wisdom.find("dia_csr_remainder") != std::string::npos);
