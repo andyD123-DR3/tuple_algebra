@@ -59,7 +59,7 @@ int main() {
     for (const auto& result : results) {
         if (!result.recursive_search_tree.empty()) {
             saw_recursive_candidate = true;
-            SPMV_REQUIRE(result.plan_tree.find("nest<decomposition::row_bisection_search>") != std::string::npos);
+            SPMV_REQUIRE(result.plan_tree.find("leaf<decomposition::recursive_grid_bisection>") != std::string::npos);
             SPMV_REQUIRE(result.recursive_search_tree.find("split<row_bisection>") != std::string::npos);
             SPMV_REQUIRE(result.recursive_search_trace.find("selected=split") != std::string::npos);
         }

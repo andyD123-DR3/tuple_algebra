@@ -75,13 +75,13 @@ inline std::vector<candidate_result> run_design_space_search(
         const auto contract = contract_for_plan(base_contract, plan.contract);
         candidate_result result;
         result.plan = plan;
+        result.plan_tree = plan_tree::to_string(plan_tree::as_plan_tree(plan));
         result.legality = analyse_legality(contract, facts, plan, hardware);
 
         if (plan.contract == contract_level::strict_expression &&
             plan.storage == storage_kind::matrix_free_stencil &&
             plan.decomposition == decomposition_kind::recursive_grid_bisection) {
             const auto recursive = search_recursive_spmv_plan(facts, options.recursive);
-            result.plan_tree = plan_tree::to_string<plan_tree::matrix_free_recursive_candidate>();
             result.recursive_search_tree = recursive_tree_string(recursive);
             result.recursive_search_trace = recursive_trace_string(recursive);
         }
