@@ -1,4 +1,4 @@
-#include "spmv_design_space/plan.hpp"
+#include "spmv_design_space/search.hpp"
 
 #include <algorithm>
 #include "test_support.hpp"
@@ -87,6 +87,54 @@ int main() {
     const auto strict_bad = analyse_legality(strict, facts, solver_none);
     SPMV_REQUIRE(!strict_bad.legal());
     SPMV_REQUIRE(!strict_bad.numerically_legal);
+
+    const auto hybrid_problem = make_stencil_with_remainder_problem(8, 8, 7);
+    const auto hybrid_facts = analyse_problem(hybrid_problem);
+    const auto hybrid_plans = generate_candidate_plans(hybrid_facts);
+    const auto has_hybrid = std::any_of(hybrid_plans.begin(), hybrid_plans.end(), [](const plan_descriptor& p) {
+        return p.storage == storage_kind::dia_csr_remainder &&
+               p.executor == executor_kind::hybrid_dia_csr_executor;
+    });
+    SPMV_REQUIRE(has_hybrid);
+
+    plan_descriptor regular_dia{
+        .name = "regular dia drops remainder",
+        .storage = storage_kind::dia,
+        .preconditioner = preconditioner_kind::fixed_diagonal_jacobi,
+        .executor = executor_kind::dia_executor
+    };
+    const auto dia_rejected = analyse_legality(strict, hybrid_facts, regular_dia);
+    SPMV_REQUIRE(!dia_rejected.legal());
+    SPMV_REQUIRE(!dia_rejected.structurally_legal);
+
+    plan_descriptor hybrid_ok{
+        .name = "hybrid dia csr",
+        .storage = storage_kind::dia_csr_remainder,
+        .preconditioner = preconditioner_kind::fixed_diagonal_jacobi,
+        .executor = executor_kind::hybrid_dia_csr_executor
+    };
+    const auto hybrid_legal = analyse_legality(strict, hybrid_facts, hybrid_ok);
+    SPMV_REQUIRE(hybrid_legal.legal());
+
+    hardware_profile lanes4{};
+    lanes4.max_simd_lanes = 4;
+    plan_descriptor lanes8 = hybrid_ok;
+    lanes8.simd = simd_kind::lanes8;
+    const auto width_rejected = analyse_legality(strict, hybrid_facts, lanes8, lanes4);
+    SPMV_REQUIRE(!width_rejected.legal());
+    SPMV_REQUIRE(!width_rejected.target_legal);
+
+    hardware_profile single_thread{};
+    single_thread.max_worker_threads = 1;
+    plan_descriptor threaded = hybrid_ok;
+    threaded.threading = threading_kind::recursive_tasks;
+    const auto threaded_rejected = analyse_legality(strict, hybrid_facts, threaded, single_thread);
+    SPMV_REQUIRE(!threaded_rejected.legal());
+    SPMV_REQUIRE(!threaded_rejected.target_legal);
+
+    const auto wisdom = emit_plan_wisdom(hybrid_ok);
+    SPMV_REQUIRE(wisdom.find("dia_csr_remainder") != std::string::npos);
+    SPMV_REQUIRE(wisdom.find("hybrid_dia_csr_executor") != std::string::npos);
 
     std::cout << "plan tests PASS\n";
 }

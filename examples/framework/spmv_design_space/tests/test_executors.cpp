@@ -2,6 +2,7 @@
 
 #include "test_support.hpp"
 #include <iostream>
+#include <sstream>
 #include <string>
 
 int main() {
@@ -9,6 +10,19 @@ int main() {
 
     const auto problem = make_stencil_problem(10, 10);
     const auto reference = execute_strict_reference(problem, 0.125);
+
+    const auto hybrid_problem = make_stencil_with_remainder_problem(10, 10, 7);
+    const auto hybrid_reference = execute_strict_reference(hybrid_problem, 0.125);
+    plan_descriptor hybrid{
+        .name = "hybrid strict",
+        .storage = storage_kind::dia_csr_remainder,
+        .preconditioner = preconditioner_kind::fixed_diagonal_jacobi,
+        .simd = simd_kind::lanes4,
+        .executor = executor_kind::hybrid_dia_csr_executor
+    };
+    const auto hybrid_result = execute_plan(hybrid_problem, hybrid, 0.125);
+    SPMV_REQUIRE(conforms_to_reference(hybrid_result, hybrid_reference, hybrid));
+    SPMV_REQUIRE(hybrid_result.execution_path.find("hybrid_dia_csr_executor") != std::string::npos);
 
     plan_descriptor csr{
         .name = "csr strict",
@@ -178,6 +192,52 @@ int main() {
             (r.legality.legal() && uses_parallel_threading(r.plan.threading));
     }
     SPMV_REQUIRE(saw_threaded_candidate);
+
+    search_options single_thread_options;
+    single_thread_options.iterations = 2;
+    single_thread_options.warmup = 1;
+    single_thread_options.threads = 1;
+    single_thread_options.hardware.max_worker_threads = 1;
+    single_thread_options.hardware.allow_parallel_candidates = false;
+    single_thread_options.hardware.max_simd_lanes = 4;
+    const auto hardware_results = run_design_space_search(problem, contract, 0.125, single_thread_options);
+    bool saw_target_rejection = false;
+    for (const auto& r : hardware_results) {
+        saw_target_rejection = saw_target_rejection || !r.legality.target_legal;
+        if (r.plan.simd == simd_kind::lanes8) {
+            SPMV_REQUIRE(!r.legality.target_legal);
+        }
+        if (uses_parallel_threading(r.plan.threading)) {
+            SPMV_REQUIRE(!r.legality.target_legal);
+        }
+    }
+    SPMV_REQUIRE(saw_target_rejection);
+
+    const auto hybrid_search_problem = make_stencil_with_remainder_problem(16, 16, 9);
+    search_options hybrid_options;
+    hybrid_options.iterations = 2;
+    hybrid_options.warmup = 1;
+    hybrid_options.threads = 1;
+    const auto hybrid_search_results = run_design_space_search(hybrid_search_problem, contract, 0.125, hybrid_options);
+    bool saw_legal_hybrid_candidate = false;
+    bool saw_regular_stencil_rejected = false;
+    for (const auto& r : hybrid_search_results) {
+        saw_legal_hybrid_candidate = saw_legal_hybrid_candidate ||
+            (r.plan.storage == storage_kind::dia_csr_remainder && r.strict_conforming);
+        saw_regular_stencil_rejected = saw_regular_stencil_rejected ||
+            ((r.plan.storage == storage_kind::dia || r.plan.storage == storage_kind::matrix_free_stencil) &&
+             !r.legality.structurally_legal);
+    }
+    SPMV_REQUIRE(saw_legal_hybrid_candidate);
+    SPMV_REQUIRE(saw_regular_stencil_rejected);
+
+    std::ostringstream report;
+    print_report(report, hybrid_search_problem, analyse_problem(hybrid_search_problem), hybrid_search_results, hybrid_options);
+    const auto report_text = report.str();
+    SPMV_REQUIRE(report_text.find("Hardware profile") != std::string::npos);
+    SPMV_REQUIRE(report_text.find("Objective and gates") != std::string::npos);
+    SPMV_REQUIRE(report_text.find("generated_wisdom") != std::string::npos);
+    SPMV_REQUIRE(report_text.find("dia_csr_remainder") != std::string::npos);
 
     std::cout << "executor tests PASS\n";
 }

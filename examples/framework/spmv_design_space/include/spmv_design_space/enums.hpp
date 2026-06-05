@@ -15,7 +15,8 @@ enum class contract_level {
 enum class storage_kind {
     csr,
     dia,
-    matrix_free_stencil
+    matrix_free_stencil,
+    dia_csr_remainder
 };
 
 enum class decomposition_kind {
@@ -74,7 +75,8 @@ enum class executor_kind {
     reference,
     csr_executor,
     dia_executor,
-    matrix_free_executor
+    matrix_free_executor,
+    hybrid_dia_csr_executor
 };
 
 enum class candidate_scope {
@@ -98,6 +100,7 @@ constexpr std::string_view to_string(storage_kind v) noexcept {
     case storage_kind::csr: return "csr";
     case storage_kind::dia: return "dia";
     case storage_kind::matrix_free_stencil: return "matrix_free_stencil";
+    case storage_kind::dia_csr_remainder: return "dia_csr_remainder";
     }
     return "unknown";
 }
@@ -192,6 +195,7 @@ constexpr std::string_view to_string(executor_kind v) noexcept {
     case executor_kind::csr_executor: return "csr_executor";
     case executor_kind::dia_executor: return "dia_executor";
     case executor_kind::matrix_free_executor: return "matrix_free_executor";
+    case executor_kind::hybrid_dia_csr_executor: return "hybrid_dia_csr_executor";
     }
     return "unknown";
 }

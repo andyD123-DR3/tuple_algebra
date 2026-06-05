@@ -292,14 +292,17 @@ inline void apply_preconditioner(
 }
 
 inline double apply_operator_at(const stencil_problem& problem, const plan_descriptor& plan, std::size_t row) {
-    if (plan.executor == executor_kind::csr_executor) {
+    if (plan.executor == executor_kind::reference ||
+        plan.executor == executor_kind::csr_executor) {
         return apply_csr_at(problem.csr, problem.x, row);
     }
     if (plan.executor == executor_kind::dia_executor) {
         return apply_dia_at(problem, row);
     }
-    if (plan.executor == executor_kind::matrix_free_executor ||
-        plan.executor == executor_kind::reference) {
+    if (plan.executor == executor_kind::hybrid_dia_csr_executor) {
+        return apply_hybrid_dia_csr_at(problem, row);
+    }
+    if (plan.executor == executor_kind::matrix_free_executor) {
         return apply_five_point_at(problem, row);
     }
     throw std::invalid_argument("unknown executor");
