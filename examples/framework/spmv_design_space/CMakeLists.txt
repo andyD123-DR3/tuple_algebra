@@ -3,6 +3,18 @@ project(spmv_design_space_demonstrator LANGUAGES CXX)
 
 find_package(Threads REQUIRED)
 
+option(SPMV_STRICT_FP "Build the SpMV demonstrator with reproducibility-oriented FP flags" ON)
+
+function(spmv_apply_strict_fp target_name)
+    if(SPMV_STRICT_FP)
+        if(MSVC)
+            target_compile_options(${target_name} PRIVATE /fp:strict)
+        else()
+            target_compile_options(${target_name} PRIVATE -ffp-contract=off -fno-fast-math)
+        endif()
+    endif()
+endfunction()
+
 add_library(spmv_design_space INTERFACE)
 target_include_directories(spmv_design_space INTERFACE
     ${CMAKE_CURRENT_SOURCE_DIR}/include
@@ -20,6 +32,7 @@ if(NOT CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
 else()
     target_compile_options(spmv_design_space_demo PRIVATE /O2 /W4)
 endif()
+spmv_apply_strict_fp(spmv_design_space_demo)
 
 set(SPMV_DESIGN_SPACE_TESTS
     spmv_design_space_contract_tests
@@ -42,6 +55,7 @@ foreach(test_target IN LISTS SPMV_DESIGN_SPACE_TESTS)
     else()
         target_compile_options(${test_target} PRIVATE /O2 /W4)
     endif()
+    spmv_apply_strict_fp(${test_target})
     add_test(NAME ${test_target} COMMAND ${test_target})
 endforeach()
 

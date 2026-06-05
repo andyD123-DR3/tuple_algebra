@@ -39,23 +39,27 @@ inline csr_matrix make_empty_csr(std::size_t rows, std::size_t cols) {
     return a;
 }
 
-inline double apply_five_point_at(const stencil_problem& p, std::size_t i) {
+inline double apply_five_point_at(const stencil_problem& p, const std::vector<double>& x, std::size_t i) {
     const auto row = i / p.width;
     const auto col = i % p.width;
-    double y = 4.0 * p.x[i];
+    double y = 4.0 * x[i];
     if (row > 0) {
-        y -= p.x[index_of(row - 1, col, p.width)];
+        y -= x[index_of(row - 1, col, p.width)];
     }
     if (row + 1 < p.height) {
-        y -= p.x[index_of(row + 1, col, p.width)];
+        y -= x[index_of(row + 1, col, p.width)];
     }
     if (col > 0) {
-        y -= p.x[index_of(row, col - 1, p.width)];
+        y -= x[index_of(row, col - 1, p.width)];
     }
     if (col + 1 < p.width) {
-        y -= p.x[index_of(row, col + 1, p.width)];
+        y -= x[index_of(row, col + 1, p.width)];
     }
     return y;
+}
+
+inline double apply_five_point_at(const stencil_problem& p, std::size_t i) {
+    return apply_five_point_at(p, p.x, i);
 }
 
 
@@ -63,14 +67,22 @@ inline double apply_five_point_at(const stencil_problem& p, std::size_t i) {
 // fixed by the grid topology: centre, north, south, west, east.  The arithmetic
 // order intentionally matches apply_five_point_at and the CSR construction so
 // strict-expression candidates can compare bitwise.
+inline double apply_dia_at(const stencil_problem& p, const std::vector<double>& x, std::size_t i) {
+    return apply_five_point_at(p, x, i);
+}
+
 inline double apply_dia_at(const stencil_problem& p, std::size_t i) {
-    return apply_five_point_at(p, i);
+    return apply_dia_at(p, p.x, i);
 }
 
 inline double apply_csr_at(const csr_matrix& a, const std::vector<double>& x, std::size_t row);
 
+inline double apply_hybrid_dia_csr_at(const stencil_problem& p, const std::vector<double>& x, std::size_t i) {
+    return apply_five_point_at(p, x, i) + apply_csr_at(p.remainder_csr, x, i);
+}
+
 inline double apply_hybrid_dia_csr_at(const stencil_problem& p, std::size_t i) {
-    return apply_five_point_at(p, i) + apply_csr_at(p.remainder_csr, p.x, i);
+    return apply_hybrid_dia_csr_at(p, p.x, i);
 }
 
 inline csr_matrix build_five_point_csr(std::size_t width, std::size_t height) {

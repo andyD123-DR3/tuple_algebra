@@ -33,6 +33,29 @@ int main() {
     };
     const auto csr_result = execute_plan(problem, csr, 0.125);
     SPMV_REQUIRE(conforms_to_reference(csr_result, reference, csr));
+    SPMV_REQUIRE(!csr_result.q.empty());
+    SPMV_REQUIRE(csr_result.sigma != 0.0);
+    SPMV_REQUIRE(csr_result.alpha != 0.125);
+
+    const auto propagation_problem = make_stencil_problem(32, 32);
+    const auto propagation_reference = execute_strict_reference(propagation_problem, 0.125);
+    plan_descriptor unordered_rho{
+        .name = "unordered rho/sigma propagation witness",
+        .storage = storage_kind::csr,
+        .decomposition = decomposition_kind::blocked_rows,
+        .preconditioner = preconditioner_kind::fixed_diagonal_jacobi,
+        .simd = simd_kind::lanes4,
+        .fusion = fusion_kind::rzpu,
+        .reduction = reduction_kind::thread_local_unordered_witness,
+        .executor = executor_kind::csr_executor
+    };
+    const auto unordered_result = execute_plan(propagation_problem, unordered_rho, 0.125);
+    const auto reference_fp = fingerprint_observation(propagation_reference);
+    const auto unordered_fp = fingerprint_observation(unordered_result);
+    SPMV_REQUIRE(unordered_fp.rho_bits != reference_fp.rho_bits);
+    SPMV_REQUIRE(unordered_fp.alpha_bits != reference_fp.alpha_bits);
+    SPMV_REQUIRE(unordered_fp.x_next_hash != reference_fp.x_next_hash);
+    SPMV_REQUIRE(unordered_fp.observation_hash != reference_fp.observation_hash);
 
 
     plan_descriptor dia{
@@ -57,7 +80,7 @@ int main() {
     };
     const auto fused_result = execute_plan(problem, fused, 0.125);
     SPMV_REQUIRE(conforms_to_reference(fused_result, reference, fused));
-    SPMV_REQUIRE(fused_result.execution_path.find("[RZPU]") != std::string::npos);
+    SPMV_REQUIRE(fused_result.execution_path.find("[(R,Z,rho)][(Q,sigma)][alpha][U]") != std::string::npos);
 
     const fusion_kind partitions[] = {
         fusion_kind::r_z_p_u,
@@ -149,6 +172,8 @@ int main() {
             SPMV_REQUIRE(r.best_ns >= 0.0);
             SPMV_REQUIRE(r.median_ns >= 0.0);
             SPMV_REQUIRE(r.mean_ns >= 0.0);
+            SPMV_REQUIRE(r.observation_hash != 0);
+            SPMV_REQUIRE(r.q_hash != 0);
         }
     }
     SPMV_REQUIRE(saw_illegal);
@@ -162,6 +187,9 @@ int main() {
     SPMV_REQUIRE(select_best_legal(relaxed_results) != nullptr);
     SPMV_REQUIRE(select_fastest_executed(relaxed_results) != nullptr);
     SPMV_REQUIRE(select_fastest_non_strict_executed(relaxed_results) != nullptr);
+    const auto top_strict = select_top_strict_conforming(relaxed_results, 2);
+    SPMV_REQUIRE(top_strict.size() == 2);
+    SPMV_REQUIRE(top_strict[0]->observation_hash == top_strict[1]->observation_hash);
 
     bool saw_executed_unordered_witness = false;
     bool saw_unexecuted_structural_rejection = false;
@@ -184,6 +212,9 @@ int main() {
     }
     SPMV_REQUIRE(saw_executed_unordered_witness);
     SPMV_REQUIRE(saw_unexecuted_structural_rejection);
+    const auto* non_strict = select_fastest_non_strict_executed(relaxed_results);
+    SPMV_REQUIRE(non_strict != nullptr);
+    SPMV_REQUIRE(non_strict->observation_hash != top_strict[0]->observation_hash);
 
 
     const auto larger_problem = make_stencil_problem(64, 64);
@@ -244,6 +275,9 @@ int main() {
     const auto report_text = report.str();
     SPMV_REQUIRE(report_text.find("Hardware profile") != std::string::npos);
     SPMV_REQUIRE(report_text.find("Objective and gates") != std::string::npos);
+    SPMV_REQUIRE(report_text.find("Top strict-conforming plans") != std::string::npos);
+    SPMV_REQUIRE(report_text.find("observation_hash") != std::string::npos);
+    SPMV_REQUIRE(report_text.find("sigma_bits") != std::string::npos);
     SPMV_REQUIRE(report_text.find("generated_wisdom") != std::string::npos);
     SPMV_REQUIRE(report_text.find("dia_csr_remainder") != std::string::npos);
 

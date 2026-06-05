@@ -95,9 +95,22 @@ inline std::vector<candidate_result> run_design_space_search(
             auto last = execute_plan(problem, plan, alpha, &threaded_ctx);
             result.executed = true;
             result.rho = last.rho;
+            result.sigma = last.sigma;
+            result.alpha = last.alpha;
             result.rho_abs_delta = std::abs(last.rho - reference.rho);
             result.rho_rel_delta = reference.rho == 0.0 ? result.rho_abs_delta : result.rho_abs_delta / std::abs(reference.rho);
+            result.sigma_abs_delta = std::abs(last.sigma - reference.sigma);
+            result.alpha_abs_delta = std::abs(last.alpha - reference.alpha);
             result.x_next_max_abs_delta = max_abs_delta(last.x_next, reference.x_next);
+            const auto fingerprint = fingerprint_observation(last);
+            result.rho_bits = fingerprint.rho_bits;
+            result.sigma_bits = fingerprint.sigma_bits;
+            result.alpha_bits = fingerprint.alpha_bits;
+            result.residual_hash = fingerprint.residual_hash;
+            result.z_hash = fingerprint.z_hash;
+            result.q_hash = fingerprint.q_hash;
+            result.x_next_hash = fingerprint.x_next_hash;
+            result.observation_hash = fingerprint.observation_hash;
             result.execution_path = last.execution_path;
             result.conformance_passed = conforms_to_reference(last, reference, plan);
             result.strict_conforming = plan.contract == contract_level::strict_expression &&
@@ -141,6 +154,60 @@ inline const candidate_result* select_best_legal(const std::vector<candidate_res
         }
     }
     return best_strict;
+}
+
+inline std::vector<const candidate_result*> select_top_strict_conforming(
+    const std::vector<candidate_result>& results,
+    std::size_t count) {
+    std::vector<const candidate_result*> out;
+    for (const auto& r : results) {
+        if (r.strict_conforming) {
+            out.push_back(&r);
+        }
+    }
+    std::sort(out.begin(), out.end(), [](const candidate_result* a, const candidate_result* b) {
+        return a->median_ns < b->median_ns;
+    });
+    if (out.size() > count) {
+        out.resize(count);
+    }
+    return out;
+}
+
+inline std::string strict_plan_family_key_ignoring_simd(const plan_descriptor& p) {
+    std::ostringstream os;
+    os << to_string(p.storage) << '|'
+       << to_string(p.decomposition) << '|'
+       << to_string(p.ordering) << '|'
+       << to_string(p.colouring) << '|'
+       << to_string(p.preconditioner) << '|'
+       << to_string(p.threading) << '|'
+       << to_string(p.fusion) << '|'
+       << to_string(p.reduction) << '|'
+       << to_string(p.executor);
+    return os.str();
+}
+
+inline std::vector<const candidate_result*> select_top_distinct_strict_families(
+    const std::vector<candidate_result>& results,
+    std::size_t count) {
+    auto sorted = select_top_strict_conforming(results, results.size());
+    std::vector<const candidate_result*> out;
+    std::vector<std::string> seen_keys;
+
+    for (const auto* r : sorted) {
+        const auto key = strict_plan_family_key_ignoring_simd(r->plan);
+        if (std::find(seen_keys.begin(), seen_keys.end(), key) != seen_keys.end()) {
+            continue;
+        }
+        seen_keys.push_back(key);
+        out.push_back(r);
+        if (out.size() == count) {
+            break;
+        }
+    }
+
+    return out;
 }
 
 inline const candidate_result* select_fastest_executed(const std::vector<candidate_result>& results) {
@@ -187,14 +254,14 @@ inline void print_indented_block(std::ostream& os, std::string_view label, const
 
 inline std::string wisdom_symbol(fusion_kind fusion) {
     switch (fusion) {
-    case fusion_kind::r_z_p_u: return "r_z_p_u";
-    case fusion_kind::rz_p_u: return "rz_p_u";
-    case fusion_kind::r_zp_u: return "r_zp_u";
-    case fusion_kind::r_z_pu: return "r_z_pu";
-    case fusion_kind::rzp_u: return "rzp_u";
-    case fusion_kind::rz_pu: return "rz_pu";
-    case fusion_kind::r_zpu: return "r_zpu";
-    case fusion_kind::rzpu: return "rzpu";
+    case fusion_kind::r_z_p_u: return "r_z_rho__q_sigma__alpha_u";
+    case fusion_kind::rz_p_u: return "rz_rho__q_sigma__alpha_u";
+    case fusion_kind::r_zp_u: return "r_zrho__q_sigma__alpha_u";
+    case fusion_kind::r_z_pu: return "r_z_rho__q_sigma__alpha_u";
+    case fusion_kind::rzp_u: return "rzrho__q_sigma__alpha_u";
+    case fusion_kind::rz_pu: return "rz_rho__q_sigma__alpha_u";
+    case fusion_kind::r_zpu: return "r_zrho__q_sigma__alpha_u";
+    case fusion_kind::rzpu: return "rzrho__q_sigma__alpha_u";
     }
     return "unknown";
 }
@@ -228,7 +295,10 @@ inline void print_report(
     os << "  r    = b - A*x\n";
     os << "  z    = M^{-1}r\n";
     os << "  rho  = canonical_dot_row_major(r,z)\n";
-    os << "  x'   = x + alpha*z\n\n";
+    os << "  q    = A*z\n";
+    os << "  sigma= canonical_dot_row_major(z,q)\n";
+    os << "  alpha= step_scale * (rho / sigma)\n";
+    os << "  x'   = x + (alpha*z)\n\n";
 
     os << "Facts:\n";
     os << "  grid: " << problem.width << " x " << problem.height << "\n";
@@ -251,7 +321,7 @@ inline void print_report(
     os << "  structural gate: matrix facts must make the storage/evaluator legal\n";
     os << "  target gate: SIMD/threading must fit the declared hardware profile\n";
     os << "  numerical gate: strict contracts preserve preconditioner binding and observed reduction\n";
-    os << "  conformance gate: executed strict candidates must match the reference result bitwise\n\n";
+    os << "  conformance gate: executed strict candidates must match the reference result bitwise\n  environment gate: no reassociation and no implicit FMA contraction in reproducibility builds\n";
 
     const bool relaxed_candidates_executed = std::any_of(results.begin(), results.end(), [](const candidate_result& r) {
         return r.executed && !r.legality.legal() && r.relaxed_executable;
@@ -285,11 +355,60 @@ inline void print_report(
             os << "      median_ns: " << std::fixed << std::setprecision(1) << r.median_ns << "\n";
             os << "      mean_ns: " << std::fixed << std::setprecision(1) << r.mean_ns << "\n";
             os << "      rho: " << std::setprecision(17) << r.rho << "\n";
+            os << "      sigma: " << std::setprecision(17) << r.sigma << "\n";
+            os << "      alpha: " << std::setprecision(17) << r.alpha << "\n";
             os << "      rho_abs_delta: " << std::setprecision(17) << r.rho_abs_delta << "\n";
             os << "      rho_rel_delta: " << std::setprecision(17) << r.rho_rel_delta << "\n";
+            os << "      sigma_abs_delta: " << std::setprecision(17) << r.sigma_abs_delta << "\n";
+            os << "      alpha_abs_delta: " << std::setprecision(17) << r.alpha_abs_delta << "\n";
             os << "      x_next_max_abs_delta: " << std::setprecision(17) << r.x_next_max_abs_delta << "\n";
+            os << "      rho_bits: " << hex64(r.rho_bits) << "\n";
+            os << "      sigma_bits: " << hex64(r.sigma_bits) << "\n";
+            os << "      alpha_bits: " << hex64(r.alpha_bits) << "\n";
+            os << "      residual_hash: " << hex64(r.residual_hash) << "\n";
+            os << "      z_hash: " << hex64(r.z_hash) << "\n";
+            os << "      q_hash: " << hex64(r.q_hash) << "\n";
+            os << "      x_next_hash: " << hex64(r.x_next_hash) << "\n";
+            os << "      observation_hash: " << hex64(r.observation_hash) << "\n";
             os << "      executed_by: " << r.execution_path << "\n";
         }
+    }
+
+    const auto top_strict = select_top_strict_conforming(results, 4);
+    if (!top_strict.empty()) {
+        os << "\nTop strict-conforming plans by measured median time (top 4):\n";
+        os << "  rank  median_ns  rho_bits            sigma_bits          alpha_bits          x_next_hash        observation_hash   plan\n";
+        std::size_t rank = 1;
+        for (const auto* r : top_strict) {
+            os << "  " << rank++
+               << "     " << std::fixed << std::setprecision(1) << r->median_ns
+               << "  " << hex64(r->rho_bits)
+               << "  " << hex64(r->sigma_bits)
+               << "  " << hex64(r->alpha_bits)
+               << "  " << hex64(r->x_next_hash)
+               << "  " << hex64(r->observation_hash)
+               << "  " << r->plan.name << "\n";
+        }
+    }
+
+    const auto top_families = select_top_distinct_strict_families(results, 4);
+    if (!top_families.empty()) {
+        os << "\nTop distinct strict-conforming plan families by measured median time (top 4):\n";
+        os << "  rank  median_ns  storage  decomposition  threading  simd  fusion  observation_hash   plan\n";
+        std::size_t rank = 1;
+        for (const auto* r : top_families) {
+            os << "  " << rank++
+               << "     " << std::fixed << std::setprecision(1) << r->median_ns
+               << "  " << to_string(r->plan.storage)
+               << "  " << to_string(r->plan.decomposition)
+               << "  " << to_string(r->plan.threading)
+               << "  " << to_string(r->plan.simd)
+               << "  " << to_string(r->plan.fusion)
+               << "  " << hex64(r->observation_hash)
+               << "  " << r->plan.name << "\n";
+        }
+        os << "  note: family ranking ignores SIMD lane shape when deciding distinctness;"
+              " the displayed SIMD value is the fastest member of that family.\n";
     }
 
     if (const auto* best = select_best_legal(results)) {
@@ -297,6 +416,11 @@ inline void print_report(
         os << "  " << describe_plan(best->plan) << "\n";
         os << "  selected_by: lowest measured median_ns among strict-conforming candidates\n";
         os << "  median_ns: " << std::fixed << std::setprecision(1) << best->median_ns << "\n";
+        os << "  rho_bits: " << hex64(best->rho_bits) << "\n";
+        os << "  sigma_bits: " << hex64(best->sigma_bits) << "\n";
+        os << "  alpha_bits: " << hex64(best->alpha_bits) << "\n";
+        os << "  x_next_hash: " << hex64(best->x_next_hash) << "\n";
+        os << "  observation_hash: " << hex64(best->observation_hash) << "\n";
         os << "  uses_threads: " << (uses_parallel_threading(best->plan.threading) ? "yes" : "no") << "\n";
         os << "  generated_wisdom:\n";
         std::istringstream wisdom(emit_plan_wisdom(best->plan));
@@ -320,7 +444,14 @@ inline void print_report(
             os << "  " << describe_plan(non_strict->plan) << "\n";
             os << "  median_ns: " << std::fixed << std::setprecision(1) << non_strict->median_ns << "\n";
             os << "  rho_abs_delta: " << std::setprecision(17) << non_strict->rho_abs_delta << "\n";
+            os << "  sigma_abs_delta: " << std::setprecision(17) << non_strict->sigma_abs_delta << "\n";
+            os << "  alpha_abs_delta: " << std::setprecision(17) << non_strict->alpha_abs_delta << "\n";
             os << "  x_next_max_abs_delta: " << std::setprecision(17) << non_strict->x_next_max_abs_delta << "\n";
+            os << "  rho_bits: " << hex64(non_strict->rho_bits) << "\n";
+            os << "  sigma_bits: " << hex64(non_strict->sigma_bits) << "\n";
+            os << "  alpha_bits: " << hex64(non_strict->alpha_bits) << "\n";
+            os << "  x_next_hash: " << hex64(non_strict->x_next_hash) << "\n";
+            os << "  observation_hash: " << hex64(non_strict->observation_hash) << "\n";
         }
     }
 }

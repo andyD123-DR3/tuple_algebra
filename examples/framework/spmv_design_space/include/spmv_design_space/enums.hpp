@@ -61,14 +61,19 @@ enum class reduction_kind {
 };
 
 enum class fusion_kind {
-    r_z_p_u,   // [R] [Z] [P] [U]
-    rz_p_u,    // [R Z] [P] [U]
-    r_zp_u,    // [R] [Z P] [U]
-    r_z_pu,    // [R] [Z] [P U]
-    rzp_u,     // [R Z P] [U]
-    rz_pu,     // [R Z] [P U]
-    r_zpu,     // [R] [Z P U]
-    rzpu       // [R Z P U]
+    // These names preserve the original R/Z/P/U grammar used by the first
+    // demonstrator.  In the rho/sigma solver step, U is separated by the
+    // alpha = step_scale * (rho / sigma) reduction barrier.  The effective
+    // report labels therefore show only legal local fusion around R, Z and
+    // rho, followed by [(Q,sigma)][alpha][U].
+    r_z_p_u,
+    rz_p_u,
+    r_zp_u,
+    r_z_pu,
+    rzp_u,
+    rz_pu,
+    r_zpu,
+    rzpu
 };
 
 enum class executor_kind {
@@ -169,14 +174,14 @@ constexpr std::string_view to_string(reduction_kind v) noexcept {
 
 constexpr std::string_view to_string(fusion_kind v) noexcept {
     switch (v) {
-    case fusion_kind::r_z_p_u: return "[R][Z][P][U]";
-    case fusion_kind::rz_p_u: return "[RZ][P][U]";
-    case fusion_kind::r_zp_u: return "[R][ZP][U]";
-    case fusion_kind::r_z_pu: return "[R][Z][PU]";
-    case fusion_kind::rzp_u: return "[RZP][U]";
-    case fusion_kind::rz_pu: return "[RZ][PU]";
-    case fusion_kind::r_zpu: return "[R][ZPU]";
-    case fusion_kind::rzpu: return "[RZPU]";
+    case fusion_kind::r_z_p_u: return "[R][Z][rho][(Q,sigma)][alpha][U]";
+    case fusion_kind::rz_p_u: return "[(R,Z)][rho][(Q,sigma)][alpha][U]";
+    case fusion_kind::r_zp_u: return "[R][(Z,rho)][(Q,sigma)][alpha][U]";
+    case fusion_kind::r_z_pu: return "[R][Z][rho][(Q,sigma)][alpha][U]";
+    case fusion_kind::rzp_u: return "[(R,Z,rho)][(Q,sigma)][alpha][U]";
+    case fusion_kind::rz_pu: return "[(R,Z)][rho][(Q,sigma)][alpha][U]";
+    case fusion_kind::r_zpu: return "[R][(Z,rho)][(Q,sigma)][alpha][U]";
+    case fusion_kind::rzpu: return "[(R,Z,rho)][(Q,sigma)][alpha][U]";
     }
     return "unknown";
 }

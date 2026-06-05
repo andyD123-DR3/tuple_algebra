@@ -6,7 +6,11 @@
 #include <algorithm>
 #include <cmath>
 #include <cstddef>
+#include <cstdint>
+#include <cstring>
+#include <iomanip>
 #include <numeric>
+#include <sstream>
 #include <stdexcept>
 #include <string>
 #include <thread>
@@ -17,13 +21,81 @@ namespace ctdp::spmv_dsl {
 struct execution_result {
     std::vector<double> residual;
     std::vector<double> z;
+    std::vector<double> q;
     std::vector<double> x_next;
     std::vector<std::size_t> visited_rows;
     std::string execution_path;
     std::size_t worker_count = 1;
     std::size_t simd_lanes = 1;
     double rho = 0.0;
+    double sigma = 0.0;
+    double alpha = 0.0;
 };
+
+struct observation_fingerprint {
+    std::uint64_t rho_bits = 0;
+    std::uint64_t sigma_bits = 0;
+    std::uint64_t alpha_bits = 0;
+    std::uint64_t residual_hash = 0;
+    std::uint64_t z_hash = 0;
+    std::uint64_t q_hash = 0;
+    std::uint64_t x_next_hash = 0;
+    std::uint64_t observation_hash = 0;
+};
+
+inline std::uint64_t double_bits(double x) noexcept {
+    std::uint64_t out = 0;
+    static_assert(sizeof(out) == sizeof(x));
+    std::memcpy(&out, &x, sizeof(out));
+    return out;
+}
+
+inline std::uint64_t fnv1a_mix(std::uint64_t h, std::uint64_t x) noexcept {
+    constexpr std::uint64_t prime = 1099511628211ull;
+    for (int i = 0; i < 8; ++i) {
+        const auto byte = static_cast<unsigned char>((x >> (8 * i)) & 0xffu);
+        h ^= byte;
+        h *= prime;
+    }
+    return h;
+}
+
+inline std::uint64_t hash_double_vector(const std::vector<double>& xs) noexcept {
+    std::uint64_t h = 1469598103934665603ull;
+    h = fnv1a_mix(h, static_cast<std::uint64_t>(xs.size()));
+    for (const auto x : xs) {
+        h = fnv1a_mix(h, double_bits(x));
+    }
+    return h;
+}
+
+inline observation_fingerprint fingerprint_observation(const execution_result& r) noexcept {
+    observation_fingerprint f;
+    f.rho_bits = double_bits(r.rho);
+    f.sigma_bits = double_bits(r.sigma);
+    f.alpha_bits = double_bits(r.alpha);
+    f.residual_hash = hash_double_vector(r.residual);
+    f.z_hash = hash_double_vector(r.z);
+    f.q_hash = hash_double_vector(r.q);
+    f.x_next_hash = hash_double_vector(r.x_next);
+
+    std::uint64_t h = 1469598103934665603ull;
+    h = fnv1a_mix(h, f.rho_bits);
+    h = fnv1a_mix(h, f.sigma_bits);
+    h = fnv1a_mix(h, f.alpha_bits);
+    h = fnv1a_mix(h, f.residual_hash);
+    h = fnv1a_mix(h, f.z_hash);
+    h = fnv1a_mix(h, f.q_hash);
+    h = fnv1a_mix(h, f.x_next_hash);
+    f.observation_hash = h;
+    return f;
+}
+
+inline std::string hex64(std::uint64_t x) {
+    std::ostringstream os;
+    os << "0x" << std::hex << std::setfill('0') << std::setw(16) << x;
+    return os.str();
+}
 
 inline std::size_t lanes_for(simd_kind simd) noexcept {
     switch (simd) {
@@ -291,21 +363,28 @@ inline void apply_preconditioner(
     }
 }
 
-inline double apply_operator_at(const stencil_problem& problem, const plan_descriptor& plan, std::size_t row) {
+inline double apply_operator_at(const stencil_problem& problem,
+                                const plan_descriptor& plan,
+                                const std::vector<double>& x,
+                                std::size_t row) {
     if (plan.executor == executor_kind::reference ||
         plan.executor == executor_kind::csr_executor) {
-        return apply_csr_at(problem.csr, problem.x, row);
+        return apply_csr_at(problem.csr, x, row);
     }
     if (plan.executor == executor_kind::dia_executor) {
-        return apply_dia_at(problem, row);
+        return apply_dia_at(problem, x, row);
     }
     if (plan.executor == executor_kind::hybrid_dia_csr_executor) {
-        return apply_hybrid_dia_csr_at(problem, row);
+        return apply_hybrid_dia_csr_at(problem, x, row);
     }
     if (plan.executor == executor_kind::matrix_free_executor) {
-        return apply_five_point_at(problem, row);
+        return apply_five_point_at(problem, x, row);
     }
     throw std::invalid_argument("unknown executor");
+}
+
+inline double apply_operator_at(const stencil_problem& problem, const plan_descriptor& plan, std::size_t row) {
+    return apply_operator_at(problem, plan, problem.x, row);
 }
 
 template<std::size_t W>
@@ -383,6 +462,51 @@ inline void compute_residual(
 }
 
 template<std::size_t W>
+inline void compute_operator_image_range(
+    const stencil_problem& problem,
+    const plan_descriptor& plan,
+    const std::vector<double>& x,
+    std::vector<double>& y,
+    std::size_t first,
+    std::size_t last) {
+    std::size_t i = first;
+    for (; i + W <= last; i += W) {
+        for (std::size_t lane = 0; lane < W; ++lane) {
+            y[i + lane] = apply_operator_at(problem, plan, x, i + lane);
+        }
+    }
+    for (; i < last; ++i) {
+        y[i] = apply_operator_at(problem, plan, x, i);
+    }
+}
+
+inline void compute_operator_image(
+    const stencil_problem& problem,
+    const plan_descriptor& plan,
+    const std::vector<double>& x,
+    std::vector<double>& y,
+    std::size_t lanes,
+    execution_context* ctx) {
+    y.resize(problem.size());
+    const auto body = [&](std::size_t first, std::size_t last) {
+        if (lanes >= 8) {
+            compute_operator_image_range<8>(problem, plan, x, y, first, last);
+        } else if (lanes >= 4) {
+            compute_operator_image_range<4>(problem, plan, x, y, first, last);
+        } else {
+            compute_operator_image_range<1>(problem, plan, x, y, first, last);
+        }
+    };
+
+    if (ctx != nullptr && ctx->pool != nullptr && uses_parallel_threading(plan.threading)) {
+        const auto tasks = make_row_tasks(problem.size(), ctx->task_grain);
+        ctx->pool->run(tasks, body);
+    } else {
+        body(0, problem.size());
+    }
+}
+
+template<std::size_t W>
 inline void update_x_range(
     const stencil_problem& problem,
     const std::vector<double>& z,
@@ -399,11 +523,13 @@ inline void update_x_range(
             zz[lane] = z[i + lane];
         }
         for (std::size_t lane = 0; lane < W; ++lane) {
-            x_next[i + lane] = xx[lane] + alpha * zz[lane];
+            const auto scaled_step = alpha * zz[lane];
+            x_next[i + lane] = xx[lane] + scaled_step;
         }
     }
     for (; i < last; ++i) {
-        x_next[i] = problem.x[i] + alpha * z[i];
+        const auto scaled_step = alpha * z[i];
+        x_next[i] = problem.x[i] + scaled_step;
     }
 }
 
@@ -468,7 +594,8 @@ inline void compute_fused_range(
             residual[row] = rr[lane];
             z[row] = zz[lane];
             products[row] = rr[lane] * zz[lane];
-            x_next[row] = xx[lane] + alpha * zz[lane];
+            const auto scaled_step = alpha * zz[lane];
+            x_next[row] = xx[lane] + scaled_step;
         }
     }
     for (; k < last; ++k) {
@@ -478,7 +605,8 @@ inline void compute_fused_range(
         residual[row] = ri;
         z[row] = zi;
         products[row] = ri * zi;
-        x_next[row] = problem.x[row] + alpha * zi;
+        const auto scaled_step = alpha * zi;
+        x_next[row] = problem.x[row] + scaled_step;
     }
 }
 
@@ -568,13 +696,18 @@ inline bool fusion_cut_after(fusion_kind fusion, int stage) noexcept {
 inline std::vector<fusion_group_descriptor> fusion_groups(fusion_kind fusion) {
     std::vector<fusion_group_descriptor> groups;
     int first = 0;
-    for (int stage = 0; stage < 3; ++stage) {
+    // The solver update uses alpha = step_scale * (rho / sigma).  That scalar
+    // is not available until after the observed dot products have been reduced,
+    // so U is always separated by a hard alpha barrier.  The current legacy
+    // fusion enum therefore only controls materialisation barriers around R,
+    // Z, and rho; every effective plan then performs [(Q,sigma)][alpha][U].
+    for (int stage = 0; stage < 2; ++stage) {
         if (fusion_cut_after(fusion, stage)) {
             groups.push_back({first, stage});
             first = stage + 1;
         }
     }
-    groups.push_back({first, 3});
+    groups.push_back({first, 2});
     return groups;
 }
 
@@ -641,7 +774,8 @@ inline void compute_fusion_group_range(
                 products[row] = rr[lane] * zz[lane];
             }
             if (do_update) {
-                x_next[row] = xx[lane] + alpha * zz[lane];
+                const auto scaled_step = alpha * zz[lane];
+                x_next[row] = xx[lane] + scaled_step;
             }
         }
     }
@@ -662,7 +796,8 @@ inline void compute_fusion_group_range(
             products[row] = ri * zi;
         }
         if (do_update) {
-            x_next[row] = problem.x[row] + alpha * zi;
+            const auto scaled_step = alpha * zi;
+            x_next[row] = problem.x[row] + scaled_step;
         }
     }
 }
@@ -756,7 +891,7 @@ inline double rho_from_products_or_witness(const plan_descriptor& plan,
 
 inline execution_result execute_plan(const stencil_problem& problem,
                                      const plan_descriptor& plan,
-                                     double alpha,
+                                     double step_scale,
                                      execution_context* ctx = nullptr) {
     execution_result r;
     r.residual.resize(problem.size());
@@ -768,8 +903,12 @@ inline execution_result execute_plan(const stencil_problem& problem,
     r.execution_path = execution_path_for(plan, r.worker_count, r.simd_lanes);
 
     std::vector<double> products;
-    compute_fusion_partition(problem, plan, r.visited_rows, r.residual, r.z, r.x_next, products, alpha, r.simd_lanes, ctx);
+    compute_fusion_partition(problem, plan, r.visited_rows, r.residual, r.z, r.x_next, products, step_scale, r.simd_lanes, ctx);
     r.rho = rho_from_products_or_witness(plan, r.residual, r.z, products);
+    compute_operator_image(problem, plan, r.z, r.q, r.simd_lanes, ctx);
+    r.sigma = dot_for_plan(plan, r.z, r.q, r.simd_lanes);
+    r.alpha = (r.sigma == 0.0) ? 0.0 : step_scale * (r.rho / r.sigma);
+    update_x(problem, plan, r.z, r.x_next, r.alpha, r.simd_lanes, ctx);
 
     return r;
 }
@@ -812,8 +951,11 @@ inline bool conforms_to_reference(
         return true;
     }
     return candidate.rho == reference.rho &&
+           candidate.sigma == reference.sigma &&
+           candidate.alpha == reference.alpha &&
            same_vector(candidate.residual, reference.residual) &&
            same_vector(candidate.z, reference.z) &&
+           same_vector(candidate.q, reference.q) &&
            same_vector(candidate.x_next, reference.x_next);
 }
 

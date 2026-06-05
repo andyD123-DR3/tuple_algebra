@@ -26,6 +26,13 @@
 #include <string>
 #include <array>
 
+#if defined(__x86_64__) || defined(__i386__) || \
+    defined(_M_X64) || defined(_M_AMD64) || defined(_M_IX86)
+#define CTDP_BENCH_X86 1
+#else
+#define CTDP_BENCH_X86 0
+#endif
+
 #if defined(_WIN32)
 #ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
@@ -34,8 +41,8 @@
 #define NOMINMAX
 #endif
 #include <windows.h>
-#if defined(_MSC_VER) && !defined(__MINGW32__) && !defined(__MINGW64__)
-#include <intrin.h>   // __rdtsc (MSVC only; MinGW uses x86intrin.h below)
+#if CTDP_BENCH_X86 && defined(_MSC_VER) && !defined(__MINGW32__) && !defined(__MINGW64__)
+#include <intrin.h>   // __rdtsc (MSVC x86/x64 only; MinGW uses x86intrin.h below)
 #endif
 #endif
 
@@ -47,8 +54,8 @@
 #include <time.h>
 #endif
 
-#if defined(__x86_64__) || defined(__MINGW32__) || defined(__MINGW64__)
-#include <x86intrin.h>  // __rdtsc, __rdtscp for GCC/Clang/MinGW
+#if CTDP_BENCH_X86 && !defined(_MSC_VER)
+#include <x86intrin.h>  // __rdtsc, __rdtscp for GCC/Clang/MinGW x86/x64
 #endif
 
 namespace ctdp::bench {
@@ -127,11 +134,13 @@ struct counter_snapshot {
 
 /// Read Time Stamp Counter -- serialising variant
 [[nodiscard]] inline std::uint64_t rdtsc_start() noexcept {
-#ifdef __x86_64__
+#if CTDP_BENCH_X86
+  #if defined(_MSC_VER) && !defined(__MINGW32__) && !defined(__MINGW64__)
+    return __rdtsc();
+  #else
     unsigned int aux;
     return __rdtscp(&aux);
-#elif defined(_M_X64) || defined(_M_AMD64)
-    return __rdtsc();
+  #endif
 #else
     return 0;
 #endif
@@ -139,11 +148,13 @@ struct counter_snapshot {
 
 /// Read Time Stamp Counter -- post-measurement (no serialisation needed)
 [[nodiscard]] inline std::uint64_t rdtsc_end() noexcept {
-#ifdef __x86_64__
+#if CTDP_BENCH_X86
+  #if defined(_MSC_VER) && !defined(__MINGW32__) && !defined(__MINGW64__)
+    return __rdtsc();
+  #else
     unsigned int aux;
     return __rdtscp(&aux);
-#elif defined(_M_X64) || defined(_M_AMD64)
-    return __rdtsc();
+  #endif
 #else
     return 0;
 #endif

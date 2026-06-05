@@ -6,6 +6,7 @@
 
 #include <sstream>
 #include <string>
+#include <cstdint>
 #include <vector>
 
 namespace ctdp::spmv_dsl {
@@ -36,9 +37,21 @@ struct candidate_result {
     double median_ns = 0.0;
     double mean_ns = 0.0;
     double rho = 0.0;
+    double sigma = 0.0;
+    double alpha = 0.0;
     double rho_abs_delta = 0.0;
     double rho_rel_delta = 0.0;
+    double sigma_abs_delta = 0.0;
+    double alpha_abs_delta = 0.0;
     double x_next_max_abs_delta = 0.0;
+    std::uint64_t rho_bits = 0;
+    std::uint64_t sigma_bits = 0;
+    std::uint64_t alpha_bits = 0;
+    std::uint64_t residual_hash = 0;
+    std::uint64_t z_hash = 0;
+    std::uint64_t q_hash = 0;
+    std::uint64_t x_next_hash = 0;
+    std::uint64_t observation_hash = 0;
     std::string execution_path;
     std::string plan_tree;
     std::string recursive_search_tree;
@@ -169,14 +182,14 @@ inline std::string simd_suffix(simd_kind simd) {
 
 inline std::string fusion_suffix(fusion_kind fusion) {
     switch (fusion) {
-    case fusion_kind::r_z_p_u: return "R_Z_P_U";
-    case fusion_kind::rz_p_u: return "RZ_P_U";
-    case fusion_kind::r_zp_u: return "R_ZP_U";
-    case fusion_kind::r_z_pu: return "R_Z_PU";
-    case fusion_kind::rzp_u: return "RZP_U";
-    case fusion_kind::rz_pu: return "RZ_PU";
-    case fusion_kind::r_zpu: return "R_ZPU";
-    case fusion_kind::rzpu: return "RZPU";
+    case fusion_kind::r_z_p_u: return "R_Z_rho_(Q,sigma)_alpha_U";
+    case fusion_kind::rz_p_u: return "(R,Z)_rho_(Q,sigma)_alpha_U";
+    case fusion_kind::r_zp_u: return "R_(Z,rho)_(Q,sigma)_alpha_U";
+    case fusion_kind::r_z_pu: return "R_Z_rho_(Q,sigma)_alpha_U";
+    case fusion_kind::rzp_u: return "(R,Z,rho)_(Q,sigma)_alpha_U";
+    case fusion_kind::rz_pu: return "(R,Z)_rho_(Q,sigma)_alpha_U";
+    case fusion_kind::r_zpu: return "R_(Z,rho)_(Q,sigma)_alpha_U";
+    case fusion_kind::rzpu: return "(R,Z,rho)_(Q,sigma)_alpha_U";
     }
     return "fusion?";
 }
@@ -192,11 +205,7 @@ inline void add_width_and_fusion_candidates(std::vector<plan_descriptor>& out,
         fusion_kind::r_z_p_u,
         fusion_kind::rz_p_u,
         fusion_kind::r_zp_u,
-        fusion_kind::r_z_pu,
-        fusion_kind::rzp_u,
-        fusion_kind::rz_pu,
-        fusion_kind::r_zpu,
-        fusion_kind::rzpu
+        fusion_kind::rzp_u
     };
     for (const auto width : widths) {
         for (const auto fusion : fusions) {
@@ -241,7 +250,7 @@ inline std::vector<plan_descriptor> generate_candidate_plans(const sparse_facts&
         }
 
         out.push_back({
-            .name = "strict/matrix-free/recursive/block4/unfused/jacobi/canonical",
+            .name = "strict/matrix-free/recursive/block4/[R][Z][rho][(Q,sigma)][alpha][U]/jacobi/canonical",
             .storage = storage_kind::matrix_free_stencil,
             .decomposition = decomposition_kind::recursive_grid_bisection,
             .ordering = ordering_kind::natural,
@@ -253,7 +262,7 @@ inline std::vector<plan_descriptor> generate_candidate_plans(const sparse_facts&
         });
 
         out.push_back({
-            .name = "strict/matrix-free/recursive/block8/fused/jacobi/canonical",
+            .name = "strict/matrix-free/recursive/block8/[(R,Z,rho)][(Q,sigma)][alpha][U]/jacobi/canonical",
             .storage = storage_kind::matrix_free_stencil,
             .decomposition = decomposition_kind::recursive_grid_bisection,
             .ordering = ordering_kind::natural,
@@ -265,7 +274,7 @@ inline std::vector<plan_descriptor> generate_candidate_plans(const sparse_facts&
         });
 
         out.push_back({
-            .name = "strict/matrix-free/red-black/block8/fused/jacobi/canonical",
+            .name = "strict/matrix-free/red-black/block8/[(R,Z,rho)][(Q,sigma)][alpha][U]/jacobi/canonical",
             .storage = storage_kind::matrix_free_stencil,
             .decomposition = decomposition_kind::blocked_rows,
             .colouring = colouring_kind::red_black_stencil,
@@ -297,7 +306,7 @@ inline std::vector<plan_descriptor> generate_candidate_plans(const sparse_facts&
     });
 
     out.push_back({
-        .name = "illegal/fused-RZPU-thread-local-unordered-rho-merge",
+        .name = "illegal/[(R,Z,rho)][(Q,sigma)][alpha][U]-thread-local-unordered-rho-merge",
         .storage = storage_kind::csr,
         .decomposition = decomposition_kind::blocked_rows,
         .preconditioner = preconditioner_kind::fixed_diagonal_jacobi,

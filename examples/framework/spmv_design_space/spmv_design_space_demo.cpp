@@ -146,6 +146,11 @@ int run_sweep(demo_options options) {
                   << " selected='" << best->plan.name << "'"
                   << " median_ns=" << best->median_ns
                   << " mean_ns=" << best->mean_ns
+                  << " rho_bits=" << hex64(best->rho_bits)
+                  << " sigma_bits=" << hex64(best->sigma_bits)
+                  << " alpha_bits=" << hex64(best->alpha_bits)
+                  << " x_next_hash=" << hex64(best->x_next_hash)
+                  << " observation_hash=" << hex64(best->observation_hash)
                   << " uses_threads=" << (uses_parallel_threading(best->plan.threading) ? "yes" : "no")
                   << "\n";
     }
