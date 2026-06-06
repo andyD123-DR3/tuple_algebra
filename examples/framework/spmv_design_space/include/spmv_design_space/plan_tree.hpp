@@ -92,7 +92,7 @@ namespace tag {
 
 struct strict_expression_contract { static constexpr const char* name = "contract::strict_expression"; };
 struct residual_jacobi_dot_update { static constexpr const char* name = "expression::residual_jacobi_dot_update"; };
-struct strict_ieee_no_implicit_fma { static constexpr const char* name = "environment::strict_ieee_no_implicit_fma"; };
+struct strict_ieee_no_reassociation_no_implicit_fma { static constexpr const char* name = "environment::strict_ieee_no_reassociation_no_implicit_fma"; };
 struct matrix_free_stencil { static constexpr const char* name = "storage::matrix_free_stencil"; };
 struct fixed_row_order { static constexpr const char* name = "ordering::fixed_row_order"; };
 struct fixed_nonzero_order { static constexpr const char* name = "ordering::fixed_nonzero_order"; };
@@ -230,7 +230,7 @@ decltype(auto) get_leaf(const sequence<Children...>& selected) {
 using spmv_plan_tree = sequence<
     leaf<role::contract, contract_level>,
     leaf<tag::residual_jacobi_dot_update>,
-    leaf<tag::strict_ieee_no_implicit_fma>,
+    leaf<tag::strict_ieee_no_reassociation_no_implicit_fma>,
     leaf<role::storage, storage_kind>,
     leaf<role::decomposition, decomposition_kind>,
     leaf<role::ordering, ordering_kind>,
@@ -250,7 +250,7 @@ inline spmv_plan_tree as_plan_tree(const plan_descriptor& p) {
     return {{
         leaf<role::contract, contract_level>{p.contract},
         leaf<tag::residual_jacobi_dot_update>{},
-        leaf<tag::strict_ieee_no_implicit_fma>{},
+        leaf<tag::strict_ieee_no_reassociation_no_implicit_fma>{},
         leaf<role::storage, storage_kind>{p.storage},
         leaf<role::decomposition, decomposition_kind>{p.decomposition},
         leaf<role::ordering, ordering_kind>{p.ordering},
@@ -270,7 +270,7 @@ inline spmv_plan_tree as_plan_tree(const plan_descriptor& p) {
 using matrix_free_recursive_candidate = seq<
     leaf<tag::strict_expression_contract>,
     leaf<tag::residual_jacobi_dot_update>,
-    leaf<tag::strict_ieee_no_implicit_fma>,
+    leaf<tag::strict_ieee_no_reassociation_no_implicit_fma>,
     leaf<tag::matrix_free_stencil>,
     leaf<tag::fixed_row_order>,
     leaf<tag::fixed_nonzero_order>,

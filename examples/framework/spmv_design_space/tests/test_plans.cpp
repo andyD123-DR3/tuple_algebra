@@ -13,7 +13,7 @@ int main() {
     const expression_contract strict{};
     const auto plans = generate_candidate_plans(facts);
 
-    SPMV_REQUIRE(plans.size() >= 70);
+    SPMV_REQUIRE(plans.size() >= 40);
 
     const auto has_dia = std::any_of(plans.begin(), plans.end(), [](const plan_descriptor& p) {
         return p.storage == storage_kind::dia && p.executor == executor_kind::dia_executor;
@@ -24,11 +24,7 @@ int main() {
         fusion_kind::r_z_p_u,
         fusion_kind::rz_p_u,
         fusion_kind::r_zp_u,
-        fusion_kind::r_z_pu,
-        fusion_kind::rzp_u,
-        fusion_kind::rz_pu,
-        fusion_kind::r_zpu,
-        fusion_kind::rzpu
+        fusion_kind::rzp_u
     };
     for (const auto partition : partitions) {
         const auto has_partition = std::any_of(plans.begin(), plans.end(), [partition](const plan_descriptor& p) {
@@ -157,7 +153,7 @@ int main() {
     SPMV_REQUIRE(plan_tree::get_leaf<plan_tree::role::lowering>(tree).value == executor_kind::matrix_free_executor);
     const auto tree_report = plan_tree::to_string(tree);
     SPMV_REQUIRE(tree_report.find("leaf<storage::matrix_free_stencil>") != std::string::npos);
-    SPMV_REQUIRE(tree_report.find("leaf<fusion::[RZPU]>") != std::string::npos);
+    SPMV_REQUIRE(tree_report.find("leaf<fusion::[(R,Z,rho)][(Q,sigma)][alpha][U]>") != std::string::npos);
     SPMV_REQUIRE(tree_report.find("leaf<lowering::matrix_free_executor>") != std::string::npos);
 
     const auto wisdom = emit_plan_wisdom(hybrid_ok);

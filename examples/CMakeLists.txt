@@ -1,3 +1,56 @@
+
+# -- Architecture helpers -----------------------------------------------------
+# Apple Silicon and other non-x86 targets must not receive x86-only flags such
+# as -mavx2/-mfma or /arch:AVX2.  Keep the examples buildable on ARM, while
+# still enabling native/x86 tuning on Intel/AMD hosts.
+set(CTDP_TARGET_X86 FALSE)
+if(CMAKE_SYSTEM_PROCESSOR MATCHES "^(x86_64|amd64|AMD64|i[3-6]86)$")
+    set(CTDP_TARGET_X86 TRUE)
+endif()
+
+function(ctdp_add_native_optimisation target opt_level)
+    if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+        if(CTDP_TARGET_X86)
+            target_compile_options(${target} PRIVATE ${opt_level} -march=native)
+        else()
+            target_compile_options(${target} PRIVATE ${opt_level})
+        endif()
+    elseif(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+        if(CTDP_TARGET_X86)
+            target_compile_options(${target} PRIVATE ${opt_level} -march=native)
+        else()
+            target_compile_options(${target} PRIVATE ${opt_level})
+        endif()
+    elseif(CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
+        # AppleClang on Apple Silicon does not accept x86 -march/-mavx flags.
+        # Leave architecture selection to the compiler unless the user supplies
+        # explicit CMAKE_CXX_FLAGS externally.
+        target_compile_options(${target} PRIVATE ${opt_level})
+    elseif(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
+        target_compile_options(${target} PRIVATE /O2)
+    endif()
+endfunction()
+
+function(ctdp_add_x86_avx2_fma_options target)
+    if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR
+       CMAKE_CXX_COMPILER_ID STREQUAL "Clang" OR
+       CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
+        if(CTDP_TARGET_X86)
+            target_compile_options(${target} PRIVATE -O2 -mavx2 -mfma
+                -Wno-conversion -Wno-sign-conversion)
+        else()
+            target_compile_options(${target} PRIVATE -O2
+                -Wno-conversion -Wno-sign-conversion)
+        endif()
+    elseif(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
+        if(CTDP_TARGET_X86)
+            target_compile_options(${target} PRIVATE /O2 /arch:AVX2)
+        else()
+            target_compile_options(${target} PRIVATE /O2)
+        endif()
+    endif()
+endfunction()
+
 # -- FIX Cache-Line Layout -----------------------------------------------------
 # Demonstrates consteval subset-DP for cache-line layout optimisation
 # of a FIX protocol session struct (13 fields, 6 hot).
@@ -50,53 +103,30 @@ target_link_libraries(per_element_demo PRIVATE ctdp_all)
 
 # Enable optimisations for benchmarks regardless of global build type
 if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-    target_compile_options(fix_cacheline PRIVATE -O3 -march=native
-        -fconstexpr-ops-limit=300000000)
-    target_compile_options(fix_p99_calibration PRIVATE -O2 -march=native)
-    target_compile_options(fix_p99_svr_search PRIVATE -O2 -march=native)
-    target_compile_options(fix_p99_beam_search PRIVATE -O2 -march=native)
-    target_compile_options(spmv_benchmark PRIVATE -O3 -march=native)
-    target_compile_options(variadic_reduce PRIVATE -O3 -march=native)
-    target_compile_options(matrix_chain_demo PRIVATE -O3 -march=native)
-    target_compile_options(matrix_chain_et PRIVATE -O2)
-    target_compile_options(per_element_demo PRIVATE -O3 -march=native)
+    target_compile_options(fix_cacheline PRIVATE -fconstexpr-ops-limit=300000000)
 elseif(CMAKE_CXX_COMPILER_ID STREQUAL "Clang" OR
        CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
-    target_compile_options(fix_cacheline PRIVATE -O3 -march=native
-        -fconstexpr-steps=300000000)
-    target_compile_options(fix_p99_calibration PRIVATE -O2 -march=native)
-    target_compile_options(fix_p99_svr_search PRIVATE -O2 -march=native)
-    target_compile_options(fix_p99_beam_search PRIVATE -O2 -march=native)
-    target_compile_options(spmv_benchmark PRIVATE -O3 -march=native)
-    target_compile_options(variadic_reduce PRIVATE -O3 -march=native)
-    target_compile_options(matrix_chain_demo PRIVATE -O3 -march=native)
-    target_compile_options(matrix_chain_et PRIVATE -O2)
-    target_compile_options(per_element_demo PRIVATE -O3 -march=native)
+    target_compile_options(fix_cacheline PRIVATE -fconstexpr-steps=300000000)
 elseif(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
-    target_compile_options(fix_cacheline PRIVATE /O2 /constexpr:steps300000000)
-    target_compile_options(fix_p99_calibration PRIVATE /O2)
-    target_compile_options(fix_p99_svr_search PRIVATE /O2)
-    target_compile_options(fix_p99_beam_search PRIVATE /O2)
-    target_compile_options(spmv_benchmark PRIVATE /O2)
-    target_compile_options(variadic_reduce PRIVATE /O2)
-    target_compile_options(matrix_chain_demo PRIVATE /O2)
-    target_compile_options(matrix_chain_et PRIVATE /O2)
-    target_compile_options(per_element_demo PRIVATE /O2)
+    target_compile_options(fix_cacheline PRIVATE /constexpr:steps300000000)
 endif()
+
+ctdp_add_native_optimisation(fix_cacheline -O3)
+ctdp_add_native_optimisation(fix_p99_calibration -O2)
+ctdp_add_native_optimisation(fix_p99_svr_search -O2)
+ctdp_add_native_optimisation(fix_p99_beam_search -O2)
+ctdp_add_native_optimisation(spmv_benchmark -O3)
+ctdp_add_native_optimisation(variadic_reduce -O3)
+ctdp_add_native_optimisation(matrix_chain_demo -O3)
+ctdp_add_native_optimisation(matrix_chain_et -O2)
+ctdp_add_native_optimisation(per_element_demo -O3)
 
 # -- GEMM Tile Optimisation ----------------------------------------------------
 # Demonstrates ML cost model calibration: preprocess -> train -> search.
 add_executable(gemm_tile_optimisation gemm_tile_optimisation.cpp)
 target_link_libraries(gemm_tile_optimisation PRIVATE ctdp_all)
 
-if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-    target_compile_options(gemm_tile_optimisation PRIVATE -O3 -march=native)
-elseif(CMAKE_CXX_COMPILER_ID STREQUAL "Clang" OR
-       CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
-    target_compile_options(gemm_tile_optimisation PRIVATE -O3 -march=native)
-elseif(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
-    target_compile_options(gemm_tile_optimisation PRIVATE /O2)
-endif()
+ctdp_add_native_optimisation(gemm_tile_optimisation -O3)
 
 # ==============================================================================
 # v0.7.2: Standalone + Framework examples
@@ -122,14 +152,13 @@ add_executable(permutation_order_search framework/permutation_order_search.cpp)
 target_link_libraries(permutation_order_search PRIVATE ctdp_space)
 
 # -- Compiler options for v0.7.2 examples --------------------------------------
+ctdp_add_x86_avx2_fma_options(loop_nest_opt)
+ctdp_add_x86_avx2_fma_options(dep_break_opt)
+ctdp_add_native_optimisation(fix_parser_initial -O3)
+
 if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-    target_compile_options(loop_nest_opt PRIVATE -O2 -mavx2 -mfma
-        -Wno-conversion -Wno-sign-conversion)
-    target_compile_options(dep_break_opt PRIVATE -O2 -mavx2 -mfma
-        -Wno-conversion -Wno-sign-conversion)
     target_compile_options(cache_size_opt PRIVATE -O2
         -Wno-conversion -Wno-sign-conversion)
-    target_compile_options(fix_parser_initial PRIVATE -O3 -march=native)
     target_compile_options(cache_line_layout PRIVATE -O2
         -fconstexpr-ops-limit=500000000
         -Wno-conversion -Wno-sign-conversion)
@@ -137,23 +166,15 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
         -Wno-conversion -Wno-sign-conversion)
 elseif(CMAKE_CXX_COMPILER_ID STREQUAL "Clang" OR
        CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
-    target_compile_options(loop_nest_opt PRIVATE -O2 -mavx2 -mfma
-        -Wno-conversion -Wno-sign-conversion)
-    target_compile_options(dep_break_opt PRIVATE -O2 -mavx2 -mfma
-        -Wno-conversion -Wno-sign-conversion)
     target_compile_options(cache_size_opt PRIVATE -O2
         -Wno-conversion -Wno-sign-conversion)
-    target_compile_options(fix_parser_initial PRIVATE -O3 -march=native)
     target_compile_options(cache_line_layout PRIVATE -O2
         -fconstexpr-steps=500000000
         -Wno-conversion -Wno-sign-conversion)
     target_compile_options(permutation_order_search PRIVATE -O2
         -Wno-conversion -Wno-sign-conversion)
 elseif(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
-    target_compile_options(loop_nest_opt PRIVATE /O2 /arch:AVX2)
-    target_compile_options(dep_break_opt PRIVATE /O2 /arch:AVX2)
     target_compile_options(cache_size_opt PRIVATE /O2)
-    target_compile_options(fix_parser_initial PRIVATE /O2 /arch:AVX2)
     target_compile_options(cache_line_layout PRIVATE /O2
         /constexpr:steps500000000)
     target_compile_options(permutation_order_search PRIVATE /O2)
@@ -191,12 +212,13 @@ target_include_directories(example_parser_pipeline PRIVATE ${CMAKE_CURRENT_SOURC
 add_executable(fix_calibrate_trivial EXCLUDE_FROM_ALL fix_calibrate_trivial.cpp)
 target_link_libraries(fix_calibrate_trivial PRIVATE ctdp::calibrator)
 target_include_directories(fix_calibrate_trivial PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+ctdp_add_native_optimisation(fix_calibrate_trivial -O3)
 if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR
    CMAKE_CXX_COMPILER_ID STREQUAL "Clang" OR
    CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
-    target_compile_options(fix_calibrate_trivial PRIVATE -O3 -march=native -Wall -Wextra)
+    target_compile_options(fix_calibrate_trivial PRIVATE -Wall -Wextra)
 elseif(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
-    target_compile_options(fix_calibrate_trivial PRIVATE /O2 /W4)
+    target_compile_options(fix_calibrate_trivial PRIVATE /W4)
 endif()
 if(CTDP_VTUNE AND TARGET ITT::ittnotify)
     target_link_libraries(fix_calibrate_trivial PRIVATE ITT::ittnotify)
@@ -212,12 +234,13 @@ endif()
 add_executable(fix_counter_profile EXCLUDE_FROM_ALL fix_counter_profile.cpp)
 target_link_libraries(fix_counter_profile PRIVATE ctdp::calibrator)
 target_include_directories(fix_counter_profile PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+ctdp_add_native_optimisation(fix_counter_profile -O3)
 if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR
    CMAKE_CXX_COMPILER_ID STREQUAL "Clang" OR
    CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
-    target_compile_options(fix_counter_profile PRIVATE -O3 -march=native -Wall -Wextra)
+    target_compile_options(fix_counter_profile PRIVATE -Wall -Wextra)
 elseif(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
-    target_compile_options(fix_counter_profile PRIVATE /O2 /W4)
+    target_compile_options(fix_counter_profile PRIVATE /W4)
 endif()
 if(CTDP_VTUNE AND TARGET ITT::ittnotify)
     target_link_libraries(fix_counter_profile PRIVATE ITT::ittnotify)

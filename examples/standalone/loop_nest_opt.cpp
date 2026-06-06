@@ -19,7 +19,13 @@
 #include <iostream>
 #include <iomanip>
 #include <limits>
-#include <immintrin.h>
+#if defined(__AVX2__) && defined(__FMA__) && \
+    (defined(__x86_64__) || defined(_M_X64) || defined(_M_AMD64) || defined(__i386__) || defined(_M_IX86))
+  #include <immintrin.h>
+  #define CTDP_EXAMPLE_HAS_X86_AVX2_FMA 1
+#else
+  #define CTDP_EXAMPLE_HAS_X86_AVX2_FMA 0
+#endif
 
 // ============================================================================
 // Portability: MSVC and MinGW don't provide std::aligned_alloc
@@ -53,7 +59,11 @@ constexpr std::array<simd_strategy, 4> all_simd = {
     simd_strategy::SCALAR, simd_strategy::INNERMOST_SIMD,
     simd_strategy::OUTER_SIMD, simd_strategy::BLOCKED_SIMD
 };
+#if CTDP_EXAMPLE_HAS_X86_AVX2_FMA
 constexpr std::array<isa_level, 2> all_isa = { isa_level::SSE, isa_level::AVX2 };
+#else
+constexpr std::array<isa_level, 1> all_isa = { isa_level::SSE };
+#endif
 constexpr std::array<bool, 2> all_bool = { false, true };
 
 // ============================================================================
@@ -205,12 +215,21 @@ static constexpr auto ct_result = solve(matmul_3d);
 static constexpr auto ct_cfg = ct_result.best;
 
 // Compile-time verification
+#if CTDP_EXAMPLE_HAS_X86_AVX2_FMA
 static_assert(ct_result.total == 192);
+#else
+static_assert(ct_result.total == 96);
+#endif
 static_assert(ct_result.feasible > 0);
 static_assert(ct_cfg.order == loop_order::IKJ);
 static_assert(ct_cfg.simd == simd_strategy::INNERMOST_SIMD);
+#if CTDP_EXAMPLE_HAS_X86_AVX2_FMA
 static_assert(ct_cfg.isa == isa_level::AVX2);
 static_assert(ct_cfg.use_fma == true);
+#else
+static_assert(ct_cfg.isa == isa_level::SSE);
+static_assert(ct_cfg.use_fma == false);
+#endif
 static_assert(ct_cfg.aligned == true);
 
 // ============================================================================
@@ -259,7 +278,11 @@ struct matmul_executor {
             return 0;
         }();
 
-        // SIMD path: innermost must be j (dim 1, unit stride)
+        // SIMD path: innermost must be j (dim 1, unit stride).
+        // The AVX2/FMA executor is compiled only when the target actually
+        // exposes those x86 features; otherwise the example remains buildable
+        // and the constexpr search falls back to scalar/SSE-labelled plans.
+#if CTDP_EXAMPLE_HAS_X86_AVX2_FMA
         if constexpr (Cfg.simd == simd_strategy::INNERMOST_SIMD &&
                       Cfg.isa == isa_level::AVX2 && d2 == 1) {
             static_assert(d2 == 1, "INNERMOST_SIMD requires j (dim 1) innermost");
@@ -300,7 +323,9 @@ struct matmul_executor {
                     }
                 }
             }
-        } else {
+        } else
+#endif
+        {
             // Scalar fallback
             for (std::size_t i0 = 0; i0 < N; ++i0)
                 for (std::size_t i1 = 0; i1 < N; ++i1)
@@ -380,7 +405,11 @@ int main() {
     std::cout << "Loop Nest Optimisation Demo (N=" << N << ")\n";
     std::cout << "  Search: " << ct_result.total << " total, "
               << ct_result.feasible << " feasible\n";
+#if CTDP_EXAMPLE_HAS_X86_AVX2_FMA
     std::cout << "  Optimal: IKJ, INNERMOST_SIMD, AVX2, FMA, aligned\n";
+#else
+    std::cout << "  Optimal: portable scalar/SSE-labelled fallback; AVX2/FMA unavailable on this target\n";
+#endif
     std::cout << "  Max error vs reference: " << std::scientific << max_err << "\n\n";
 
     double t_ref = bench(reference_matmul, "Scalar IJK");
