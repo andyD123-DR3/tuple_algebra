@@ -203,6 +203,30 @@ inline double canonical_pairwise_sum(const std::vector<double>& xs, std::size_t 
     return canonical_pairwise_sum(xs, lo, mid) + canonical_pairwise_sum(xs, mid, hi);
 }
 
+inline double thread_local_unordered_sum_witness(const std::vector<double>& terms) {
+    constexpr std::size_t chunks = 4;
+    std::vector<double> partials(chunks, 0.0);
+    for (std::size_t i = 0; i < terms.size(); ++i) {
+        partials[i % chunks] += terms[i];
+    }
+    double total = 0.0;
+    for (std::size_t i = chunks; i > 0; --i) {
+        total += partials[i - 1];
+    }
+    return total;
+}
+
+inline double reduce_terms_for_plan(const plan_descriptor& plan,
+                                    const std::vector<double>& terms) {
+    switch (plan.reduction) {
+    case reduction_kind::canonical_pairwise:
+        return canonical_pairwise_sum(terms, 0, terms.size());
+    case reduction_kind::thread_local_unordered_witness:
+        return thread_local_unordered_sum_witness(terms);
+    }
+    throw std::invalid_argument("unknown reduction");
+}
+
 template<std::size_t W>
 inline void fill_products_blocked(
     const std::vector<double>& a,
@@ -887,6 +911,173 @@ inline double rho_from_products_or_witness(const plan_descriptor& plan,
         return thread_local_unordered_dot_witness(residual, z);
     }
     throw std::invalid_argument("unknown reduction");
+}
+
+
+template<std::size_t W>
+inline void compute_z_and_rho_terms_range(
+    const stencil_problem& problem,
+    const plan_descriptor& plan,
+    const std::vector<std::size_t>& rows,
+    std::vector<double>& z,
+    std::vector<double>& rho_terms,
+    std::size_t first,
+    std::size_t last) {
+
+    std::size_t k = first;
+    for (; k + W <= last; k += W) {
+        fixed_block<double, W> bb{};
+        fixed_block<double, W> ax{};
+        fixed_block<double, W> rr{};
+        fixed_block<double, W> zz{};
+        for (std::size_t lane = 0; lane < W; ++lane) {
+            const auto row = rows[k + lane];
+            bb[lane] = problem.b[row];
+            ax[lane] = apply_operator_at(problem, plan, row);
+        }
+        rr = fixed_binary(bb, ax, [](double x, double y) noexcept { return x - y; });
+        for (std::size_t lane = 0; lane < W; ++lane) {
+            zz[lane] = preconditioner_value(plan, rr[lane]);
+        }
+        for (std::size_t lane = 0; lane < W; ++lane) {
+            const auto row = rows[k + lane];
+            z[row] = zz[lane];
+            rho_terms[row] = rr[lane] * zz[lane];
+        }
+    }
+
+    for (; k < last; ++k) {
+        const auto row = rows[k];
+        const auto ri = problem.b[row] - apply_operator_at(problem, plan, row);
+        const auto zi = preconditioner_value(plan, ri);
+        z[row] = zi;
+        rho_terms[row] = ri * zi;
+    }
+}
+
+inline void compute_z_and_rho_terms(
+    const stencil_problem& problem,
+    const plan_descriptor& plan,
+    const std::vector<std::size_t>& rows,
+    std::vector<double>& z,
+    std::vector<double>& rho_terms,
+    std::size_t lanes,
+    execution_context* ctx) {
+
+    z.assign(problem.size(), 0.0);
+    rho_terms.assign(problem.size(), 0.0);
+
+    const auto body = [&](std::size_t first, std::size_t last) {
+        if (lanes >= 8) {
+            compute_z_and_rho_terms_range<8>(problem, plan, rows, z, rho_terms, first, last);
+        } else if (lanes >= 4) {
+            compute_z_and_rho_terms_range<4>(problem, plan, rows, z, rho_terms, first, last);
+        } else {
+            compute_z_and_rho_terms_range<1>(problem, plan, rows, z, rho_terms, first, last);
+        }
+    };
+
+    if (ctx != nullptr && ctx->pool != nullptr && uses_parallel_threading(plan.threading)) {
+        if (plan.threading == threading_kind::colour_phases &&
+            plan.colouring == colouring_kind::red_black_stencil) {
+            const auto colours = red_black_colours(problem);
+            auto first_black = rows.size();
+            for (std::size_t i = 0; i < rows.size(); ++i) {
+                if (colours[rows[i]] == 1) {
+                    first_black = i;
+                    break;
+                }
+            }
+            const auto red_tasks = make_row_tasks(first_black, ctx->task_grain);
+            ctx->pool->run(red_tasks, body);
+
+            auto black_tasks = make_row_tasks(rows.size() - first_black, ctx->task_grain);
+            for (auto& task : black_tasks) {
+                task.first += first_black;
+                task.last += first_black;
+            }
+            ctx->pool->run(black_tasks, body);
+        } else {
+            const auto tasks = make_row_tasks(rows.size(), ctx->task_grain);
+            ctx->pool->run(tasks, body);
+        }
+    } else {
+        body(0, rows.size());
+    }
+}
+
+template<std::size_t W>
+inline void compute_sigma_terms_range(
+    const stencil_problem& problem,
+    const plan_descriptor& plan,
+    const std::vector<double>& z,
+    std::vector<double>& sigma_terms,
+    std::size_t first,
+    std::size_t last) {
+
+    std::size_t i = first;
+    for (; i + W <= last; i += W) {
+        for (std::size_t lane = 0; lane < W; ++lane) {
+            const auto row = i + lane;
+            const auto qi = apply_operator_at(problem, plan, z, row);
+            sigma_terms[row] = z[row] * qi;
+        }
+    }
+    for (; i < last; ++i) {
+        const auto qi = apply_operator_at(problem, plan, z, i);
+        sigma_terms[i] = z[i] * qi;
+    }
+}
+
+inline void compute_sigma_terms(
+    const stencil_problem& problem,
+    const plan_descriptor& plan,
+    const std::vector<double>& z,
+    std::vector<double>& sigma_terms,
+    std::size_t lanes,
+    execution_context* ctx) {
+
+    sigma_terms.assign(problem.size(), 0.0);
+    const auto body = [&](std::size_t first, std::size_t last) {
+        if (lanes >= 8) {
+            compute_sigma_terms_range<8>(problem, plan, z, sigma_terms, first, last);
+        } else if (lanes >= 4) {
+            compute_sigma_terms_range<4>(problem, plan, z, sigma_terms, first, last);
+        } else {
+            compute_sigma_terms_range<1>(problem, plan, z, sigma_terms, first, last);
+        }
+    };
+
+    if (ctx != nullptr && ctx->pool != nullptr && uses_parallel_threading(plan.threading)) {
+        const auto tasks = make_row_tasks(problem.size(), ctx->task_grain);
+        ctx->pool->run(tasks, body);
+    } else {
+        body(0, problem.size());
+    }
+}
+
+inline execution_result execute_plan_solver_state_only(const stencil_problem& problem,
+                                                       const plan_descriptor& plan,
+                                                       double step_scale,
+                                                       execution_context* ctx = nullptr) {
+    execution_result r;
+    r.visited_rows = row_visit_order(problem, plan);
+    r.simd_lanes = lanes_for(plan.simd);
+    r.worker_count = (ctx != nullptr && ctx->pool != nullptr && uses_parallel_threading(plan.threading))
+        ? ctx->pool->size()
+        : 1;
+    r.execution_path = execution_path_for(plan, r.worker_count, r.simd_lanes);
+
+    std::vector<double> rho_terms;
+    std::vector<double> sigma_terms;
+    compute_z_and_rho_terms(problem, plan, r.visited_rows, r.z, rho_terms, r.simd_lanes, ctx);
+    r.rho = reduce_terms_for_plan(plan, rho_terms);
+    compute_sigma_terms(problem, plan, r.z, sigma_terms, r.simd_lanes, ctx);
+    r.sigma = reduce_terms_for_plan(plan, sigma_terms);
+    r.alpha = (r.sigma == 0.0) ? 0.0 : step_scale * (r.rho / r.sigma);
+    update_x(problem, plan, r.z, r.x_next, r.alpha, r.simd_lanes, ctx);
+
+    return r;
 }
 
 inline execution_result execute_plan(const stencil_problem& problem,

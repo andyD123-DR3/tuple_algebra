@@ -25,6 +25,7 @@ void print_usage(const char* exe) {
         << "usage: " << exe << " [width height]\n"
         << "       " << exe << " [--size N | --width W --height H] [--iterations N] [--warmup N]\n"
         << "              [--threads N] [--grain N] [--relaxed] [--sweep]\n"
+        << "              [--timing-observation full|solver-state]\n"
         << "              [--hybrid] [--remainder-period N] [--max-simd-lanes N]\n"
         << "              [--single-thread-target] [--no-task-runtime]\n\n"
         << "defaults are tuned to show threaded candidates on a non-trivial matrix:\n"
@@ -32,6 +33,7 @@ void print_usage(const char* exe) {
         << "examples:\n"
         << "  " << exe << " --size 512 --iterations 41 --threads 4 --grain 4096\n"
         << "  " << exe << " --size 512 --iterations 17 --threads 4 --relaxed\n"
+        << "  " << exe << " --size 512 --iterations 17 --threads 4 --timing-observation solver-state\n"
         << "  " << exe << " --sweep --iterations 17 --threads 4\n"
         << "  " << exe << " --hybrid --size 256 --iterations 17 --threads 4\n"
         << "  " << exe << " --size 256 --max-simd-lanes 4 --single-thread-target\n";
@@ -74,6 +76,17 @@ demo_options parse_args(int argc, char** argv) {
             options.search.threads = parse_size(need_value("--threads"));
         } else if (arg == "--grain") {
             options.search.task_grain = parse_size(need_value("--grain"));
+        } else if (arg == "--timing-observation") {
+            const std::string mode = need_value("--timing-observation");
+            if (mode == "full" || mode == "full-trace") {
+                options.search.timing_observation = ctdp::spmv_dsl::timing_observation_mode::full_trace;
+            } else if (mode == "solver-state" || mode == "solver-state-only") {
+                options.search.timing_observation = ctdp::spmv_dsl::timing_observation_mode::solver_state_only;
+            } else {
+                std::cerr << "unknown timing observation mode: " << mode << "\n";
+                print_usage(argv[0]);
+                std::exit(2);
+            }
         } else if (arg == "--max-simd-lanes") {
             options.search.hardware.max_simd_lanes = parse_size(need_value("--max-simd-lanes"));
         } else if (arg == "--single-thread-target") {
@@ -127,6 +140,7 @@ int run_sweep(demo_options options) {
               << " threads=" << effective_worker_count(options.search)
               << " grain=" << options.search.task_grain
               << " scope=" << to_string(options.search.scope)
+              << " timing_observation=" << to_string(options.search.timing_observation)
               << " hybrid=" << (options.hybrid ? "yes" : "no")
               << " hardware={" << describe_hardware_profile(options.search.hardware) << "}" << "\n\n";
 

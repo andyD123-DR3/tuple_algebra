@@ -18,6 +18,19 @@
 
 namespace ctdp::spmv_dsl {
 
+enum class timing_observation_mode {
+    full_trace,
+    solver_state_only
+};
+
+inline constexpr std::string_view to_string(timing_observation_mode mode) noexcept {
+    switch (mode) {
+    case timing_observation_mode::full_trace: return "full-trace";
+    case timing_observation_mode::solver_state_only: return "solver-state-only";
+    }
+    return "unknown";
+}
+
 struct search_options {
     std::size_t iterations = 31;
     std::size_t warmup = 3;
@@ -26,6 +39,7 @@ struct search_options {
     recursive_search_options recursive{};
     candidate_scope scope = candidate_scope::strict_conforming_only;
     hardware_profile hardware{};
+    timing_observation_mode timing_observation = timing_observation_mode::full_trace;
 };
 
 inline bool relaxed_search_enabled(const search_options& options) noexcept {
@@ -116,7 +130,9 @@ inline std::vector<candidate_result> run_design_space_search(
             result.strict_conforming = plan.contract == contract_level::strict_expression &&
                 result.legality.legal() && result.conformance_passed;
             const auto timings = measure([&] {
-                auto r = execute_plan(problem, plan, alpha, &threaded_ctx);
+                auto r = options.timing_observation == timing_observation_mode::solver_state_only
+                    ? execute_plan_solver_state_only(problem, plan, alpha, &threaded_ctx)
+                    : execute_plan(problem, plan, alpha, &threaded_ctx);
                 // Prevent the call from being trivially discarded.
                 if (r.x_next.empty()) {
                     throw std::runtime_error("empty execution result");
@@ -318,6 +334,7 @@ inline void print_report(
 
     os << "Objective and gates:\n";
     os << "  objective: minimise measured median_ns\n";
+    os << "  timed_execution_observation: " << to_string(options.timing_observation) << "\n";
     os << "  structural gate: matrix facts must make the storage/evaluator legal\n";
     os << "  target gate: SIMD/threading must fit the declared hardware profile\n";
     os << "  numerical gate: strict contracts preserve preconditioner binding and observed reduction\n";
@@ -332,6 +349,8 @@ inline void print_report(
     if (relaxed_candidates_executed) {
         os << "  relaxed comparison = executable non-strict candidates are measured but cannot win strict_best\n";
     }
+    os << "  timing_note = conformance/hash reporting still uses the full observed trace; "
+          "solver-state-only timing avoids materialising residual and q in the measured loop\n";
     os << "  optimality_scope = generated candidates x declared hardware profile x measured objective\n\n";
 
     os << "Candidates:\n";
