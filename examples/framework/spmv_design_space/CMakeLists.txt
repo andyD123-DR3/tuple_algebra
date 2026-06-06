@@ -40,6 +40,7 @@ set(SPMV_DESIGN_SPACE_TESTS
     spmv_design_space_plan_tests
     spmv_design_space_executor_tests
     spmv_design_space_recursive_search_tests
+    spmv_design_space_reporting_tests
 )
 
 add_executable(spmv_design_space_contract_tests tests/test_contracts.cpp)
@@ -47,6 +48,7 @@ add_executable(spmv_design_space_fact_tests tests/test_facts.cpp)
 add_executable(spmv_design_space_plan_tests tests/test_plans.cpp)
 add_executable(spmv_design_space_executor_tests tests/test_executors.cpp)
 add_executable(spmv_design_space_recursive_search_tests tests/test_recursive_search.cpp)
+add_executable(spmv_design_space_reporting_tests tests/test_reporting.cpp)
 
 foreach(test_target IN LISTS SPMV_DESIGN_SPACE_TESTS)
     target_link_libraries(${test_target} PRIVATE spmv_design_space)
