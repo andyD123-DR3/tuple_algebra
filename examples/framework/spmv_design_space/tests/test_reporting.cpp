@@ -80,5 +80,74 @@ int main() {
     write_family_summary_markdown(family_md, {row, row2});
     SPMV_REQUIRE(family_md.str().find("SpMV selected-plan structural families") != std::string::npos);
 
+    candidate_result csr_candidate{};
+    csr_candidate.plan = plan_descriptor{
+        .name = "strict/csr/flat/block4/[(R,Z,rho)][(Q,sigma)][alpha][U]/jacobi/canonical",
+        .storage = storage_kind::csr,
+        .decomposition = decomposition_kind::flat_rows,
+        .threading = threading_kind::serial,
+        .simd = simd_kind::lanes4,
+        .fusion = fusion_kind::rzp_u,
+        .reduction = reduction_kind::canonical_pairwise,
+        .executor = executor_kind::csr_executor
+    };
+    csr_candidate.executed = true;
+    csr_candidate.strict_conforming = true;
+    csr_candidate.conformance_passed = true;
+    csr_candidate.relaxed_executable = true;
+    csr_candidate.median_ns = 900.0;
+    csr_candidate.best_ns = 850.0;
+    csr_candidate.mean_ns = 910.0;
+    csr_candidate.observation_hash = 0x7777777777777777ull;
+
+    candidate_result mf_candidate = selected;
+    mf_candidate.executed = true;
+    mf_candidate.strict_conforming = true;
+    mf_candidate.conformance_passed = true;
+    mf_candidate.relaxed_executable = true;
+
+    const std::vector<candidate_result> candidate_results{csr_candidate, mf_candidate};
+    const auto candidate_rows = make_candidate_plan_summaries(
+        problem, facts, options, candidate_results, &candidate_results[1], "test/os");
+    SPMV_REQUIRE(candidate_rows.size() == 2);
+    SPMV_REQUIRE(candidate_rows[0].structural_family == "csr / flat_rows / serial");
+    SPMV_REQUIRE(candidate_rows[1].structural_family == "matrix_free_stencil / recursive_grid_bisection / recursive_tasks");
+    SPMV_REQUIRE(candidate_rows[1].selected == "yes");
+
+    std::ostringstream candidate_csv;
+    write_candidate_plan_summary_csv(candidate_csv, candidate_rows);
+    const auto candidate_csv_text = candidate_csv.str();
+    SPMV_REQUIRE(candidate_csv_text.find("structural_family,execution_family") != std::string::npos);
+    SPMV_REQUIRE(candidate_csv_text.find("test/os,2d_stencil,8,8") != std::string::npos);
+    SPMV_REQUIRE(candidate_csv_text.find("yes,matrix_free_stencil / recursive_grid_bisection / recursive_tasks") != std::string::npos);
+
+    const auto candidate_families = summarize_candidate_families(candidate_rows);
+    SPMV_REQUIRE(candidate_families.size() == 2);
+    SPMV_REQUIRE(candidate_families[0].selected_wins == 1);
+    SPMV_REQUIRE(candidate_families[0].structural_family == "matrix_free_stencil / recursive_grid_bisection / recursive_tasks");
+
+    std::ostringstream candidate_family_md;
+    write_candidate_family_summary_markdown(candidate_family_md, candidate_rows);
+    SPMV_REQUIRE(candidate_family_md.str().find("SpMV measured-candidate structural families") != std::string::npos);
+    SPMV_REQUIRE(candidate_family_md.str().find("not only the selected winners") != std::string::npos);
+
+
+
+    const auto count_row = make_search_run_count_summary(
+        problem, facts, options, candidate_results, "test/os");
+    SPMV_REQUIRE(count_row.generated_candidates == 2);
+    SPMV_REQUIRE(count_row.executed_candidates == 2);
+    SPMV_REQUIRE(count_row.strict_conforming_candidates == 2);
+    SPMV_REQUIRE(count_row.relaxed_executable_candidates == 2);
+
+    std::ostringstream counts_csv;
+    write_search_run_count_summary_csv(counts_csv, {count_row});
+    SPMV_REQUIRE(counts_csv.str().find("generated_candidates,legal_candidates,executed_candidates") != std::string::npos);
+
+    std::ostringstream counts_md;
+    write_search_run_count_summary_markdown(counts_md, {count_row});
+    SPMV_REQUIRE(counts_md.str().find("SpMV candidate-count summary") != std::string::npos);
+    SPMV_REQUIRE(counts_md.str().find("generated plan slice") != std::string::npos);
+
     std::cout << "reporting tests PASS\n";
 }

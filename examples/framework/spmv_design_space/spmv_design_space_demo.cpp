@@ -6,6 +6,7 @@
 #include <iostream>
 #include <stdexcept>
 #include <string>
+#include <sstream>
 #include <vector>
 
 namespace {
@@ -16,6 +17,7 @@ struct demo_options {
     ctdp::spmv_dsl::search_options search{};
     bool sweep = false;
     bool hybrid = false;
+    std::vector<std::size_t> sweep_sizes{32, 64, 128, 256, 512, 1024};
     std::size_t remainder_period = 17;
     std::string summary_prefix;
     std::string platform_label = ctdp::spmv_dsl::default_platform_label();
@@ -25,14 +27,39 @@ std::size_t parse_size(const char* s) {
     return static_cast<std::size_t>(std::strtoull(s, nullptr, 10));
 }
 
+std::vector<std::size_t> parse_size_list(const char* text) {
+    std::vector<std::size_t> out;
+    std::stringstream ss(text);
+    std::string item;
+    while (std::getline(ss, item, ',')) {
+        if (item.empty()) {
+            continue;
+        }
+        out.push_back(static_cast<std::size_t>(std::strtoull(item.c_str(), nullptr, 10)));
+    }
+    if (out.empty()) {
+        throw std::runtime_error("--sizes requires at least one positive size");
+    }
+    return out;
+}
+
+void append_unique_size(std::vector<std::size_t>& sizes, std::size_t value) {
+    for (const auto existing : sizes) {
+        if (existing == value) {
+            return;
+        }
+    }
+    sizes.push_back(value);
+}
+
 void print_usage(const char* exe) {
     std::cout
         << "usage: " << exe << " [width height]\n"
         << "       " << exe << " [--size N | --width W --height H] [--iterations N] [--warmup N]\n"
-        << "              [--threads N] [--grain N] [--relaxed] [--sweep]\n"
+        << "              [--threads N] [--grain N] [--relaxed] [--sweep] [--sizes LIST]\n"
         << "              [--timing-observation full|solver-state]\n"
         << "              [--summary-prefix PATH] [--platform LABEL]\n"
-        << "              [--hybrid] [--remainder-period N] [--max-simd-lanes N]\n"
+        << "              [--hybrid] [--include-2048] [--remainder-period N] [--max-simd-lanes N]\n"
         << "              [--single-thread-target] [--no-task-runtime]\n\n"
         << "defaults are tuned to show threaded candidates on a non-trivial matrix:\n"
         << "  --size 512 --iterations 31 --warmup 3 --threads auto --grain 2048\n\n"
@@ -42,6 +69,7 @@ void print_usage(const char* exe) {
         << "  " << exe << " --size 512 --iterations 17 --threads 4 --timing-observation solver-state\n"
         << "  " << exe << " --sweep --iterations 17 --threads 4\n"
         << "  " << exe << " --sweep --timing-observation solver-state --summary-prefix spmv_solver_state\n"
+        << "  " << exe << " --sweep --sizes 32,64,128,256,512,1024,2048 --summary-prefix spmv_large\n"
         << "  " << exe << " --hybrid --size 256 --iterations 17 --threads 4\n"
         << "  " << exe << " --size 256 --max-simd-lanes 4 --single-thread-target\n";
 }
@@ -115,6 +143,10 @@ demo_options parse_args(int argc, char** argv) {
             options.search.scope = ctdp::spmv_dsl::candidate_scope::strict_conforming_only;
         } else if (arg == "--sweep") {
             options.sweep = true;
+        } else if (arg == "--sizes") {
+            options.sweep_sizes = parse_size_list(need_value("--sizes"));
+        } else if (arg == "--include-2048") {
+            append_unique_size(options.sweep_sizes, 2048);
         } else {
             std::cerr << "unknown argument: " << arg << "\n";
             print_usage(argv[0]);
@@ -125,7 +157,9 @@ demo_options parse_args(int argc, char** argv) {
 }
 
 void write_summary_files(const std::string& prefix,
-                         const std::vector<ctdp::spmv_dsl::selected_plan_summary>& rows) {
+                         const std::vector<ctdp::spmv_dsl::selected_plan_summary>& selected_rows,
+                         const std::vector<ctdp::spmv_dsl::candidate_plan_summary>& candidate_rows,
+                         const std::vector<ctdp::spmv_dsl::search_run_count_summary>& count_rows) {
     using namespace ctdp::spmv_dsl;
 
     if (prefix.empty()) {
@@ -134,34 +168,70 @@ void write_summary_files(const std::string& prefix,
 
     const auto selected_csv = prefix + "_selected.csv";
     const auto selected_md = prefix + "_selected.md";
-    const auto families_md = prefix + "_families.md";
+    const auto selected_families_md = prefix + "_families.md";
+    const auto candidates_csv = prefix + "_candidates.csv";
+    const auto candidate_families_md = prefix + "_candidate_families.md";
+    const auto counts_csv = prefix + "_candidate_counts.csv";
+    const auto counts_md = prefix + "_candidate_counts.md";
 
     {
         std::ofstream out(selected_csv);
         if (!out) {
             throw std::runtime_error("failed to open summary CSV: " + selected_csv);
         }
-        write_selected_plan_summary_csv(out, rows);
+        write_selected_plan_summary_csv(out, selected_rows);
     }
     {
         std::ofstream out(selected_md);
         if (!out) {
             throw std::runtime_error("failed to open selected-plan Markdown summary: " + selected_md);
         }
-        write_selected_plan_summary_markdown(out, rows);
+        write_selected_plan_summary_markdown(out, selected_rows);
     }
     {
-        std::ofstream out(families_md);
+        std::ofstream out(selected_families_md);
         if (!out) {
-            throw std::runtime_error("failed to open family Markdown summary: " + families_md);
+            throw std::runtime_error("failed to open selected family Markdown summary: " + selected_families_md);
         }
-        write_family_summary_markdown(out, rows);
+        write_family_summary_markdown(out, selected_rows);
+    }
+    {
+        std::ofstream out(candidates_csv);
+        if (!out) {
+            throw std::runtime_error("failed to open candidate CSV: " + candidates_csv);
+        }
+        write_candidate_plan_summary_csv(out, candidate_rows);
+    }
+    {
+        std::ofstream out(candidate_families_md);
+        if (!out) {
+            throw std::runtime_error("failed to open candidate family Markdown summary: " + candidate_families_md);
+        }
+        write_candidate_family_summary_markdown(out, candidate_rows);
+    }
+    {
+        std::ofstream out(counts_csv);
+        if (!out) {
+            throw std::runtime_error("failed to open candidate-count CSV: " + counts_csv);
+        }
+        write_search_run_count_summary_csv(out, count_rows);
+    }
+    {
+        std::ofstream out(counts_md);
+        if (!out) {
+            throw std::runtime_error("failed to open candidate-count Markdown summary: " + counts_md);
+        }
+        write_search_run_count_summary_markdown(out, count_rows);
     }
 
     std::cout << "\nWrote summary reports:\n"
               << "  " << selected_csv << "\n"
               << "  " << selected_md << "\n"
-              << "  " << families_md << "\n";
+              << "  " << selected_families_md << "\n"
+              << "  " << candidates_csv << "\n"
+              << "  " << candidate_families_md << "\n"
+              << "  " << counts_csv << "\n"
+              << "  " << counts_md << "\n";
 }
 
 int run_single(const demo_options& options) {
@@ -177,10 +247,15 @@ int run_single(const demo_options& options) {
 
     const auto* best = select_best_legal(results);
     if (!options.summary_prefix.empty()) {
-        const std::vector<selected_plan_summary> rows{
+        const std::vector<selected_plan_summary> selected_rows{
             make_selected_plan_summary(problem, facts, options.search, best, options.platform_label)
         };
-        write_summary_files(options.summary_prefix, rows);
+        const auto candidate_rows = make_candidate_plan_summaries(
+            problem, facts, options.search, results, best, options.platform_label);
+        const std::vector<search_run_count_summary> count_rows{
+            make_search_run_count_summary(problem, facts, options.search, results, options.platform_label)
+        };
+        write_summary_files(options.summary_prefix, selected_rows, candidate_rows, count_rows);
     }
     return best == nullptr ? 1 : 0;
 }
@@ -188,10 +263,12 @@ int run_single(const demo_options& options) {
 int run_sweep(demo_options options) {
     using namespace ctdp::spmv_dsl;
 
-    const std::vector<std::size_t> sizes{32, 64, 128, 256, 512};
+    const auto sizes = options.sweep_sizes;
     const expression_contract contract{};
     bool saw_threaded_selection = false;
     std::vector<selected_plan_summary> selected_rows;
+    std::vector<candidate_plan_summary> candidate_rows;
+    std::vector<search_run_count_summary> count_rows;
 
     std::cout << "Sparse Expression Decomposition DSL Size Sweep\n";
     std::cout << "==============================================\n\n";
@@ -203,7 +280,12 @@ int run_sweep(demo_options options) {
               << " timing_observation=" << to_string(options.search.timing_observation)
               << " hybrid=" << (options.hybrid ? "yes" : "no")
               << " platform=" << options.platform_label
-              << " hardware={" << describe_hardware_profile(options.search.hardware) << "}" << "\n\n";
+              << " hardware={" << describe_hardware_profile(options.search.hardware) << "}" << "\n";
+    std::cout << "sweep_sizes=";
+    for (std::size_t i = 0; i < sizes.size(); ++i) {
+        std::cout << (i == 0 ? "" : ",") << sizes[i];
+    }
+    std::cout << "\n\n";
 
     for (const auto n : sizes) {
         const auto problem = options.hybrid
@@ -212,6 +294,11 @@ int run_sweep(demo_options options) {
         const auto facts = analyse_problem(problem);
         const auto results = run_design_space_search(problem, contract, 0.125, options.search);
         const auto* best = select_best_legal(results);
+        const auto case_candidate_rows = make_candidate_plan_summaries(
+            problem, facts, options.search, results, best, options.platform_label);
+        candidate_rows.insert(candidate_rows.end(), case_candidate_rows.begin(), case_candidate_rows.end());
+        count_rows.push_back(make_search_run_count_summary(
+            problem, facts, options.search, results, options.platform_label));
         if (best == nullptr) {
             selected_rows.push_back(make_selected_plan_summary(problem, facts, options.search, nullptr, options.platform_label));
             std::cout << n << "x" << n << ": no legal conforming candidate\n";
@@ -233,7 +320,7 @@ int run_sweep(demo_options options) {
                   << "\n";
     }
 
-    write_summary_files(options.summary_prefix, selected_rows);
+    write_summary_files(options.summary_prefix, selected_rows, candidate_rows, count_rows);
 
     std::cout << "\nInterpretation:\n";
     std::cout << "  Threaded candidates are expected to lose on small matrices because startup,\n";
