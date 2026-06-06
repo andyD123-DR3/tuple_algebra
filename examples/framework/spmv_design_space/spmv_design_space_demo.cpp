@@ -1,7 +1,10 @@
 #include "spmv_design_space/search.hpp"
+#include "spmv_design_space/reporting.hpp"
 
 #include <cstdlib>
+#include <fstream>
 #include <iostream>
+#include <stdexcept>
 #include <string>
 #include <vector>
 
@@ -14,6 +17,8 @@ struct demo_options {
     bool sweep = false;
     bool hybrid = false;
     std::size_t remainder_period = 17;
+    std::string summary_prefix;
+    std::string platform_label = ctdp::spmv_dsl::default_platform_label();
 };
 
 std::size_t parse_size(const char* s) {
@@ -26,6 +31,7 @@ void print_usage(const char* exe) {
         << "       " << exe << " [--size N | --width W --height H] [--iterations N] [--warmup N]\n"
         << "              [--threads N] [--grain N] [--relaxed] [--sweep]\n"
         << "              [--timing-observation full|solver-state]\n"
+        << "              [--summary-prefix PATH] [--platform LABEL]\n"
         << "              [--hybrid] [--remainder-period N] [--max-simd-lanes N]\n"
         << "              [--single-thread-target] [--no-task-runtime]\n\n"
         << "defaults are tuned to show threaded candidates on a non-trivial matrix:\n"
@@ -35,6 +41,7 @@ void print_usage(const char* exe) {
         << "  " << exe << " --size 512 --iterations 17 --threads 4 --relaxed\n"
         << "  " << exe << " --size 512 --iterations 17 --threads 4 --timing-observation solver-state\n"
         << "  " << exe << " --sweep --iterations 17 --threads 4\n"
+        << "  " << exe << " --sweep --timing-observation solver-state --summary-prefix spmv_solver_state\n"
         << "  " << exe << " --hybrid --size 256 --iterations 17 --threads 4\n"
         << "  " << exe << " --size 256 --max-simd-lanes 4 --single-thread-target\n";
 }
@@ -94,6 +101,10 @@ demo_options parse_args(int argc, char** argv) {
             options.search.hardware.max_worker_threads = 1;
         } else if (arg == "--no-task-runtime") {
             options.search.hardware.task_runtime_available = false;
+        } else if (arg == "--summary-prefix") {
+            options.summary_prefix = need_value("--summary-prefix");
+        } else if (arg == "--platform") {
+            options.platform_label = need_value("--platform");
         } else if (arg == "--hybrid") {
             options.hybrid = true;
         } else if (arg == "--remainder-period") {
@@ -113,6 +124,46 @@ demo_options parse_args(int argc, char** argv) {
     return options;
 }
 
+void write_summary_files(const std::string& prefix,
+                         const std::vector<ctdp::spmv_dsl::selected_plan_summary>& rows) {
+    using namespace ctdp::spmv_dsl;
+
+    if (prefix.empty()) {
+        return;
+    }
+
+    const auto selected_csv = prefix + "_selected.csv";
+    const auto selected_md = prefix + "_selected.md";
+    const auto families_md = prefix + "_families.md";
+
+    {
+        std::ofstream out(selected_csv);
+        if (!out) {
+            throw std::runtime_error("failed to open summary CSV: " + selected_csv);
+        }
+        write_selected_plan_summary_csv(out, rows);
+    }
+    {
+        std::ofstream out(selected_md);
+        if (!out) {
+            throw std::runtime_error("failed to open selected-plan Markdown summary: " + selected_md);
+        }
+        write_selected_plan_summary_markdown(out, rows);
+    }
+    {
+        std::ofstream out(families_md);
+        if (!out) {
+            throw std::runtime_error("failed to open family Markdown summary: " + families_md);
+        }
+        write_family_summary_markdown(out, rows);
+    }
+
+    std::cout << "\nWrote summary reports:\n"
+              << "  " << selected_csv << "\n"
+              << "  " << selected_md << "\n"
+              << "  " << families_md << "\n";
+}
+
 int run_single(const demo_options& options) {
     using namespace ctdp::spmv_dsl;
 
@@ -123,7 +174,15 @@ int run_single(const demo_options& options) {
     const expression_contract contract{};
     const auto results = run_design_space_search(problem, contract, 0.125, options.search);
     print_report(std::cout, problem, facts, results, options.search);
-    return select_best_legal(results) == nullptr ? 1 : 0;
+
+    const auto* best = select_best_legal(results);
+    if (!options.summary_prefix.empty()) {
+        const std::vector<selected_plan_summary> rows{
+            make_selected_plan_summary(problem, facts, options.search, best, options.platform_label)
+        };
+        write_summary_files(options.summary_prefix, rows);
+    }
+    return best == nullptr ? 1 : 0;
 }
 
 int run_sweep(demo_options options) {
@@ -132,6 +191,7 @@ int run_sweep(demo_options options) {
     const std::vector<std::size_t> sizes{32, 64, 128, 256, 512};
     const expression_contract contract{};
     bool saw_threaded_selection = false;
+    std::vector<selected_plan_summary> selected_rows;
 
     std::cout << "Sparse Expression Decomposition DSL Size Sweep\n";
     std::cout << "==============================================\n\n";
@@ -142,18 +202,22 @@ int run_sweep(demo_options options) {
               << " scope=" << to_string(options.search.scope)
               << " timing_observation=" << to_string(options.search.timing_observation)
               << " hybrid=" << (options.hybrid ? "yes" : "no")
+              << " platform=" << options.platform_label
               << " hardware={" << describe_hardware_profile(options.search.hardware) << "}" << "\n\n";
 
     for (const auto n : sizes) {
         const auto problem = options.hybrid
             ? make_stencil_with_remainder_problem(n, n, options.remainder_period)
             : make_stencil_problem(n, n);
+        const auto facts = analyse_problem(problem);
         const auto results = run_design_space_search(problem, contract, 0.125, options.search);
         const auto* best = select_best_legal(results);
         if (best == nullptr) {
+            selected_rows.push_back(make_selected_plan_summary(problem, facts, options.search, nullptr, options.platform_label));
             std::cout << n << "x" << n << ": no legal conforming candidate\n";
             continue;
         }
+        selected_rows.push_back(make_selected_plan_summary(problem, facts, options.search, best, options.platform_label));
         saw_threaded_selection = saw_threaded_selection || uses_parallel_threading(best->plan.threading);
         std::cout << n << "x" << n
                   << " rows=" << problem.size()
@@ -168,6 +232,8 @@ int run_sweep(demo_options options) {
                   << " uses_threads=" << (uses_parallel_threading(best->plan.threading) ? "yes" : "no")
                   << "\n";
     }
+
+    write_summary_files(options.summary_prefix, selected_rows);
 
     std::cout << "\nInterpretation:\n";
     std::cout << "  Threaded candidates are expected to lose on small matrices because startup,\n";
