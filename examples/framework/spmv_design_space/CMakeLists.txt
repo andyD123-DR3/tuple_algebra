@@ -75,3 +75,9 @@ add_custom_target(spmv_design_space_sweep
     DEPENDS spmv_design_space_demo
     COMMENT "Running SpMV design-space benchmark sweep"
     VERBATIM)
+
+add_custom_target(spmv_design_space_large_sweep
+    COMMAND $<TARGET_FILE:spmv_design_space_demo> --sweep --sizes 32,64,128,256,512,1024,2048 --iterations 7 --warmup 1 --threads 4 --grain 2048 --timing-observation solver-state
+    DEPENDS spmv_design_space_demo
+    COMMENT "Running SpMV design-space large-size sweep through 2048 x 2048"
+    VERBATIM)
