@@ -1,0 +1,156 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1100" height="940" viewBox="0 0 1100 940" font-family="Helvetica,Arial,sans-serif">
+<rect width="1100" height="940" fill="#FFFFFF"/>
+<text x="40" y="70" font-size="22" font-weight="bold" fill="#1E2761">1.  Sequential — strict left fold</text>
+<text x="40" y="92" font-size="13" fill="#6B7480">(((((((x0 + x1) + x2) + x3) + x4) + x5) + x6) + x7)   ·   one long dependency chain</text>
+<rect x="620" y="52" width="122.8" height="26" rx="13" fill="#00A896"/>
+<text x="681.4" y="70" font-size="13" font-weight="bold" fill="#FFFFFF" text-anchor="middle">deterministic</text>
+<rect x="745" y="52" width="100.0" height="26" rx="13" fill="#E0644A"/>
+<text x="795.0" y="70" font-size="13" font-weight="bold" fill="#FFFFFF" text-anchor="middle">lowest ILP</text>
+<circle cx="80" cy="132" r="20" fill="#EEF3F8" stroke="#FFFFFF" stroke-width="2"/>
+<text x="80" y="136.55" font-size="13" font-weight="normal" fill="#1A1F2B" text-anchor="middle">x0</text>
+<circle cx="80" cy="190" r="19" fill="#2B3A78" stroke="#FFFFFF" stroke-width="2"/>
+<text x="80" y="195.6" font-size="16" font-weight="bold" fill="#FFFFFF" text-anchor="middle">+</text>
+<line x1="80" y1="152" x2="80" y2="171" stroke="#6B7480" stroke-width="2"/>
+<circle cx="150" cy="132" r="20" fill="#EEF3F8" stroke="#FFFFFF" stroke-width="2"/>
+<text x="150" y="136.55" font-size="13" font-weight="normal" fill="#1A1F2B" text-anchor="middle">x1</text>
+<circle cx="150" cy="190" r="19" fill="#2B3A78" stroke="#FFFFFF" stroke-width="2"/>
+<text x="150" y="195.6" font-size="16" font-weight="bold" fill="#FFFFFF" text-anchor="middle">+</text>
+<line x1="150" y1="152" x2="150" y2="171" stroke="#6B7480" stroke-width="2"/>
+<line x1="99" y1="190" x2="131" y2="190" stroke="#028090" stroke-width="3"/>
+<circle cx="220" cy="132" r="20" fill="#EEF3F8" stroke="#FFFFFF" stroke-width="2"/>
+<text x="220" y="136.55" font-size="13" font-weight="normal" fill="#1A1F2B" text-anchor="middle">x2</text>
+<circle cx="220" cy="190" r="19" fill="#2B3A78" stroke="#FFFFFF" stroke-width="2"/>
+<text x="220" y="195.6" font-size="16" font-weight="bold" fill="#FFFFFF" text-anchor="middle">+</text>
+<line x1="220" y1="152" x2="220" y2="171" stroke="#6B7480" stroke-width="2"/>
+<line x1="169" y1="190" x2="201" y2="190" stroke="#028090" stroke-width="3"/>
+<circle cx="290" cy="132" r="20" fill="#EEF3F8" stroke="#FFFFFF" stroke-width="2"/>
+<text x="290" y="136.55" font-size="13" font-weight="normal" fill="#1A1F2B" text-anchor="middle">x3</text>
+<circle cx="290" cy="190" r="19" fill="#2B3A78" stroke="#FFFFFF" stroke-width="2"/>
+<text x="290" y="195.6" font-size="16" font-weight="bold" fill="#FFFFFF" text-anchor="middle">+</text>
+<line x1="290" y1="152" x2="290" y2="171" stroke="#6B7480" stroke-width="2"/>
+<line x1="239" y1="190" x2="271" y2="190" stroke="#028090" stroke-width="3"/>
+<circle cx="360" cy="132" r="20" fill="#EEF3F8" stroke="#FFFFFF" stroke-width="2"/>
+<text x="360" y="136.55" font-size="13" font-weight="normal" fill="#1A1F2B" text-anchor="middle">x4</text>
+<circle cx="360" cy="190" r="19" fill="#2B3A78" stroke="#FFFFFF" stroke-width="2"/>
+<text x="360" y="195.6" font-size="16" font-weight="bold" fill="#FFFFFF" text-anchor="middle">+</text>
+<line x1="360" y1="152" x2="360" y2="171" stroke="#6B7480" stroke-width="2"/>
+<line x1="309" y1="190" x2="341" y2="190" stroke="#028090" stroke-width="3"/>
+<circle cx="430" cy="132" r="20" fill="#EEF3F8" stroke="#FFFFFF" stroke-width="2"/>
+<text x="430" y="136.55" font-size="13" font-weight="normal" fill="#1A1F2B" text-anchor="middle">x5</text>
+<circle cx="430" cy="190" r="19" fill="#2B3A78" stroke="#FFFFFF" stroke-width="2"/>
+<text x="430" y="195.6" font-size="16" font-weight="bold" fill="#FFFFFF" text-anchor="middle">+</text>
+<line x1="430" y1="152" x2="430" y2="171" stroke="#6B7480" stroke-width="2"/>
+<line x1="379" y1="190" x2="411" y2="190" stroke="#028090" stroke-width="3"/>
+<circle cx="500" cy="132" r="20" fill="#EEF3F8" stroke="#FFFFFF" stroke-width="2"/>
+<text x="500" y="136.55" font-size="13" font-weight="normal" fill="#1A1F2B" text-anchor="middle">x6</text>
+<circle cx="500" cy="190" r="19" fill="#2B3A78" stroke="#FFFFFF" stroke-width="2"/>
+<text x="500" y="195.6" font-size="16" font-weight="bold" fill="#FFFFFF" text-anchor="middle">+</text>
+<line x1="500" y1="152" x2="500" y2="171" stroke="#6B7480" stroke-width="2"/>
+<line x1="449" y1="190" x2="481" y2="190" stroke="#028090" stroke-width="3"/>
+<circle cx="570" cy="132" r="20" fill="#EEF3F8" stroke="#FFFFFF" stroke-width="2"/>
+<text x="570" y="136.55" font-size="13" font-weight="normal" fill="#1A1F2B" text-anchor="middle">x7</text>
+<circle cx="570" cy="190" r="19" fill="#1E2761" stroke="#FFFFFF" stroke-width="2"/>
+<text x="570" y="195.6" font-size="16" font-weight="bold" fill="#FFFFFF" text-anchor="middle">+</text>
+<line x1="570" y1="152" x2="570" y2="171" stroke="#6B7480" stroke-width="2"/>
+<line x1="519" y1="190" x2="551" y2="190" stroke="#028090" stroke-width="3"/>
+<text x="596" y="195" font-size="14" fill="#1E2761">→ result</text>
+<text x="40" y="380" font-size="22" font-weight="bold" fill="#1E2761">2.  Fixed-shape tree (deterministic)</text>
+<text x="40" y="402" font-size="13" fill="#6B7480">((x0+x1)+(x2+x3)) + ((x4+x5)+(x6+x7))   ·   pairing fixed at compile time</text>
+<rect x="620" y="362" width="122.8" height="26" rx="13" fill="#00A896"/>
+<text x="681.4" y="380" font-size="13" font-weight="bold" fill="#FFFFFF" text-anchor="middle">deterministic</text>
+<rect x="745" y="362" width="84.8" height="26" rx="13" fill="#028090"/>
+<text x="787.4" y="380" font-size="13" font-weight="bold" fill="#FFFFFF" text-anchor="middle">high ILP</text>
+<circle cx="80" cy="445" r="17" fill="#EEF3F8" stroke="#FFFFFF" stroke-width="2"/>
+<text x="80" y="449.2" font-size="12" font-weight="normal" fill="#1A1F2B" text-anchor="middle">x0</text>
+<circle cx="150" cy="445" r="17" fill="#EEF3F8" stroke="#FFFFFF" stroke-width="2"/>
+<text x="150" y="449.2" font-size="12" font-weight="normal" fill="#1A1F2B" text-anchor="middle">x1</text>
+<circle cx="220" cy="445" r="17" fill="#EEF3F8" stroke="#FFFFFF" stroke-width="2"/>
+<text x="220" y="449.2" font-size="12" font-weight="normal" fill="#1A1F2B" text-anchor="middle">x2</text>
+<circle cx="290" cy="445" r="17" fill="#EEF3F8" stroke="#FFFFFF" stroke-width="2"/>
+<text x="290" y="449.2" font-size="12" font-weight="normal" fill="#1A1F2B" text-anchor="middle">x3</text>
+<circle cx="360" cy="445" r="17" fill="#EEF3F8" stroke="#FFFFFF" stroke-width="2"/>
+<text x="360" y="449.2" font-size="12" font-weight="normal" fill="#1A1F2B" text-anchor="middle">x4</text>
+<circle cx="430" cy="445" r="17" fill="#EEF3F8" stroke="#FFFFFF" stroke-width="2"/>
+<text x="430" y="449.2" font-size="12" font-weight="normal" fill="#1A1F2B" text-anchor="middle">x5</text>
+<circle cx="500" cy="445" r="17" fill="#EEF3F8" stroke="#FFFFFF" stroke-width="2"/>
+<text x="500" y="449.2" font-size="12" font-weight="normal" fill="#1A1F2B" text-anchor="middle">x6</text>
+<circle cx="570" cy="445" r="17" fill="#EEF3F8" stroke="#FFFFFF" stroke-width="2"/>
+<text x="570" y="449.2" font-size="12" font-weight="normal" fill="#1A1F2B" text-anchor="middle">x7</text>
+<circle cx="115.0" cy="505" r="17" fill="#2B3A78" stroke="#FFFFFF" stroke-width="2"/>
+<text x="115.0" y="510.25" font-size="15" font-weight="bold" fill="#FFFFFF" text-anchor="middle">+</text>
+<line x1="80" y1="462" x2="115.0" y2="488" stroke="#6B7480" stroke-width="2"/>
+<line x1="150" y1="462" x2="115.0" y2="488" stroke="#6B7480" stroke-width="2"/>
+<circle cx="255.0" cy="505" r="17" fill="#2B3A78" stroke="#FFFFFF" stroke-width="2"/>
+<text x="255.0" y="510.25" font-size="15" font-weight="bold" fill="#FFFFFF" text-anchor="middle">+</text>
+<line x1="220" y1="462" x2="255.0" y2="488" stroke="#6B7480" stroke-width="2"/>
+<line x1="290" y1="462" x2="255.0" y2="488" stroke="#6B7480" stroke-width="2"/>
+<circle cx="395.0" cy="505" r="17" fill="#2B3A78" stroke="#FFFFFF" stroke-width="2"/>
+<text x="395.0" y="510.25" font-size="15" font-weight="bold" fill="#FFFFFF" text-anchor="middle">+</text>
+<line x1="360" y1="462" x2="395.0" y2="488" stroke="#6B7480" stroke-width="2"/>
+<line x1="430" y1="462" x2="395.0" y2="488" stroke="#6B7480" stroke-width="2"/>
+<circle cx="535.0" cy="505" r="17" fill="#2B3A78" stroke="#FFFFFF" stroke-width="2"/>
+<text x="535.0" y="510.25" font-size="15" font-weight="bold" fill="#FFFFFF" text-anchor="middle">+</text>
+<line x1="500" y1="462" x2="535.0" y2="488" stroke="#6B7480" stroke-width="2"/>
+<line x1="570" y1="462" x2="535.0" y2="488" stroke="#6B7480" stroke-width="2"/>
+<circle cx="185.0" cy="560" r="18" fill="#028090" stroke="#FFFFFF" stroke-width="2"/>
+<text x="185.0" y="565.25" font-size="15" font-weight="bold" fill="#FFFFFF" text-anchor="middle">+</text>
+<line x1="115.0" y1="522" x2="185.0" y2="542" stroke="#6B7480" stroke-width="2.5"/>
+<line x1="255.0" y1="522" x2="185.0" y2="542" stroke="#6B7480" stroke-width="2.5"/>
+<circle cx="465.0" cy="560" r="18" fill="#028090" stroke="#FFFFFF" stroke-width="2"/>
+<text x="465.0" y="565.25" font-size="15" font-weight="bold" fill="#FFFFFF" text-anchor="middle">+</text>
+<line x1="395.0" y1="522" x2="465.0" y2="542" stroke="#6B7480" stroke-width="2.5"/>
+<line x1="535.0" y1="522" x2="465.0" y2="542" stroke="#6B7480" stroke-width="2.5"/>
+<circle cx="325.0" cy="605" r="19" fill="#1E2761" stroke="#FFFFFF" stroke-width="2"/>
+<text x="325.0" y="610.6" font-size="16" font-weight="bold" fill="#FFFFFF" text-anchor="middle">+</text>
+<line x1="185.0" y1="578" x2="325.0" y2="586" stroke="#6B7480" stroke-width="3"/>
+<line x1="465.0" y1="578" x2="325.0" y2="586" stroke="#6B7480" stroke-width="3"/>
+<text x="353.0" y="610" font-size="14" fill="#1E2761">→ result</text>
+<text x="40" y="680" font-size="22" font-weight="bold" fill="#1E2761">3.  Dynamic tree — shape varies at run time</text>
+<text x="40" y="702" font-size="13" fill="#6B7480">pairing chosen at run time (schedule/cache) → order can differ run to run</text>
+<rect x="640" y="662" width="153.2" height="26" rx="13" fill="#E0644A"/>
+<text x="716.6" y="680" font-size="13" font-weight="bold" fill="#FFFFFF" text-anchor="middle">NOT deterministic</text>
+<rect x="810" y="662" width="130.39999999999998" height="26" rx="13" fill="#F2B134"/>
+<text x="875.2" y="680" font-size="13" font-weight="bold" fill="#1A1F2B" text-anchor="middle">cache-adaptive</text>
+<circle cx="80" cy="745" r="17" fill="#EEF3F8" stroke="#FFFFFF" stroke-width="2"/>
+<text x="80" y="749.2" font-size="12" font-weight="normal" fill="#1A1F2B" text-anchor="middle">x0</text>
+<circle cx="150" cy="745" r="17" fill="#EEF3F8" stroke="#FFFFFF" stroke-width="2"/>
+<text x="150" y="749.2" font-size="12" font-weight="normal" fill="#1A1F2B" text-anchor="middle">x1</text>
+<circle cx="220" cy="745" r="17" fill="#EEF3F8" stroke="#FFFFFF" stroke-width="2"/>
+<text x="220" y="749.2" font-size="12" font-weight="normal" fill="#1A1F2B" text-anchor="middle">x2</text>
+<circle cx="290" cy="745" r="17" fill="#EEF3F8" stroke="#FFFFFF" stroke-width="2"/>
+<text x="290" y="749.2" font-size="12" font-weight="normal" fill="#1A1F2B" text-anchor="middle">x3</text>
+<circle cx="360" cy="745" r="17" fill="#EEF3F8" stroke="#FFFFFF" stroke-width="2"/>
+<text x="360" y="749.2" font-size="12" font-weight="normal" fill="#1A1F2B" text-anchor="middle">x4</text>
+<circle cx="430" cy="745" r="17" fill="#EEF3F8" stroke="#FFFFFF" stroke-width="2"/>
+<text x="430" y="749.2" font-size="12" font-weight="normal" fill="#1A1F2B" text-anchor="middle">x5</text>
+<circle cx="500" cy="745" r="17" fill="#EEF3F8" stroke="#FFFFFF" stroke-width="2"/>
+<text x="500" y="749.2" font-size="12" font-weight="normal" fill="#1A1F2B" text-anchor="middle">x6</text>
+<circle cx="570" cy="745" r="17" fill="#EEF3F8" stroke="#FFFFFF" stroke-width="2"/>
+<text x="570" y="749.2" font-size="12" font-weight="normal" fill="#1A1F2B" text-anchor="middle">x7</text>
+<circle cx="115.0" cy="800" r="16" fill="#2B3A78" stroke="#FFFFFF" stroke-width="2"/>
+<text x="115.0" y="804.9" font-size="14" font-weight="bold" fill="#FFFFFF" text-anchor="middle">+</text>
+<line x1="80" y1="762" x2="115.0" y2="784" stroke="#6B7480" stroke-width="2"/>
+<line x1="150" y1="762" x2="115.0" y2="784" stroke="#6B7480" stroke-width="2"/>
+<circle cx="395.0" cy="800" r="16" fill="#2B3A78" stroke="#FFFFFF" stroke-width="2"/>
+<text x="395.0" y="804.9" font-size="14" font-weight="bold" fill="#FFFFFF" text-anchor="middle">+</text>
+<line x1="360" y1="762" x2="395.0" y2="784" stroke="#6B7480" stroke-width="2"/>
+<line x1="430" y1="762" x2="395.0" y2="784" stroke="#6B7480" stroke-width="2"/>
+<circle cx="535.0" cy="800" r="16" fill="#2B3A78" stroke="#FFFFFF" stroke-width="2"/>
+<text x="535.0" y="804.9" font-size="14" font-weight="bold" fill="#FFFFFF" text-anchor="middle">+</text>
+<line x1="500" y1="762" x2="535.0" y2="784" stroke="#6B7480" stroke-width="2"/>
+<line x1="570" y1="762" x2="535.0" y2="784" stroke="#6B7480" stroke-width="2"/>
+<circle cx="167.5" cy="850" r="17" fill="#F2B134" stroke="#FFFFFF" stroke-width="2"/>
+<text x="167.5" y="854.9" font-size="14" font-weight="bold" fill="#1A1F2B" text-anchor="middle">+</text>
+<line x1="115.0" y1="816" x2="167.5" y2="833" stroke="#E0644A" stroke-width="2.5"/>
+<line x1="220" y1="762" x2="167.5" y2="833" stroke="#E0644A" stroke-width="2.5"/>
+<circle cx="342.5" cy="850" r="17" fill="#F2B134" stroke="#FFFFFF" stroke-width="2"/>
+<text x="342.5" y="854.9" font-size="14" font-weight="bold" fill="#1A1F2B" text-anchor="middle">+</text>
+<line x1="290" y1="762" x2="342.5" y2="833" stroke="#E0644A" stroke-width="2.5"/>
+<line x1="395.0" y1="816" x2="342.5" y2="833" stroke="#E0644A" stroke-width="2.5"/>
+<circle cx="351.25" cy="898" r="18" fill="#1E2761" stroke="#FFFFFF" stroke-width="2"/>
+<text x="351.25" y="903.25" font-size="15" font-weight="bold" fill="#FFFFFF" text-anchor="middle">+</text>
+<line x1="167.5" y1="867" x2="351.25" y2="880" stroke="#6B7480" stroke-width="2.5"/>
+<line x1="342.5" y1="867" x2="351.25" y2="880" stroke="#6B7480" stroke-width="2.5"/>
+<line x1="535.0" y1="816" x2="351.25" y2="880" stroke="#6B7480" stroke-width="2.5"/>
+<text x="377.25" y="903" font-size="13" fill="#E0644A">→ result (order not fixed)</text>
+</svg>

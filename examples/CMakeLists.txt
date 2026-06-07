@@ -84,6 +84,23 @@ target_link_libraries(spmv_benchmark PRIVATE ctdp_all)
 add_executable(variadic_reduce variadic_reduce.cpp)
 target_link_libraries(variadic_reduce PRIVATE ctdp_algebra)
 
+# -- Pareto Tile-Configuration Demo --------------------------------------------
+# Six-dimensional tile config space -> hardware feasibility -> 6 cost objectives
+# -> Pareto frontier -> lexicographic / weighted policy selection. All constexpr.
+add_executable(pareto_tiling_demo pareto_tiling_demo.cpp)
+target_link_libraries(pareto_tiling_demo PRIVATE ctdp_all)
+
+# -- Accuracy + Speed Probe ----------------------------------------------------
+# Measures the ERROR and THROUGHPUT objectives directly (vs the analytical
+# proxies in pareto_tiling_demo): a float kernel under test vs a double-Kahan
+# reference, on adversarial cancellation data. Reports relative error and
+# best-of-reps ns/element for naive sequential, full pairwise tree, blocked
+# deterministic tree, and Kahan sequential.
+# NOTE: must NOT be built with -ffast-math (it would reassociate and void the
+# experiment). -O2/-O3 without fast-math leave the FP results bit-identical.
+add_executable(accuracy_probe accuracy_probe.cpp)
+target_link_libraries(accuracy_probe PRIVATE ctdp_algebra)
+
 # -- Matrix Chain Demo ---------------------------------------------------------
 # End-to-end proof: Cormen matrix chain via interval_dp (compile-time + runtime).
 add_executable(matrix_chain_demo matrix_chain_demo.cpp)
@@ -117,6 +134,8 @@ ctdp_add_native_optimisation(fix_p99_svr_search -O2)
 ctdp_add_native_optimisation(fix_p99_beam_search -O2)
 ctdp_add_native_optimisation(spmv_benchmark -O3)
 ctdp_add_native_optimisation(variadic_reduce -O3)
+ctdp_add_native_optimisation(pareto_tiling_demo -O2)
+ctdp_add_native_optimisation(accuracy_probe -O2)
 ctdp_add_native_optimisation(matrix_chain_demo -O3)
 ctdp_add_native_optimisation(matrix_chain_et -O2)
 ctdp_add_native_optimisation(per_element_demo -O3)
