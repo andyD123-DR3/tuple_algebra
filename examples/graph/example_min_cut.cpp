@@ -32,7 +32,7 @@ using namespace ctdp::graph;
 // Min cut should be 20 MB/s, separating the two clusters.
 
 constexpr auto make_pipeline() {
-    symmetric_graph_builder<8, 16> b;
+    symmetric_graph_builder<cap_from<8, 16>> b;
     auto parser1    = b.add_node();   // 0
     auto parser2    = b.add_node();   // 1
     auto parser3    = b.add_node();   // 2

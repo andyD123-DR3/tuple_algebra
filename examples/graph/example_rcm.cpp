@@ -1,9 +1,9 @@
-// examples/example_rcm.cpp — Reverse Cuthill-McKee bandwidth reduction
+// examples/graph/example_rcm.cpp — Reverse Cuthill-McKee bandwidth reduction
 //
 // Demonstrates RCM reordering at both compile time and runtime.
 //
 // Compile:
-//   g++ -std=c++20 -O2 -I include -o example_rcm examples/example_rcm.cpp
+//   g++ -std=c++20 -O2 -I include -o example_rcm examples/graph/example_rcm.cpp
 //
 // This example shows:
 //   1. Compile-time: prove bandwidth reduction on a scrambled grid
@@ -27,7 +27,7 @@ using namespace ctdp::graph;
 // Scrambled numbering gives bandwidth = 13.
 // RCM should recover near-optimal bandwidth.
 constexpr auto make_scrambled_grid4x4() {
-    symmetric_graph_builder<32, 64> b;
+    symmetric_graph_builder<cap_from<32, 64>> b;
     for (int i = 0; i < 16; ++i) b.add_node();
 
     // Map from grid position (row-major) to scrambled node id
@@ -105,7 +105,7 @@ void runtime_example() {
     // Build a conflict graph for 8 rows of a sparse matrix.
     // Rows that share non-zero columns are connected.
     // Deliberately scattered numbering creates high bandwidth.
-    symmetric_graph_builder<16, 64> b;
+    symmetric_graph_builder<cap_from<16, 64>> b;
     for (int i = 0; i < 8; ++i) b.add_node();
 
     // Row conflicts (simulate an arrowhead pattern)

@@ -21,14 +21,14 @@ using namespace ctdp::graph;
 
 // Single node, no edges.
 constexpr auto make_single() {
-    symmetric_graph_builder<4, 8> b;
+    symmetric_graph_builder<cap_from<4, 8>> b;
     b.add_node();
     return b.finalise();
 }
 
 // Two nodes, one edge.
 constexpr auto make_pair() {
-    symmetric_graph_builder<4, 8> b;
+    symmetric_graph_builder<cap_from<4, 8>> b;
     auto n0 = b.add_node(); auto n1 = b.add_node();
     b.add_edge(n0, n1);
     return b.finalise();
@@ -36,7 +36,7 @@ constexpr auto make_pair() {
 
 // Triangle: 0-1, 1-2, 0-2.  Bandwidth = 2 (cannot improve).
 constexpr auto make_triangle() {
-    symmetric_graph_builder<4, 8> b;
+    symmetric_graph_builder<cap_from<4, 8>> b;
     auto n0 = b.add_node(); auto n1 = b.add_node(); auto n2 = b.add_node();
     b.add_edge(n0, n1); b.add_edge(n1, n2); b.add_edge(n0, n2);
     return b.finalise();
@@ -44,7 +44,7 @@ constexpr auto make_triangle() {
 
 // Path graph: 0-1-2-3-4 (already optimal bandwidth = 1).
 constexpr auto make_path5() {
-    symmetric_graph_builder<8, 16> b;
+    symmetric_graph_builder<cap_from<8, 16>> b;
     for (int i = 0; i < 5; ++i) b.add_node();
     for (int i = 0; i < 4; ++i)
         b.add_edge(node_id{static_cast<uint16_t>(i)},
@@ -55,7 +55,7 @@ constexpr auto make_path5() {
 // Star graph: node 0 connected to nodes 1,2,3,4.
 // Identity bandwidth = 4 (edge 0-4).  Optimal bandwidth = 2.
 constexpr auto make_star5() {
-    symmetric_graph_builder<8, 16> b;
+    symmetric_graph_builder<cap_from<8, 16>> b;
     for (int i = 0; i < 5; ++i) b.add_node();
     for (int i = 1; i < 5; ++i)
         b.add_edge(node_id{0}, node_id{static_cast<uint16_t>(i)});
@@ -66,7 +66,7 @@ constexpr auto make_star5() {
 // 0-4, 4-2, 2-3, 3-1 (path order is 0-4-2-3-1).
 // Identity bandwidth = 4.  RCM should find bandwidth = 1.
 constexpr auto make_scrambled_path() {
-    symmetric_graph_builder<8, 16> b;
+    symmetric_graph_builder<cap_from<8, 16>> b;
     for (int i = 0; i < 5; ++i) b.add_node();
     b.add_edge(node_id{0}, node_id{4});
     b.add_edge(node_id{4}, node_id{2});
@@ -77,7 +77,7 @@ constexpr auto make_scrambled_path() {
 
 // Ring: 0-1-2-3-4-5-0.  Identity bandwidth = 5.  Optimal = 3.
 constexpr auto make_ring6() {
-    symmetric_graph_builder<8, 16> b;
+    symmetric_graph_builder<cap_from<8, 16>> b;
     for (int i = 0; i < 6; ++i) b.add_node();
     for (int i = 0; i < 6; ++i)
         b.add_edge(node_id{static_cast<uint16_t>(i)},
@@ -87,7 +87,7 @@ constexpr auto make_ring6() {
 
 // Two disconnected triangles: {0,1,2} and {3,4,5}.
 constexpr auto make_two_triangles() {
-    symmetric_graph_builder<8, 16> b;
+    symmetric_graph_builder<cap_from<8, 16>> b;
     for (int i = 0; i < 6; ++i) b.add_node();
     // Triangle A
     b.add_edge(node_id{0}, node_id{1});
@@ -104,7 +104,7 @@ constexpr auto make_two_triangles() {
 // Natural labelling (row-major): bandwidth = 3.
 // Optimal bandwidth for 3x3 grid = 3 (cannot do better).
 constexpr auto make_grid3x3() {
-    symmetric_graph_builder<16, 32> b;
+    symmetric_graph_builder<cap_from<16, 32>> b;
     for (int i = 0; i < 9; ++i) b.add_node();
     // Horizontal edges
     for (int r = 0; r < 3; ++r)
@@ -123,7 +123,7 @@ constexpr auto make_grid3x3() {
 // Node mapping: 0→0, 1→6, 2→3, 3→1, 4→7, 5→4, 6→2, 7→8, 8→5
 // This creates high bandwidth under identity ordering.
 constexpr auto make_scrambled_grid() {
-    symmetric_graph_builder<16, 32> b;
+    symmetric_graph_builder<cap_from<16, 32>> b;
     for (int i = 0; i < 9; ++i) b.add_node();
     // Map original grid node (r,c) → scrambled id
     constexpr int m[] = {0, 6, 3, 1, 7, 4, 2, 8, 5};
@@ -142,7 +142,7 @@ constexpr auto make_scrambled_grid() {
 
 // Complete graph K4 (every pair connected).  Bandwidth = 3, optimal = 3.
 constexpr auto make_K4() {
-    symmetric_graph_builder<8, 16> b;
+    symmetric_graph_builder<cap_from<8, 16>> b;
     for (int i = 0; i < 4; ++i) b.add_node();
     for (int i = 0; i < 4; ++i)
         for (int j = i + 1; j < 4; ++j)
@@ -155,7 +155,7 @@ constexpr auto make_K4() {
 // Spine: 0-1-2-3.  Leaves: 4-0, 5-1, 6-1, 7-2, 8-3, 9-3.
 // 10 nodes, 9 edges.
 constexpr auto make_caterpillar() {
-    symmetric_graph_builder<16, 32> b;
+    symmetric_graph_builder<cap_from<16, 32>> b;
     for (int i = 0; i < 10; ++i) b.add_node();
     // Spine
     b.add_edge(node_id{0}, node_id{1});
@@ -436,7 +436,7 @@ void test_print_reordering() {
 // =========================================================================
 
 void test_empty_graph() {
-    symmetric_graph_builder<4, 8> b;
+    symmetric_graph_builder<cap_from<4, 8>> b;
     auto g = b.finalise();
     auto r = rcm(g);
     assert(r.verified);
@@ -451,7 +451,7 @@ void test_empty_graph() {
 // =========================================================================
 
 void test_isolated_nodes() {
-    symmetric_graph_builder<8, 16> b;
+    symmetric_graph_builder<cap_from<8, 16>> b;
     for (int i = 0; i < 5; ++i) b.add_node();
     // No edges
     auto g = b.finalise();

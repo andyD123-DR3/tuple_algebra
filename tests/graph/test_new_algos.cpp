@@ -22,7 +22,7 @@ using namespace ctdp::graph;
 // Directed diamond: 0->1(w=1), 0->2(w=4), 1->3(w=2), 2->3(w=1)
 // Shortest 0->3: 0->1->3 = 3
 constexpr auto make_weighted_diamond() {
-    graph_builder<8, 16> b;
+    graph_builder<cap_from<8, 16>> b;
     auto n0 = b.add_node(); auto n1 = b.add_node();
     auto n2 = b.add_node(); auto n3 = b.add_node();
     b.add_edge(n0, n1); b.add_edge(n0, n2);
@@ -43,7 +43,7 @@ struct diamond_weight {
 
 // Linear chain: 0->1->2->3, each weight 1.0
 constexpr auto make_chain4() {
-    graph_builder<8, 16> b;
+    graph_builder<cap_from<8, 16>> b;
     auto n0 = b.add_node(); auto n1 = b.add_node();
     auto n2 = b.add_node(); auto n3 = b.add_node();
     b.add_edge(n0, n1); b.add_edge(n1, n2); b.add_edge(n2, n3);
@@ -52,7 +52,7 @@ constexpr auto make_chain4() {
 
 // Undirected triangle: edges {0,1}, {1,2}, {0,2}, all weight 1
 constexpr auto make_sym_triangle() {
-    symmetric_graph_builder<4, 8> b;
+    symmetric_graph_builder<cap_from<4, 8>> b;
     auto n0 = b.add_node(); auto n1 = b.add_node(); auto n2 = b.add_node();
     b.add_edge(n0, n1); b.add_edge(n1, n2); b.add_edge(n0, n2);
     return b.finalise();
@@ -65,7 +65,7 @@ constexpr auto make_sym_triangle() {
 // cut {0,2} vs {1,3} = w(0,1)+w(2,3)+w(1,2) = 2+2+1 = 5 ... hmm
 // Actually for a simpler test: bar graph 0-1-2-3
 constexpr auto make_sym_bar() {
-    symmetric_graph_builder<4, 8> b;
+    symmetric_graph_builder<cap_from<4, 8>> b;
     auto n0 = b.add_node(); auto n1 = b.add_node();
     auto n2 = b.add_node(); auto n3 = b.add_node();
     b.add_edge(n0, n1);  // weight 3
@@ -136,7 +136,7 @@ static_assert([]() {
 
 // Single node graph
 static_assert([]() {
-    graph_builder<4, 4> b;
+    graph_builder<cap_from<4, 4>> b;
     (void)b.add_node();
     auto g = b.finalise();
     auto r = dijkstra(g, node_id{0}, unit_weight{});
@@ -181,7 +181,7 @@ static_assert([]() {
 
 // Two-node graph: min cut is just the edge weight
 static_assert([]() {
-    symmetric_graph_builder<4, 4> b;
+    symmetric_graph_builder<cap_from<4, 4>> b;
     auto n0 = b.add_node(); auto n1 = b.add_node();
     b.add_edge(n0, n1);
     auto g = b.finalise();
@@ -192,7 +192,7 @@ static_assert([]() {
 
 // Single node: cut = 0
 static_assert([]() {
-    symmetric_graph_builder<4, 4> b;
+    symmetric_graph_builder<cap_from<4, 4>> b;
     (void)b.add_node();
     auto g = b.finalise();
     auto r = stoer_wagner(g, unit_weight{});

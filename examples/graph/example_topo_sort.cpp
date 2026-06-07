@@ -26,7 +26,7 @@ using namespace ctdp::graph;
 //   4: app         → libgraph, libio
 //   5: tests       → app, libmath
 constexpr auto make_build_dag() {
-    graph_builder<8, 16> b;
+    graph_builder<cap_from<8, 16>> b;
     auto core  = b.add_node();   // 0
     auto math  = b.add_node();   // 1
     auto io    = b.add_node();   // 2
