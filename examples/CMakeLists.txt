@@ -281,3 +281,4 @@ endif()
 
 # -- SpMV framework demo -----------------------------------------------------
 add_subdirectory(framework/spmv)
+add_subdirectory(graph)

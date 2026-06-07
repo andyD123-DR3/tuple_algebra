@@ -136,7 +136,6 @@ template<std::size_t MaxV, symmetric_graph_queryable G>
 [[nodiscard]] constexpr std::uint16_t
 bfs_farthest(G const& g, std::uint16_t source) {
     auto const V = g.node_count();
-    constexpr std::uint16_t NIL = 0xFFFF;
 
     std::array<std::uint16_t, MaxV> queue{};
     std::array<bool, MaxV> visited{};
@@ -173,9 +172,6 @@ find_pseudo_peripheral(G const& g) {
     auto start = find_min_degree_node(g);
     auto far1 = bfs_farthest<MaxV>(g, start);
     // far1 is a reasonable pseudo-peripheral node.
-    // A second round refines it.
-    auto far2 = bfs_farthest<MaxV>(g, far1);
-    // Use far1 as the BFS root: it is far from far2, hence peripheral.
     return far1;
 }
 
@@ -322,7 +318,6 @@ rcm(G const& g) {
         // Find pseudo-peripheral node within this component.
         // First, BFS from seed to find farthest node (component-aware).
         auto far1 = detail::bfs_farthest<MaxV>(g, static_cast<std::uint16_t>(seed));
-        auto far2 = detail::bfs_farthest<MaxV>(g, far1);
         // Use far1 as starting node for CM BFS.
         auto start = far1;
 
