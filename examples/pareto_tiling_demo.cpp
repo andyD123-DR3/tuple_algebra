@@ -37,14 +37,14 @@ using namespace ctdp::space;
 // Domain enums
 // =============================================================================
 
-enum class traversal_order : int { sequential, balanced_tree, cache_oblivious };
+enum class traversal_order : int { sequential, fixed_tree, dynamic_tree };
 enum class simd_strategy   : int { horizontal, vertical, hybrid };
 
 constexpr const char* traversal_name(traversal_order t) {
     switch (t) {
         case traversal_order::sequential:      return "sequential";
-        case traversal_order::balanced_tree:    return "balanced_tree";
-        case traversal_order::cache_oblivious:  return "cache_oblivious";
+        case traversal_order::fixed_tree:    return "fixed_tree";
+        case traversal_order::dynamic_tree:  return "dynamic_tree";
     }
     return "?";
 }
@@ -89,8 +89,8 @@ constexpr auto make_tile_space() {
         power_2("tile_size", 32, 1024),                                    // 6 values
         make_int_set("unroll", {1, 2, 4, 8}),                             // 4 values
         make_enum_vals("traversal", {traversal_order::sequential,
-                                     traversal_order::balanced_tree,
-                                     traversal_order::cache_oblivious}),   // 3 values
+                                     traversal_order::fixed_tree,
+                                     traversal_order::dynamic_tree}),   // 3 values
         make_int_set("prefetch", {0, 1, 2, 4}),                           // 4 values
         make_enum_vals("simd", {simd_strategy::horizontal,
                                 simd_strategy::vertical,
@@ -115,8 +115,8 @@ constexpr auto make_feasibility() {
         if (unroll > tile) return false;
         // Hybrid SIMD requires tile >= 4 * simd_width
         if (simd == simd_strategy::hybrid && tile < 4 * hw.simd_width) return false;
-        // Cache-oblivious traversal only makes sense for larger tiles
-        if (trav == traversal_order::cache_oblivious && tile < 128) return false;
+        // Dynamic (runtime-scheduled) traversal only pays off for larger tiles
+        if (trav == traversal_order::dynamic_tree && tile < 128) return false;
         return true;
     };
 }
@@ -141,12 +141,15 @@ constexpr double reg_pressure_cost(int rb, int unroll) {
     return static_cast<double>(rb * K + unroll * 2);
 }
 
-// Objective 2: Error bound (lower = better)
+// Objective 2: Error PROXY (lower = better)
+// NOTE: a deliberately crude scoring proxy, NOT a mathematical error bound.
+// It only needs to be monotonic enough to exercise the Pareto search; the
+// accuracy_probe example replaces it with a *measured* error.
 constexpr double error_bound_cost(traversal_order trav, int tile) {
     switch (trav) {
-        case traversal_order::sequential:     return 1.0;   // best: compensated
-        case traversal_order::balanced_tree:   return static_cast<double>(tile) * 0.01;
-        case traversal_order::cache_oblivious: return static_cast<double>(tile) * 0.005;
+        case traversal_order::sequential:     return 1.0;   // baseline: naive running sum
+        case traversal_order::fixed_tree:   return static_cast<double>(tile) * 0.01;
+        case traversal_order::dynamic_tree: return static_cast<double>(tile) * 0.005;
     }
     return 100.0;
 }
@@ -158,7 +161,7 @@ constexpr double throughput_cost(int tile, int unroll,
     double simd_factor = (simd == simd_strategy::horizontal) ? 0.5
                        : (simd == simd_strategy::hybrid)     ? 0.6
                        : 1.0;
-    double tree_factor = (trav == traversal_order::balanced_tree) ? 0.8
+    double tree_factor = (trav == traversal_order::fixed_tree) ? 0.8
                        : (trav == traversal_order::sequential)    ? 1.5
                        : 1.0;
     return base * simd_factor * tree_factor;
@@ -168,8 +171,8 @@ constexpr double throughput_cost(int tile, int unroll,
 constexpr double determinism_cost(traversal_order trav) {
     switch (trav) {
         case traversal_order::sequential:     return 0.0;  // fully deterministic
-        case traversal_order::balanced_tree:   return 0.5;  // fixed tree, deterministic
-        case traversal_order::cache_oblivious: return 1.0;  // may vary with cache state
+        case traversal_order::fixed_tree:   return 0.0;  // fixed shape -> deterministic
+        case traversal_order::dynamic_tree: return 1.0;  // shape varies at run time
     }
     return 2.0;
 }
