@@ -33,7 +33,7 @@ using namespace ctdp::graph;
 //   db_primary → db_replica (1μs)
 
 constexpr auto make_network() {
-    graph_builder<8, 32> b;
+    graph_builder<cap_from<8, 32>> b;
     for (int i = 0; i < 7; ++i) (void)b.add_node();
 
     b.add_edge(node_id{0}, node_id{1});   // web → lb

@@ -17,7 +17,7 @@
 using namespace ctdp::graph;
 
 constexpr auto make_diamond() {
-    graph_builder<8, 16> b;
+    graph_builder<cap_from<8, 16>> b;
     auto n0 = b.add_node(); auto n1 = b.add_node();
     auto n2 = b.add_node(); auto n3 = b.add_node();
     b.add_edge(n0, n1); b.add_edge(n0, n2);
@@ -39,7 +39,7 @@ static_assert(sc.component_count == 4); // DAG: each node is its own SCC
 
 // Symmetric graph
 constexpr auto make_sym_triangle() {
-    symmetric_graph_builder<4, 8> b;
+    symmetric_graph_builder<cap_from<4, 8>> b;
     auto n0 = b.add_node(); auto n1 = b.add_node(); auto n2 = b.add_node();
     b.add_edge(n0, n1); b.add_edge(n1, n2); b.add_edge(n0, n2);
     return b.finalise();

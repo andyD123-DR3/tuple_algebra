@@ -119,7 +119,7 @@ static_assert([]() {
 
 // constexpr_graph
 static_assert([]() {
-    graph_builder<8, 16> b;
+    graph_builder<cap_from<8, 16>> b;
     (void)b.add_node(); (void)b.add_node(); (void)b.add_node();
     auto g = b.finalise();
     return g.node_count() == 3 && g.node_capacity() == 8
@@ -128,7 +128,7 @@ static_assert([]() {
 
 // symmetric_graph
 static_assert([]() {
-    symmetric_graph_builder<4, 8> b;
+    symmetric_graph_builder<cap_from<4, 8>> b;
     (void)b.add_node(); (void)b.add_node();
     auto g = b.finalise();
     return g.node_count() == 2 && g.node_capacity() == 4
@@ -164,7 +164,7 @@ static_assert(!sized_graph<IG>);
 // =========================================================================
 
 static_assert([]() {
-    graph_builder<8, 16> b;
+    graph_builder<cap_from<8, 16>> b;
     auto n0 = b.add_node(); auto n1 = b.add_node(); auto n2 = b.add_node();
     b.add_edge(n0, n1); b.add_edge(n1, n2);
     auto g = b.finalise();
@@ -182,7 +182,7 @@ static_assert([]() {
 // =========================================================================
 
 constexpr auto make_test_diamond() {
-    graph_builder<8, 16> b;
+    graph_builder<cap_from<8, 16>> b;
     auto n0 = b.add_node(); auto n1 = b.add_node();
     auto n2 = b.add_node(); auto n3 = b.add_node();
     b.add_edge(n0, n1); b.add_edge(n0, n2);
@@ -191,7 +191,7 @@ constexpr auto make_test_diamond() {
 }
 
 constexpr auto make_test_sym() {
-    symmetric_graph_builder<4, 8> b;
+    symmetric_graph_builder<cap_from<4, 8>> b;
     auto n0 = b.add_node(); auto n1 = b.add_node(); auto n2 = b.add_node();
     b.add_edge(n0, n1); b.add_edge(n1, n2); b.add_edge(n0, n2);
     return b.finalise();
