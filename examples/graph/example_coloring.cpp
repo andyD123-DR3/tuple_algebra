@@ -28,7 +28,7 @@ using namespace ctdp::graph;
 // in the same slot?
 
 constexpr auto make_exam_conflicts() {
-    symmetric_graph_builder<8, 16> b;
+    symmetric_graph_builder<cap_from<8, 16>> b;
     for (int i = 0; i < 6; ++i) (void)b.add_node();
 
     b.add_edge(node_id{0}, node_id{1});   // Math–Physics

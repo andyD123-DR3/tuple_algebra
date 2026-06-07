@@ -30,7 +30,7 @@ using namespace ctdp::graph;
 // No edge from C back to A or B, so the condensation DAG is: A→B→C.
 
 constexpr auto make_module_graph() {
-    graph_builder<8, 16> b;
+    graph_builder<cap_from<8, 16>> b;
     for (int i = 0; i < 7; ++i) (void)b.add_node();
 
     // Subsystem A: UI cycle
