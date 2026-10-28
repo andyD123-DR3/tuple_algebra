@@ -96,8 +96,9 @@ struct plan {
     
     /// Check if plan is feasible (cost is finite).
     [[nodiscard]] constexpr bool is_feasible() const {
-        return predicted_cost < std::numeric_limits<double>::infinity()
-            && predicted_cost == predicted_cost;  // NaN check
+        constexpr auto inf = std::numeric_limits<double>::infinity();
+        return predicted_cost == predicted_cost &&
+               predicted_cost != inf && predicted_cost != -inf;
     }
     
     /// Check if plan is infeasible (cost is infinity).
@@ -228,8 +229,9 @@ struct composite_plan {
     
     /// Check if composite plan is feasible.
     [[nodiscard]] constexpr bool is_feasible() const {
-        return combined_cost < std::numeric_limits<double>::infinity()
-            && combined_cost == combined_cost;  // NaN check
+        constexpr auto inf = std::numeric_limits<double>::infinity();
+        return combined_cost == combined_cost &&
+               combined_cost != inf && combined_cost != -inf;
     }
     
     /// Access i-th sub-plan.

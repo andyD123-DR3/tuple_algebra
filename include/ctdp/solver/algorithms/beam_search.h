@@ -14,7 +14,8 @@
 //   - Ranks expansions by cost alone (constraints are NOT applied here)
 //   - Keeps only the top BeamWidth candidates (by cost)
 //   - After N levels, applies constraints on complete candidates
-//   - Returns the best feasible complete candidate
+//   - Returns the best feasible *retained* complete candidate, if one
+//     survives beam pruning. This is NOT an exact constrained solver.
 //
 // Constraint semantics: constraints are evaluated only on complete
 // candidates after all N dimensions are filled.  During level-by-level
@@ -92,9 +93,13 @@ constexpr void beam_sort(std::array<beam_entry<Candidate>, N>& buf,
 // causes spurious rejections — e.g., mutual_exclusion(c[0], c[1]) would
 // reject c[0]=Fast at level 0 because c[1] is still default=Fast.
 //
-// Deferring constraint evaluation to the final beam guarantees correctness
-// for all constraint types.  Users who want early pruning can encode
-// position-aware logic in their constraint lambdas.
+// Deferring constraints prevents incorrect early rejection of partial
+// candidates, but cannot guarantee completeness: a narrow beam can discard
+// every partial prefix of a feasible solution. The +infinity result means
+// "no feasible candidate survived in this beam", not "none exists globally".
+//
+// Partial candidate costs are heuristic rankings, not admissible lower bounds.
+// Use exhaustive search or DP with a sufficient state for optimality proofs.
 
 template<std::size_t BeamWidth = 32,
          typename Space, typename Cost, typename... Constraints>
@@ -131,11 +136,20 @@ template<std::size_t BeamWidth = 32,
     std::array<entry_type, MaxExpanded>  expanded{};
     std::size_t beam_size = 0;
 
+    // Invalid model predictions may occur for a partial assignment.
+    // Rank them last, but retain structural possibilities rather than
+    // treating partial NaN scores as proof that no completion exists.
+    constexpr double infinity = std::numeric_limits<double>::infinity();
+    auto safe_cost = [](double value) constexpr {
+        constexpr auto inf = std::numeric_limits<double>::infinity();
+        return value == value && value != inf && value != -inf ? value : inf;
+    };
+
     // Seed beam with default candidate.
     {
         candidate_type seed{};
         stats.candidates_total++;
-        double c = cost(seed);
+        double c = safe_cost(cost(seed));
         stats.candidates_evaluated++;
         beam[0] = entry_type{seed, c};
         beam_size = 1;
@@ -153,7 +167,7 @@ template<std::size_t BeamWidth = 32,
                 candidate_type trial = beam[b].candidate;
                 trial[d] = space.choice(d, s);
 
-                double c = cost(trial);
+                double c = safe_cost(cost(trial));
                 stats.candidates_evaluated++;
 
                 if (exp_size < MaxExpanded) {
@@ -204,7 +218,7 @@ template<std::size_t BeamWidth = 32,
         for (std::size_t i = 0; i < beam_size; ++i) {
             stats.candidates_total++;
             bool feasible = (constraints(beam[i].candidate) && ...);
-            if (feasible) {
+            if (feasible && beam[i].cost < infinity) {
                 return plan<candidate_type>{
                     beam[i].candidate, beam[i].cost, stats};
             }
@@ -219,7 +233,10 @@ template<std::size_t BeamWidth = 32,
         };
     }
 
-    // No constraints — best is first in sorted beam.
+    // No constraints — best is first if its measured/predicted cost is
+    // finite. An all-invalid cost surface is not an executable plan.
+    if (beam[0].cost == infinity)
+        return plan<candidate_type>{candidate_type{}, infinity, stats};
     return plan<candidate_type>{beam[0].candidate, beam[0].cost, stats};
 }
 
