@@ -121,15 +121,17 @@ auto make_fusibility_filter(const reduction_properties_t& props) {
 // ═══════════════════════════════════════════════════════════════════════
 
 inline auto make_reduction_child_factory(
-    const reduction_properties_t& full_props)
+    const reduction_properties_t& full_props,
+    numerical_reassociation_policy policy =
+        numerical_reassociation_policy::strict_expression)
 {
-    return [full_props](
+    return [full_props, policy](
         const auto& /*root*/,
         std::size_t /*group_label*/,
         std::span<const std::size_t> lane_indices)
     {
         auto gp = make_group_properties(full_props, lane_indices);
-        return make_reduction_opt_space(gp).space;
+        return make_reduction_opt_space(gp, policy).space;
     };
 }
 
@@ -143,7 +145,9 @@ inline auto make_reduction_child_factory(
 
 template <typename... Lanes>
 auto make_reduction_tree_space(
-    const ct_dp::algebra::tuple_reduction<Lanes...>& red)
+    const ct_dp::algebra::tuple_reduction<Lanes...>& red,
+    numerical_reassociation_policy policy =
+        numerical_reassociation_policy::strict_expression)
 {
     auto props = reduction_properties(red);
     constexpr auto NL = sizeof...(Lanes);
@@ -151,7 +155,7 @@ auto make_reduction_tree_space(
     return make_tree_space<NL>(
         "reduction_tree",
         make_partition<NL>("grouping"),
-        make_reduction_child_factory(props),
+        make_reduction_child_factory(props, policy),
         make_fusibility_filter<NL>(props));
 }
 
@@ -159,16 +163,18 @@ auto make_reduction_tree_space(
 /// Uses default_bridge as the per-group bridge factory.
 template <typename... Lanes>
 auto make_reduction_tree_bridge(
-    const ct_dp::algebra::tuple_reduction<Lanes...>& red)
+    const ct_dp::algebra::tuple_reduction<Lanes...>& red,
+    numerical_reassociation_policy policy =
+        numerical_reassociation_policy::strict_expression)
 {
     auto props = reduction_properties(red);
     constexpr auto NL = sizeof...(Lanes);
 
-    auto child_factory = make_reduction_child_factory(props);
+    auto child_factory = make_reduction_child_factory(props, policy);
 
     // Determine child feature width from any single-group space
     // (width is stable across all groups due to conditional_dim).
-    auto sample_space = make_reduction_opt_space(props).space;
+    auto sample_space = make_reduction_opt_space(props, policy).space;
     auto sample_bridge = default_bridge(sample_space);
     auto child_width = sample_bridge.num_features();
 

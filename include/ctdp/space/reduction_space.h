@@ -30,6 +30,7 @@
 #include "ctdp/space/reduction_properties.h"
 
 #include <utility>
+#include <cstdint>
 
 namespace ctdp::space {
 
@@ -66,6 +67,34 @@ inline auto default_vec_width_dim() {
     return make_int_set("vec_width", {1, 4, 8, 16});
 }
 
+// The default strict expression contract does not permit reassociation.
+// An abstract mathematical property is not a bitwise floating-point proof.
+// These explicit opt-ins only expose search *possibilities*: each lowering
+// must still qualify numeric observations, identity padding, and overflow.
+enum class numerical_reassociation_policy : std::uint8_t {
+    strict_expression,
+    declared_exact,    // requires caller to establish exact-domain preconditions
+    mathematical       // explicitly permits changed machine FP observations
+};
+
+[[nodiscard]] constexpr bool tree_change_admissible(
+    reduction_properties_t const& p, numerical_reassociation_policy policy) noexcept {
+    switch(policy) {
+    case numerical_reassociation_policy::strict_expression: return false;
+    case numerical_reassociation_policy::declared_exact: return p.all_exact_associative;
+    case numerical_reassociation_policy::mathematical: return p.all_associative;
+    }
+    return false;
+}
+[[nodiscard]] constexpr bool vector_choice_admissible(
+    reduction_properties_t const& p, numerical_reassociation_policy policy) noexcept {
+    // The generic descriptor cannot warrant identity-padding preserves
+    // signed FP zero or the K recurrence. Domain executors can supply
+    // qualified strict vector paths outside this generic search.
+    return policy != numerical_reassociation_policy::strict_expression &&
+           p.all_have_identity;
+}
+
 // ═══════════════════════════════════════════════════════════════════════
 // make_reduction_opt_space — the generator
 // ═══════════════════════════════════════════════════════════════════════
@@ -96,14 +125,16 @@ struct reduction_opt_space_result {
 ///   auto features = result.bridge.encode(pt);
 template <typename... Lanes>
 auto make_reduction_opt_space(
-    const ct_dp::algebra::tuple_reduction<Lanes...>& red)
+    const ct_dp::algebra::tuple_reduction<Lanes...>& red,
+    numerical_reassociation_policy policy =
+        numerical_reassociation_policy::strict_expression)
 {
     auto props = reduction_properties(red);
 
     auto space = descriptor_space("reduction_opt",
         default_tile_dim(),
-        conditional_dim(props.all_associative,   default_tree_shape_dim()),
-        conditional_dim(props.all_have_identity, default_vec_width_dim())
+        conditional_dim(tree_change_admissible(props, policy), default_tree_shape_dim()),
+        conditional_dim(vector_choice_admissible(props, policy), default_vec_width_dim())
     );
 
     auto bridge = default_bridge(space);
@@ -120,14 +151,16 @@ auto make_reduction_opt_space(
     const ct_dp::algebra::tuple_reduction<Lanes...>& red,
     TileDim tile_dim,
     TreeDim tree_dim,
-    VecDim  vec_dim)
+    VecDim  vec_dim,
+    numerical_reassociation_policy policy =
+        numerical_reassociation_policy::strict_expression)
 {
     auto props = reduction_properties(red);
 
     auto space = descriptor_space("reduction_opt",
         std::move(tile_dim),
-        conditional_dim(props.all_associative,   std::move(tree_dim)),
-        conditional_dim(props.all_have_identity, std::move(vec_dim))
+        conditional_dim(tree_change_admissible(props, policy), std::move(tree_dim)),
+        conditional_dim(vector_choice_admissible(props, policy), std::move(vec_dim))
     );
 
     auto bridge = default_bridge(space);
@@ -139,12 +172,15 @@ auto make_reduction_opt_space(
 ///
 /// Used by tree_space child factories that have group-level properties
 /// (from make_group_properties) but no tuple_reduction for the subset.
-inline auto make_reduction_opt_space(const reduction_properties_t& props)
+inline auto make_reduction_opt_space(
+    const reduction_properties_t& props,
+    numerical_reassociation_policy policy =
+        numerical_reassociation_policy::strict_expression)
 {
     auto space = descriptor_space("reduction_opt",
         default_tile_dim(),
-        conditional_dim(props.all_associative,   default_tree_shape_dim()),
-        conditional_dim(props.all_have_identity, default_vec_width_dim())
+        conditional_dim(tree_change_admissible(props, policy), default_tree_shape_dim()),
+        conditional_dim(vector_choice_admissible(props, policy), default_vec_width_dim())
     );
 
     auto bridge = default_bridge(space);
