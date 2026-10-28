@@ -119,9 +119,14 @@ lex_select(constexpr_vector<evaluated_point<Candidate, D>, MaxN> const& frontier
     }
 
     constexpr std::size_t prio[] = {Priority...};
-    std::size_t best = 0;
+    std::size_t best = frontier.size();
 
-    for (std::size_t i = 1; i < frontier.size(); ++i) {
+    for (std::size_t i = 0; i < frontier.size(); ++i) {
+        if (!frontier[i].cost.is_finite()) continue;
+        if (best == frontier.size()) {
+            best = i;
+            continue;
+        }
         bool i_is_better = false;
         for (std::size_t p = 0; p < sizeof...(Priority); ++p) {
             auto const dim = prio[p];
@@ -138,6 +143,7 @@ lex_select(constexpr_vector<evaluated_point<Candidate, D>, MaxN> const& frontier
             best = i;
         }
     }
+    if (best == frontier.size()) return {};
     return frontier[best];
 }
 
@@ -165,16 +171,20 @@ weighted_select(constexpr_vector<evaluated_point<Candidate, D>, MaxN> const& fro
         return sum;
     };
 
-    std::size_t best = 0;
-    double best_val = scalarise(frontier[0].cost);
+    std::size_t best = frontier.size();
+    double best_val = std::numeric_limits<double>::infinity();
 
-    for (std::size_t i = 1; i < frontier.size(); ++i) {
+    for (std::size_t i = 0; i < frontier.size(); ++i) {
+        if (!frontier[i].cost.is_finite()) continue;
         double val = scalarise(frontier[i].cost);
-        if (val < best_val) {
+        constexpr auto inf = std::numeric_limits<double>::infinity();
+        if (val != val || val == inf || val == -inf) continue;
+        if (best == frontier.size() || val < best_val) {
             best = i;
             best_val = val;
         }
     }
+    if (best == frontier.size()) return {};
     return frontier[best];
 }
 

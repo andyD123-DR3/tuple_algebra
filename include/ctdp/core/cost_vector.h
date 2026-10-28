@@ -90,6 +90,7 @@ struct cost_vector {
 
     /// Returns true iff neither vector dominates the other.
     [[nodiscard]] constexpr bool incomparable(cost_vector const& other) const {
+        if (!is_finite() || !other.is_finite()) return false;
         return !dominates(other) && !other.dominates(*this);
     }
 

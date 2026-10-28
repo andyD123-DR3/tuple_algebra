@@ -266,3 +266,16 @@ TEST(WeightedSelect, BasicWeighting) {
 }
 
 } // namespace
+
+TEST(ParetoInvalidCosts, NeverAdmitNaNIntoFrontierOrSelection) {
+    const double nan = std::numeric_limits<double>::quiet_NaN();
+    constexpr_vector<evaluated_point<int,2>,4> vals;
+    vals.push_back({10,{{nan,0.0}}});
+    vals.push_back({20,{{2.0,3.0}}});
+    vals.push_back({30,{{1.0,4.0}}});
+    auto frontier = pareto_frontier(vals);
+    ASSERT_EQ(frontier.size(),2u);
+    EXPECT_EQ(lex_select<0>(vals).candidate,30);
+    EXPECT_EQ(weighted_select(vals,cost_vector<2>{{1.0,0.0}}).candidate,30);
+    EXPECT_FALSE(cost_vector<2>{{nan,0.0}}.incomparable(cost_vector<2>{{1.0,0.0}}));
+}
