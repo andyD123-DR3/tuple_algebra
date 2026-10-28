@@ -76,6 +76,9 @@ template<std::size_t MaxIter = 1000,
     }
 
     double current_cost = cost(current);
+    constexpr auto inf = std::numeric_limits<double>::infinity();
+    if (current_cost != current_cost || current_cost == inf || current_cost == -inf)
+        return plan<candidate_type>{candidate_type{},inf,stats};
     stats.candidates_evaluated = 1;
     stats.candidates_total = 1;
 
@@ -102,6 +105,7 @@ template<std::size_t MaxIter = 1000,
 
                 double c = cost(neighbour);
                 stats.candidates_evaluated++;
+                if (c != c || c == inf || c == -inf) return;
 
                 if (c < current_cost && c < best_neighbour_cost) {
                     best_neighbour = neighbour;

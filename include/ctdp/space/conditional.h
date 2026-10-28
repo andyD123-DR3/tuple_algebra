@@ -4,12 +4,11 @@
 //   - When active:  behaves exactly like the wrapped descriptor
 //   - When inactive: cardinality = 1, single default value, no search freedom
 //
-// Feature encoding stability:
-//   Feature width is ALWAYS the same regardless of active/inactive state.
-//   When active, features encode per the wrapped descriptor's rules.
-//   When inactive, all feature slots are 0.0.
-//   This guarantees that ML models trained on one space configuration
-//   can still consume feature vectors from another without layout changes.
+// Feature encoding, schema v2:
+//   Feature width is the wrapped width + a presence bit, invariant under
+//   active/inactive state. Active writes [value features...,1]; absent
+//   writes all zeros. Present false/0 is NOT equivalent to absence.
+//   Pre-v2 model coefficients and cached feature vectors must be re-fitted.
 //
 // The predicate is evaluated at construction time, not at search time.
 // This is for conditions known before search begins: algebraic properties
@@ -29,6 +28,7 @@
 #include <cstddef>
 #include <string_view>
 #include <type_traits>
+#include <stdexcept>
 
 namespace ctdp::space {
 
@@ -93,7 +93,8 @@ struct conditional_dim {
     /// When active: delegate to wrapped. When inactive: return default value.
     constexpr value_type value_at(std::size_t i) const {
         if (active) return wrapped.value_at(i);
-        // Inactive: only index 0 is legal, returns first value of wrapped
+        if (i != 0) throw std::out_of_range(
+            "conditional_dim: inactive dimension has only index zero");
         return wrapped.value_at(0);
     }
 
@@ -114,17 +115,16 @@ struct conditional_dim {
 
     // ── Feature encoding support ─────────────────────────────────
 
-    /// Feature width is ALWAYS the wrapped descriptor's feature width.
-    /// This is the stability guarantee: active or not, same width.
+    /// Feature schema v2 has an explicit presence bit after value features.
+    /// Stable width is preserved across active/inactive, but old model
+    /// coefficients must be re-fitted for the new feature schema.
     constexpr std::size_t feature_width() const {
-        // If the wrapped descriptor provides its own feature_width (e.g. partition),
-        // use that. Otherwise fall back to the encoding-based calculation.
         if constexpr (requires { wrapped.feature_width(); }) {
-            return wrapped.feature_width();
+            return wrapped.feature_width() + 1;
         } else {
             auto enc = wrapped.default_encoding();
-            if (enc == encoding_hint::one_hot) return wrapped.cardinality();
-            return 1;
+            return (enc == encoding_hint::one_hot ?
+                wrapped.cardinality() : 1) + 1;
         }
     }
 
@@ -137,14 +137,13 @@ struct conditional_dim {
             for (std::size_t k = 0; k < w; ++k) out[k] = 0.0;
             return;
         }
-        // Active: if the wrapped descriptor provides its own write_features
-        // (e.g. partition with pairwise encoding), delegate to it.
-        // Otherwise use the shared scalar encoding logic.
+        // Active: write the wrapped features and explicit presence bit.
         if constexpr (requires { wrapped.write_features(val, out); }) {
             wrapped.write_features(val, out);
         } else {
             detail::encode_scalar(wrapped, val, wrapped.default_encoding(), out);
         }
+        out[w - 1] = 1.0;
     }
 
     // ── Query ────────────────────────────────────────────────────

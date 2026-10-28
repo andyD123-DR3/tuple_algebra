@@ -265,6 +265,12 @@ constexpr auto filter_valid(Space space, Pred pred) {
 // ═══════════════════════════════════════════════════════════════════════
 
 namespace detail {
+// C++20-constexpr finite cost predicate. Nonfinite model outputs cannot
+// be used to select a physical plan.
+constexpr bool finite_cost(double cost) noexcept {
+    constexpr auto inf = std::numeric_limits<double>::infinity();
+    return cost == cost && cost != inf && cost != -inf;
+}
 // Saturating multiply: returns saturated (SIZE_MAX) on overflow instead of wrapping.
 // Saturation is sticky: saturating_mul(saturated, n) == saturated for all n > 0.
 constexpr std::size_t saturating_mul(std::size_t a, std::size_t b) {
@@ -311,6 +317,7 @@ constexpr auto exhaustive_search(const Space& space, CostFn&& cost_fn)
             if (!space.is_valid(p)) return;
         }
         double c = cost_fn(p);
+        if (!detail::finite_cost(c)) return;
         if (!found || c < best_cost) {
             best = p; best_cost = c; found = true;
         }
@@ -336,8 +343,9 @@ constexpr auto exhaustive_search_with_cost(const Space& space, CostFn&& cost_fn)
         if constexpr (constrained_space<Space>) {
             if (!space.is_valid(p)) return;
         }
-        ++result.evaluated;
         double c = cost_fn(p);
+        if (!detail::finite_cost(c)) return;
+        ++result.evaluated;
         if (result.evaluated == 1u || c < result.best_cost) {
             result.best = p; result.best_cost = c;
         }

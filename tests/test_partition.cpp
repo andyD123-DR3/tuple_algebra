@@ -412,9 +412,9 @@ TEST(Partition, ConditionalDim_FeatureWidthStable) {
     auto b_on  = default_bridge(space_on);
     auto b_off = default_bridge(space_off);
 
-    // Both must have same width: partition(4) → 6 pairwise features
+    // Both have 6 pairwise features + explicit presence bit.
     EXPECT_EQ(b_on.num_features(), b_off.num_features());
-    EXPECT_EQ(b_on.num_features(), 6u);
+    EXPECT_EQ(b_on.num_features(), 7u);
 }
 
 TEST(Partition, ConditionalDim_InactiveEncodesZeros) {
@@ -425,8 +425,8 @@ TEST(Partition, ConditionalDim_InactiveEncodesZeros) {
 
     auto pt = space.point_at(0);
     auto features = bridge.encode(pt);
-    // All pairwise features should be 0.0 (inactive)
-    EXPECT_EQ(features.size(), 3u);
+    // All pairwise features and the presence bit are zero.
+    EXPECT_EQ(features.size(), 4u);
     for (std::size_t i = 0; i < features.size(); ++i)
         EXPECT_DOUBLE_EQ(features[i], 0.0) << "Feature " << i;
 }

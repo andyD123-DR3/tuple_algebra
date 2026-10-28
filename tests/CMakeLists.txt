@@ -101,6 +101,13 @@ ctdp_add_test(graph_step5_test graph/graph_step5_test.cc)
 
 # Step 6: Schedule space, dependencies, resource constraints
 ctdp_add_test(graph_step6_test graph/graph_step6_test.cc)
+# Compile/run the standalone adversarial graph and engine integration drivers.
+add_executable(ctdp_graph_red_team graph/test_red_team.cpp)
+target_link_libraries(ctdp_graph_red_team PRIVATE ctdp_all)
+add_test(NAME ctdp_graph_red_team COMMAND ctdp_graph_red_team)
+add_executable(ctdp_graph_engine_integration graph/test_engine_integration.cpp)
+target_link_libraries(ctdp_graph_engine_integration PRIVATE ctdp_all)
+add_test(NAME ctdp_graph_engine_integration COMMAND ctdp_graph_engine_integration)
 
 # Step 7: SpMV full pipeline end-to-end
 ctdp_add_test(graph_step7_test graph/graph_step7_test.cc)
@@ -153,6 +160,11 @@ ctdp_add_test(test_conditional_dim test_conditional_dim.cpp)
 
 # ══ Space layer: reduction properties + space generator (Sprint 2, tasks 2.3-2.7) ═
 ctdp_add_test(test_reduction_space test_reduction_space.cpp)
+# Previously committed but absent from the default CI test registration.
+ctdp_add_test(test_tree_space test_tree_space.cpp)
+ctdp_add_test(test_reduction_tree_space test_reduction_tree_space.cpp)
+ctdp_add_test(test_pareto test_pareto.cpp)
+ctdp_add_test(test_redteam_soundness test_redteam_soundness.cpp)
 
 # ══ Space layer: ordinal ordinate type + fix<I> alias (Sprint 1) ═══════════
 ctdp_add_test(test_ordinal_fix test_ordinal_fix.cpp)
@@ -229,6 +241,12 @@ add_custom_target(check
             test_space_v072
             test_conditional_dim
             test_reduction_space
+            test_tree_space
+            test_reduction_tree_space
+            test_pareto
+            test_redteam_soundness
+            ctdp_graph_red_team
+            ctdp_graph_engine_integration
             test_ordinal_fix
             test_partition
             test_permutation

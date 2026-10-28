@@ -205,8 +205,8 @@ private:
         auto enc = encodings_[I];
         auto val = std::get<I>(pt);
 
-        if constexpr (std::remove_cvref_t<decltype(desc)>::kind == dim_kind::partition ||
-                      std::remove_cvref_t<decltype(desc)>::kind == dim_kind::permutation) {
+        if constexpr (requires { desc.write_features(val, out); }) {
+            // Conditional dimensions require this path for the presence bit.
             desc.write_features(val, out);
         } else {
             detail::encode_scalar(desc, val, enc, out);

@@ -165,14 +165,18 @@ TEST(PermutationSpaceIntegration, ConditionalPermutationPreservesFeatureWidth) {
     auto active_bridge = default_bridge(active_space);
     auto inactive_bridge = default_bridge(inactive_space);
 
-    EXPECT_EQ(active_space.feature_width(), 3u);
-    EXPECT_EQ(inactive_space.feature_width(), 3u);
-    EXPECT_EQ(active_bridge.num_features(), 3u);
-    EXPECT_EQ(inactive_bridge.num_features(), 3u);
+    EXPECT_EQ(active_space.feature_width(), 4u);
+    EXPECT_EQ(inactive_space.feature_width(), 4u);
+    EXPECT_EQ(active_bridge.num_features(), 4u);
+    EXPECT_EQ(inactive_bridge.num_features(), 4u);
 
-    std::vector<double> inactive_features(3, -1.0);
+    std::vector<double> inactive_features(4, -1.0);
     inactive_bridge.write_features(std::tuple{permutation_value<3>{}}, inactive_features);
     for (double x : inactive_features) EXPECT_DOUBLE_EQ(x, 0.0);
+    const auto active_features=active_bridge.encode(
+        std::tuple{permutation_value<3>{}});
+    ASSERT_EQ(active_features.size(),4u);
+    EXPECT_DOUBLE_EQ(active_features[3],1.0); // present
 }
 
 static_assert(dimension_descriptor<permutation_desc<4>>);

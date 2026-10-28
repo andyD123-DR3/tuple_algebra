@@ -559,3 +559,31 @@ TEST(LocalSearch, HeterogeneousSpace) {
     EXPECT_EQ(plan.params[0], HS::C);
     EXPECT_EQ(plan.params[1], HS::B);
 }
+
+
+TEST(BeamSearch, NarrowBeamCanMissFeasiblePlan) {
+    // A structural constraint requires the first choice to be Safe, but
+    // beam width one prefers Fast at level 0. No feasible completion
+    // remains in the final beam. This is heuristic incompleteness, NOT
+    // evidence that the full search space is infeasible.
+    constexpr auto space = make_3x3_space();
+    auto must_safe_first = [](auto const& c) constexpr {
+        return c[0] == Strat::Safe;
+    };
+    auto beam = beam_search<1>(space, whole_cost, must_safe_first);
+    EXPECT_FALSE(beam.is_feasible());
+    auto exhaustive = exhaustive_search(space, whole_cost, must_safe_first);
+    EXPECT_TRUE(exhaustive.is_feasible());
+    EXPECT_EQ(exhaustive.params[0], Strat::Safe);
+}
+
+TEST(BeamSearch, NaNModelCannotProduceFeasibleOutput) {
+    constexpr auto space = make_3x3_space();
+    auto nan_cost = [](auto const&) constexpr -> double {
+        return std::numeric_limits<double>::quiet_NaN();
+    };
+    auto beam = beam_search<1>(space, nan_cost);
+    EXPECT_FALSE(beam.is_feasible());
+    auto local = local_search(space, nan_cost);
+    EXPECT_FALSE(local.is_feasible());
+}

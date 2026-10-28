@@ -165,8 +165,8 @@ TEST(PropsOverload, MatchesTupleVersion) {
     );
     auto props = reduction_properties(red);
 
-    auto from_red = make_reduction_opt_space(red);
-    auto from_props = make_reduction_opt_space(props);
+    auto from_red = make_reduction_opt_space(red, numerical_reassociation_policy::mathematical);
+    auto from_props = make_reduction_opt_space(props, numerical_reassociation_policy::mathematical);
 
     EXPECT_EQ(from_red.space.cardinality(), from_props.space.cardinality());
     EXPECT_EQ(from_red.bridge.num_features(), from_props.bridge.num_features());
@@ -201,7 +201,7 @@ TEST(NestedSolve, Separable) {
         reduction_lane{identity_t{}, plus_fn{}, 0},
         reduction_lane{identity_t{}, min_fn{},  std::numeric_limits<int>::max()}
     );
-    auto ts = make_reduction_tree_space(red);
+    auto ts = make_reduction_tree_space(red, numerical_reassociation_policy::mathematical);
     auto props = reduction_properties(red);
 
     // Separable cost: root_cost = num_groups, child_cost = first dim value (tile)
@@ -223,7 +223,7 @@ TEST(NestedSolve, Separable) {
     double best_nested = 1e18;
     auto root = make_partition<3>("g");
     auto filter = make_fusibility_filter<3>(props);
-    auto child_factory = make_reduction_child_factory(props);
+    auto child_factory = make_reduction_child_factory(props, numerical_reassociation_policy::mathematical);
 
     for (std::size_t i = 0; i < root.cardinality(); ++i) {
         auto rv = root.value_at(i);
@@ -259,7 +259,7 @@ TEST(NestedSolve, FewerEvaluations) {
         reduction_lane{identity_t{}, plus_fn{}, 0},
         reduction_lane{identity_t{}, min_fn{},  std::numeric_limits<int>::max()}
     );
-    auto ts = make_reduction_tree_space(red);
+    auto ts = make_reduction_tree_space(red, numerical_reassociation_policy::mathematical);
     auto props = reduction_properties(red);
 
     // Count exhaustive evaluations
@@ -269,7 +269,7 @@ TEST(NestedSolve, FewerEvaluations) {
     std::size_t nested_evals = 0;
     auto root = make_partition<3>("g");
     auto filter = make_fusibility_filter<3>(props);
-    auto child_factory = make_reduction_child_factory(props);
+    auto child_factory = make_reduction_child_factory(props, numerical_reassociation_policy::mathematical);
 
     for (std::size_t i = 0; i < root.cardinality(); ++i) {
         auto rv = root.value_at(i);
@@ -304,13 +304,13 @@ TEST(E2E, FiveLaneStats) {
     // Precondition: min and max are fusible
     ASSERT_TRUE(props.fusible(3, 4));
 
-    auto ts = make_reduction_tree_space(red);
-    auto tb = make_reduction_tree_bridge(red);
+    auto ts = make_reduction_tree_space(red, numerical_reassociation_policy::mathematical);
+    auto tb = make_reduction_tree_bridge(red, numerical_reassociation_policy::mathematical);
 
     EXPECT_GT(ts.cardinality(), 0u);
 
-    // Feature width: 5*4/2=10 pairwise + 5*5=25 child → 35
-    EXPECT_EQ(tb.num_features(), 35u);
+    // Feature schema v2: 10 pairwise root + 5 * 7 child features.
+    EXPECT_EQ(tb.num_features(), 45u);
 
     // Verify {0,1,2}+{3,4} partition exists in enumeration
     bool found_target = false;
@@ -335,18 +335,33 @@ TEST(E2E, FiveLaneStats) {
     EXPECT_TRUE(found_target);
     EXPECT_EQ(count, 10u);  // 10 legal partitions of 5 lanes
 
-    // Encode one point to verify features
-    auto rv = root_desc.value_at(0);  // [0,0,0,0,0] all one group
-    ASSERT_TRUE(filter(rv));
-
-    auto child_factory = make_reduction_child_factory(props);
+    // The all-one-group point is ILLEGAL for mixed plus/min/max lanes.
+    // Encode an actually admissible partition with one child plan per group.
+    partition_value<5> rv{};
+    bool selected = false;
+    for (std::size_t i = 0; i < root_desc.cardinality(); ++i) {
+        auto candidate = root_desc.value_at(i);
+        if (filter(candidate) && candidate.num_groups() == 2) {
+            rv = candidate;
+            selected = true;
+            break;
+        }
+    }
+    ASSERT_TRUE(selected);
+    auto child_factory = make_reduction_child_factory(
+        props, numerical_reassociation_policy::mathematical);
     std::array<std::size_t, 5> lane_buf{};
-    auto lcount = group_lanes(rv, 0, lane_buf);
-    auto lanes = std::span<const std::size_t>{lane_buf.data(), lcount};
-    auto child = child_factory(rv, 0, lanes);
-    auto child_pt = child.point_at(0);
-
-    tree_point<5, decltype(child_pt)> tp{rv, {child_pt}};
+    auto first_count = group_lanes(rv, 0, lane_buf);
+    auto first_child = child_factory(rv, 0,
+        std::span<const std::size_t>{lane_buf.data(), first_count});
+    using child_point = decltype(first_child.point_at(0));
+    tree_point<5, child_point> tp{rv, {}};
+    for (std::size_t g = 0; g < rv.num_groups(); ++g) {
+        auto count = group_lanes(rv, g, lane_buf);
+        auto child = child_factory(rv, g,
+            std::span<const std::size_t>{lane_buf.data(), count});
+        tp.group_plans.push_back(child.point_at(0));
+    }
     auto features = tb.encode(tp);
     EXPECT_EQ(features.size(), feature_width);
 }

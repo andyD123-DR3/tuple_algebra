@@ -131,6 +131,12 @@ struct segmented_solution {
     std::size_t infeasible_count = 0;
 };
 
+// Finite metric guard usable in C++20 constant evaluation.
+[[nodiscard]] constexpr bool finite_segment_cost(double x) noexcept {
+    constexpr auto inf = std::numeric_limits<double>::infinity();
+    return x == x && x != inf && x != -inf;
+}
+
 // =============================================================================
 // Segmentation engine: partition → solve → assemble
 // =============================================================================
@@ -205,7 +211,7 @@ solve_segmented(schedule_space<MaxV> const& space,
         sol.segment_cost[g] = sr.cost;
         sol.total_cost += sr.cost;
 
-        if (!sr.feasible) {
+        if (!sr.feasible || !finite_segment_cost(sr.cost)) {
             sol.all_feasible = false;
             sol.infeasible_count++;
         }
@@ -220,28 +226,52 @@ solve_segmented(schedule_space<MaxV> const& space,
     return sol;
 }
 
-/// Validate that a segmented solution respects inter-segment dependencies.
-///
-/// This checks that the assembly of independently-solved segments
-/// does not violate any dependency constraint in the original graph.
-/// For DAG-based computation graphs where segments are fusion groups,
-/// this should always pass (by construction of find_fusion_groups).
+/// Basic validation of an assembled segmented result.
+/// This rejects infeasible segments, nonfinite costs, inconsistent cost sums
+/// and impossible dependency ranks. It does NOT prove semantic compatibility
+/// of user-defined strategies: see the overload accepting the schedule and
+/// resource constraints for additional (still necessary, not sufficient) checks.
 template<std::size_t MaxV, std::size_t MaxE>
 [[nodiscard]] constexpr bool
-validate_segmented(segmented_solution<MaxV> const& /*sol*/,
+validate_segmented(segmented_solution<MaxV> const& sol,
                    dependency_set<MaxE> const& deps) noexcept {
-    // With segmented DP, each node's "time slot" is its topo_rank
-    // (the segments are solved independently but in topo order).
-    // The dependency check ensures pred_rank < succ_rank, which is
-    // guaranteed by the topological sort that built the space.
-    // This is a sanity check — it should always pass for valid inputs.
+    if (!sol.all_feasible || sol.infeasible_count != 0 ||
+        sol.segment_count > MaxV || !finite_segment_cost(sol.total_cost))
+        return false;
+    double sum = 0.0;
+    for (std::size_t i = 0; i < sol.segment_count; ++i) {
+        if (!finite_segment_cost(sol.segment_cost[i]))
+            return false;
+        sum += sol.segment_cost[i];
+    }
+    if (sum != sol.total_cost) return false;
     for (std::size_t i = 0; i < deps.size(); ++i) {
         auto const& d = deps.deps[i];
-        if (d.pred_rank >= d.succ_rank) {
-            return false;  // topo order violated
-        }
+        if (d.pred_rank >= MaxV || d.succ_rank >= MaxV ||
+            d.pred_rank >= d.succ_rank)
+            return false;
     }
     return true;
+}
+
+/// Additional global structural/resource validation. User-defined strategy
+/// combinations and observation contracts must still be checked by the
+/// domain-specific executor before considering a plan admitted.
+template<std::size_t MaxV, std::size_t MaxE>
+[[nodiscard]] constexpr bool
+validate_segmented(segmented_solution<MaxV> const& sol,
+                   dependency_set<MaxE> const& deps,
+                   schedule_space<MaxV> const& space,
+                   resource_constraint const& resources = unconstrained_resources) noexcept {
+    if (!validate_segmented(sol, deps) || !space.is_dag ||
+        space.group_count != sol.segment_count)
+        return false;
+    for (std::size_t i = 0; i < deps.size(); ++i) {
+        if (deps.deps[i].pred_rank >= space.size() ||
+            deps.deps[i].succ_rank >= space.size())
+            return false;
+    }
+    return check_all_resources(space, resources);
 }
 
 } // namespace ctdp::graph

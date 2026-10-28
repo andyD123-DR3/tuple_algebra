@@ -225,15 +225,21 @@ build_constraints(G const& g,
     std::array<std::uint16_t, MaxV> dist{};
     std::uint16_t max_dist = 0;
 
-    for (std::size_t i = 0; i < result.dependencies.size(); ++i) {
-        auto const& d = result.dependencies.deps[i];
-        auto const candidate =
-            static_cast<std::uint16_t>(dist[d.pred_rank] + 1);
-        if (candidate > dist[d.succ_rank]) {
-            dist[d.succ_rank] = candidate;
-        }
-        if (dist[d.succ_rank] > max_dist) {
-            max_dist = dist[d.succ_rank];
+    // Traverse source vertices in topological order. Iterating dependencies
+    // in original vertex-ID order is unsound for DAGs whose IDs are not
+    // topologically ordered (e.g. 2 -> 1 -> 0).
+    // The adjacency walk is O(V + E), with every predecessor finalised
+    // before its outgoing edges are relaxed.
+    for (std::size_t rank = 0; rank < space.size(); ++rank) {
+        auto const id = space[rank].id;
+        for (auto next : g.out_neighbors(id)) {
+            auto const succ_rank = space.topo_index[next.value];
+            auto const candidate =
+                static_cast<std::uint16_t>(dist[rank] + 1);
+            if (candidate > dist[succ_rank])
+                dist[succ_rank] = candidate;
+            if (dist[succ_rank] > max_dist)
+                max_dist = dist[succ_rank];
         }
     }
     result.critical_path_length = max_dist;

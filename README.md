@@ -82,6 +82,24 @@ counter measurement, and SVR-based cost prediction.
 - `docs/design/epsilon_svr_design_note.md` — Epsilon-SVR implementation
 - `docs/calibrator/` — Calibrator design and FIX parser explainer
 
+## Numerical and search soundness (October 2026 hardening)
+
+The default reduction-optimisation search now uses
+`numerical_reassociation_policy::strict_expression`:
+abstract associativity is **not** permission to alter a floating-point
+reduction tree. The explicit `declared_exact` and `mathematical` opt-ins
+expose additional candidates, but executors must still qualify observation,
+overflow, storage and hardware contracts.
+
+Conditional dimensions use **feature schema v2**: the final slot of every
+conditional dimension is a presence mask. Stored learned coefficients and
+wisdom using old conditional feature encodings must be recalibrated.
+
+The red-team correctness work is documented in
+[docs/ctdp_redteam_hardening_20261028.md](docs/ctdp_redteam_hardening_20261028.md).
+It hardens the existing framework but does not claim a generic verified
+rewrite engine or automatic synthesis of arbitrary algorithm families.
+
 ## Current interval-rooted status
 
 The interval family now has:

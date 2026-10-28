@@ -60,7 +60,10 @@ template<typename Space, typename Cost, typename... Constraints>
         double c = cost(candidate);
         stats.candidates_evaluated++;
 
-        if (c < best_cost) {
+        // Discard NaN and infinite objective values. All-invalid returns
+        // the existing infeasible (+inf) sentinel, never a NaN winner.
+        constexpr auto inf = std::numeric_limits<double>::infinity();
+        if (c == c && c != inf && c != -inf && c < best_cost) {
             best_cost = c;
             best = candidate;
         }

@@ -321,9 +321,9 @@ TEST(Ordinal, WithConditionalDim_FeatureWidthStable) {
     auto bridge_on  = default_bridge(space_on);
     auto bridge_off = default_bridge(space_off);
 
-    // Both should have same feature width: tile(1) + repro(1) = 2
+    // Presence schema v2: tile(1) + repro(1) + presence(1) = 3
     EXPECT_EQ(bridge_on.num_features(), bridge_off.num_features());
-    EXPECT_EQ(bridge_on.num_features(), 2u);
+    EXPECT_EQ(bridge_on.num_features(), 3u);
 }
 
 // ════════════════════════════════════════════════════════════════════════
@@ -455,8 +455,8 @@ TEST(Ordinal, ReproScenario_FullPipeline) {
     EXPECT_EQ(space.cardinality(), 36u);
 
     auto bridge = default_bridge(space);
-    // tile(log2:1) + tree(one-hot:3) + repro(normalised:1) = 5
-    EXPECT_EQ(bridge.num_features(), 5u);
+    // tile(log2:1) + tree(one-hot:3, present:1) + repro(1) = 6
+    EXPECT_EQ(bridge.num_features(), 6u);
 
     // Encode a specific point and verify
     auto pt = std::tuple{128, TreeShape::binary, Repro::reproducible};
@@ -466,7 +466,8 @@ TEST(Ordinal, ReproScenario_FullPipeline) {
     EXPECT_DOUBLE_EQ(features[1], 0.0);          // one-hot: flat
     EXPECT_DOUBLE_EQ(features[2], 1.0);          // one-hot: binary ← selected
     EXPECT_DOUBLE_EQ(features[3], 0.0);          // one-hot: pairwise
-    EXPECT_DOUBLE_EQ(features[4], 2.0 / 3.0);   // repro rank 2/3
+    EXPECT_DOUBLE_EQ(features[4], 1.0);          // tree present
+    EXPECT_DOUBLE_EQ(features[5], 2.0 / 3.0);   // repro rank 2/3
 
     // Fix repro to bitwise → 2D subproblem: tile × tree = 9
     auto subproblem = ctdp::space::section<2>(space, Repro::bitwise);
