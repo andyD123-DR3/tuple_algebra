@@ -107,37 +107,50 @@ find_fusion_groups(G const& g,
         return result;
     }
 
-    // Step 2: Build undirected fusability graph.
-    // Add both directions for each fusion pair so union-find in
-    // connected_components sees them as undirected.
-    graph_builder<cap_from<MaxV, MaxE>> fb;
-    for (std::size_t i = 0; i < V; ++i) {
-        [[maybe_unused]] auto n = fb.add_node();
-    }
+    // Step 2: Connected components of eligible edges, using disjoint sets.
+    // The earlier undirected graph inserted two directed edges for every
+    // eligible input edge but allocated only MaxE slots. Even a 3-node,
+    // 2-edge chain overflowed a perfectly valid MaxE=2 input capacity.
+    // Union-find avoids the duplicate-edge allocation entirely.
+    std::array<std::size_t, MaxV> parent{};
+    for (std::size_t i = 0; i < V; ++i) parent[i] = i;
+    auto find_root = [&](std::size_t i) constexpr -> std::size_t {
+        while (parent[i] != i) {
+            parent[i] = parent[parent[i]];
+            i = parent[i];
+        }
+        return i;
+    };
     for (std::size_t i = 0; i < legal.pairs.size(); ++i) {
-        auto const& p = legal.pairs[i];
-        fb.add_edge(p.u, p.v);
-        fb.add_edge(p.v, p.u);  // undirected
+        const auto a = find_root(legal.pairs[i].u.value);
+        const auto b = find_root(legal.pairs[i].v.value);
+        if (a != b) parent[b] = a;
     }
-    auto const fgraph = fb.finalise();
-
-    // Step 3: Connected components → candidate groups.
-    auto const cc = connected_components(fgraph);
+    std::array<std::size_t, MaxV> root_group{};
+    root_group.fill(MaxV);
+    std::array<std::size_t, MaxV> component_of{};
+    std::size_t component_count = 0;
+    for (std::size_t i = 0; i < V; ++i) {
+        const auto root = find_root(i);
+        if (root_group[root] == MaxV)
+            root_group[root] = component_count++;
+        component_of[i] = root_group[root];
+    }
 
     // Step 4: Validate acyclicity of the coarsened graph.
     // Build the coarsened graph directly (lightweight check).
     graph_builder<cap_from<MaxV, MaxE>> cb;
-    for (std::size_t i = 0; i < cc.component_count; ++i) {
+    for (std::size_t i = 0; i < component_count; ++i) {
         [[maybe_unused]] auto n = cb.add_node();
     }
 
     std::size_t cross_edges = 0;
     std::size_t intra_edges = 0;
     for (std::size_t u = 0; u < V; ++u) {
-        auto const gu = cc.component_of[u];
+        auto const gu = component_of[u];
         auto const uid = node_id{static_cast<std::uint16_t>(u)};
         for (auto v : g.out_neighbors(uid)) {
-            auto const gv = cc.component_of[v.value];
+            auto const gv = component_of[v.value];
             if (gu != gv) {
                 cb.add_edge(node_id{gu}, node_id{gv});
                 cross_edges++;
@@ -154,9 +167,9 @@ find_fusion_groups(G const& g,
         // Groups are valid — coarsened graph is acyclic.
         result.group_of.resize(V);
         for (std::size_t i = 0; i < V; ++i) {
-            result.group_of[i] = cc.component_of[i];
+            result.group_of[i] = static_cast<std::uint16_t>(component_of[i]);
         }
-        result.group_count = cc.component_count;
+        result.group_count = component_count;
         result.is_valid_dag = true;
         result.fused_edge_count = intra_edges;
     } else {

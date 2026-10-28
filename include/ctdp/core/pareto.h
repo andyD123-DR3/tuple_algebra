@@ -74,6 +74,9 @@ pareto_frontier(constexpr_vector<evaluated_point<Candidate, D>, MaxN> const& poi
     auto const n = points.size();
 
     for (std::size_t i = 0; i < n; ++i) {
+        // Invalid/nonfinite measurements are inadmissible, not Pareto
+        // points. Without this, NaN can appear to dominate valid costs.
+        if (!points[i].cost.is_finite()) continue;
         bool dominated = false;
         for (std::size_t j = 0; j < n; ++j) {
             if (i != j && points[j].cost.dominates(points[i].cost)) {
@@ -200,7 +203,9 @@ pareto_search(Space const& space, MultiCostFn const& cost)
     constexpr_vector<evaluated_point<point_type, D>, MaxEval> all_points;
 
     space.enumerate([&](point_type const& pt) {
-        all_points.push_back(evaluated_point<point_type, D>{pt, cost(pt)});
+        auto score = cost(pt);
+        if (score.is_finite())
+            all_points.push_back(evaluated_point<point_type, D>{pt, score});
     });
 
     return pareto_frontier(all_points);

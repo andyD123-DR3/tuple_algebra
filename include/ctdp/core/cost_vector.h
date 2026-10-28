@@ -27,6 +27,7 @@
 
 #include <array>
 #include <cstddef>
+#include <limits>
 
 namespace ctdp {
 
@@ -62,12 +63,23 @@ struct cost_vector {
 
     [[nodiscard]] static constexpr std::size_t dimensions() { return D; }
 
+    // Invalid predicted objectives must not enter Pareto comparisons:
+    // IEEE NaNs compare neither greater nor less, leading to false
+    // dominance otherwise. No infinity is a measured objective.
+    [[nodiscard]] constexpr bool is_finite() const noexcept {
+        constexpr auto inf = std::numeric_limits<double>::infinity();
+        for (double x : obj)
+            if (x != x || x == inf || x == -inf) return false;
+        return true;
+    }
+
     // ─── Pareto dominance ────────────────────────────────────────────
 
     /// Returns true iff this vector Pareto-dominates other:
     ///   - this[i] <= other[i] for ALL i, AND
     ///   - this[j] <  other[j] for at least one j.
     [[nodiscard]] constexpr bool dominates(cost_vector const& other) const {
+        if (!is_finite() || !other.is_finite()) return false;
         bool at_least_one_strict = false;
         for (std::size_t i = 0; i < D; ++i) {
             if (obj[i] > other.obj[i]) return false;
