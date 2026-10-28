@@ -15,6 +15,10 @@
 #include <ctdp/graph/min_cut.h>
 #include <ctdp/core/rt_array.h>
 
+// Test assertions must remain live even under a Release (-DNDEBUG) CI build.
+#ifdef NDEBUG
+#undef NDEBUG
+#endif
 #include <cassert>
 #include <cmath>
 #include <iostream>

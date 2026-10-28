@@ -9,6 +9,10 @@
 #include <ctdp/graph/fuse_group.h>
 #include <ctdp/graph/array_helpers.h>
 
+// Test assertions must remain live even under a Release (-DNDEBUG) CI build.
+#ifdef NDEBUG
+#undef NDEBUG
+#endif
 #include <cassert>
 #include <iostream>
 #include <type_traits>
