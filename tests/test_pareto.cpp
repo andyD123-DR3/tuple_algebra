@@ -277,5 +277,5 @@ TEST(ParetoInvalidCosts, NeverAdmitNaNIntoFrontierOrSelection) {
     ASSERT_EQ(frontier.size(),2u);
     EXPECT_EQ(lex_select<0>(vals).candidate,30);
     EXPECT_EQ(weighted_select(vals,cost_vector<2>{{1.0,0.0}}).candidate,30);
-    EXPECT_FALSE(cost_vector<2>{{nan,0.0}}.incomparable(cost_vector<2>{{1.0,0.0}}));
+    EXPECT_FALSE((cost_vector<2>{{nan,0.0}}.incomparable(cost_vector<2>{{1.0,0.0}})));
 }
