@@ -235,8 +235,8 @@ TEST(ConditionalDim, FeatureWidth_SameWhenActiveAndInactive_EnumVals) {
     auto inactive = conditional_dim(false, base);
 
     // one-hot encoding: width = number of categories = 4
-    EXPECT_EQ(active.feature_width(), 4u);
-    EXPECT_EQ(inactive.feature_width(), 4u);
+    EXPECT_EQ(active.feature_width(), 5u);
+    EXPECT_EQ(inactive.feature_width(), 5u);
     EXPECT_EQ(active.feature_width(), inactive.feature_width());
 }
 
@@ -246,8 +246,8 @@ TEST(ConditionalDim, FeatureWidth_SameWhenActiveAndInactive_IntSet) {
     auto inactive = conditional_dim(false, base);
 
     // raw encoding: width = 1
-    EXPECT_EQ(active.feature_width(), 1u);
-    EXPECT_EQ(inactive.feature_width(), 1u);
+    EXPECT_EQ(active.feature_width(), 2u);
+    EXPECT_EQ(inactive.feature_width(), 2u);
 }
 
 TEST(ConditionalDim, FeatureWidth_SameWhenActiveAndInactive_Power2) {
@@ -256,8 +256,8 @@ TEST(ConditionalDim, FeatureWidth_SameWhenActiveAndInactive_Power2) {
     auto inactive = conditional_dim(false, base);
 
     // log2 encoding: width = 1
-    EXPECT_EQ(active.feature_width(), 1u);
-    EXPECT_EQ(inactive.feature_width(), 1u);
+    EXPECT_EQ(active.feature_width(), 2u);
+    EXPECT_EQ(inactive.feature_width(), 2u);
 }
 
 TEST(ConditionalDim, FeatureWidth_SameWhenActiveAndInactive_BoolFlag) {
@@ -266,8 +266,8 @@ TEST(ConditionalDim, FeatureWidth_SameWhenActiveAndInactive_BoolFlag) {
     auto inactive = conditional_dim(false, base);
 
     // binary encoding: width = 1
-    EXPECT_EQ(active.feature_width(), 1u);
-    EXPECT_EQ(inactive.feature_width(), 1u);
+    EXPECT_EQ(active.feature_width(), 2u);
+    EXPECT_EQ(inactive.feature_width(), 2u);
 }
 
 // ════════════════════════════════════════════════════════════════════════
@@ -287,6 +287,7 @@ TEST(ConditionalDim, FeatureValues_Active_EnumVals_OneHot) {
     EXPECT_DOUBLE_EQ(features[1], 0.0);
     EXPECT_DOUBLE_EQ(features[2], 0.0);
     EXPECT_DOUBLE_EQ(features[3], 0.0);
+    EXPECT_DOUBLE_EQ(features[4], 1.0);
 
     // Encode Pairwise → [0, 0, 1, 0]
     cd.write_features(TreeShape::Pairwise, features.data());
@@ -294,33 +295,37 @@ TEST(ConditionalDim, FeatureValues_Active_EnumVals_OneHot) {
     EXPECT_DOUBLE_EQ(features[1], 0.0);
     EXPECT_DOUBLE_EQ(features[2], 1.0);
     EXPECT_DOUBLE_EQ(features[3], 0.0);
+    EXPECT_DOUBLE_EQ(features[4], 1.0);
 }
 
 TEST(ConditionalDim, FeatureValues_Active_IntSet_Raw) {
     auto cd = conditional_dim(true, make_int_set("vec", {1, 4, 8, 16}));
 
-    double feature = -1.0;
-    cd.write_features(8, &feature);
-    EXPECT_DOUBLE_EQ(feature, 8.0);
+    std::array<double,2> feature{-1.0,-1.0};
+    cd.write_features(8, feature.data());
+    EXPECT_DOUBLE_EQ(feature[0], 8.0);
+    EXPECT_DOUBLE_EQ(feature[1], 1.0);
 }
 
 TEST(ConditionalDim, FeatureValues_Active_Power2_Log2) {
     auto cd = conditional_dim(true, power_2("tile", 8, 64));
 
-    double feature = -1.0;
-    cd.write_features(32, &feature);
-    EXPECT_DOUBLE_EQ(feature, 5.0);  // log2(32) = 5
+    std::array<double,2> feature{-1.0,-1.0};
+    cd.write_features(32, feature.data());
+    EXPECT_DOUBLE_EQ(feature[0], 5.0);
+    EXPECT_DOUBLE_EQ(feature[1], 1.0);  // log2(32) = 5
 }
 
 TEST(ConditionalDim, FeatureValues_Active_BoolFlag_Binary) {
     auto cd = conditional_dim(true, bool_flag("fma"));
 
-    double feature = -1.0;
-    cd.write_features(true, &feature);
-    EXPECT_DOUBLE_EQ(feature, 1.0);
-
-    cd.write_features(false, &feature);
-    EXPECT_DOUBLE_EQ(feature, 0.0);
+    std::array<double,2> feature{-1.0,-1.0};
+    cd.write_features(true, feature.data());
+    EXPECT_DOUBLE_EQ(feature[0], 1.0);
+    EXPECT_DOUBLE_EQ(feature[1], 1.0);
+    cd.write_features(false, feature.data());
+    EXPECT_DOUBLE_EQ(feature[0], 0.0);
+    EXPECT_DOUBLE_EQ(feature[1], 1.0);
 }
 
 // ════════════════════════════════════════════════════════════════════════
@@ -344,25 +349,28 @@ TEST(ConditionalDim, FeatureValues_Inactive_EnumVals_AllZeros) {
 TEST(ConditionalDim, FeatureValues_Inactive_IntSet_Zero) {
     auto cd = conditional_dim(false, make_int_set("vec", {1, 4, 8, 16}));
 
-    double feature = -1.0;
-    cd.write_features(1, &feature);  // default value
-    EXPECT_DOUBLE_EQ(feature, 0.0);
+    std::array<double,2> feature{-1.0,-1.0};
+    cd.write_features(1, feature.data());
+    EXPECT_DOUBLE_EQ(feature[0], 0.0);
+    EXPECT_DOUBLE_EQ(feature[1], 0.0);
 }
 
 TEST(ConditionalDim, FeatureValues_Inactive_Power2_Zero) {
     auto cd = conditional_dim(false, power_2("tile", 8, 64));
 
-    double feature = -1.0;
-    cd.write_features(8, &feature);  // default value
-    EXPECT_DOUBLE_EQ(feature, 0.0);
+    std::array<double,2> feature{-1.0,-1.0};
+    cd.write_features(8, feature.data());
+    EXPECT_DOUBLE_EQ(feature[0], 0.0);
+    EXPECT_DOUBLE_EQ(feature[1], 0.0);
 }
 
 TEST(ConditionalDim, FeatureValues_Inactive_BoolFlag_Zero) {
     auto cd = conditional_dim(false, bool_flag("fma"));
 
-    double feature = -1.0;
-    cd.write_features(false, &feature);  // default value
-    EXPECT_DOUBLE_EQ(feature, 0.0);
+    std::array<double,2> feature{-1.0,-1.0};
+    cd.write_features(false, feature.data());
+    EXPECT_DOUBLE_EQ(feature[0], 0.0);
+    EXPECT_DOUBLE_EQ(feature[1], 0.0);
 }
 
 // ════════════════════════════════════════════════════════════════════════
@@ -451,6 +459,19 @@ TEST(ConditionalDim, InSpace_ActiveEnumeratesAllValues) {
               fma_values.end());
 }
 
+TEST(ConditionalDim, PresentFalseDiffersFromAbsentFalse) {
+    auto active=descriptor_space("active",conditional_dim(true,bool_flag("use")));
+    auto inactive=descriptor_space("inactive",conditional_dim(false,bool_flag("use")));
+    const auto av=default_bridge(active).encode(active.point_at(0));
+    const auto iv=default_bridge(inactive).encode(inactive.point_at(0));
+    ASSERT_EQ(av.size(),2u);
+    ASSERT_EQ(iv.size(),2u);
+    EXPECT_DOUBLE_EQ(av[0],0.0);
+    EXPECT_DOUBLE_EQ(iv[0],0.0);
+    EXPECT_DOUBLE_EQ(av[1],1.0);
+    EXPECT_DOUBLE_EQ(iv[1],0.0);
+}
+
 // ════════════════════════════════════════════════════════════════════════
 // Section 8: Feature encoding stability in descriptor_space context
 // ════════════════════════════════════════════════════════════════════════
@@ -476,7 +497,7 @@ TEST(ConditionalDim, InSpace_FeatureBridgeWidth_StableAcrossActiveInactive) {
     EXPECT_EQ(bridge_active.num_features(), bridge_inactive.num_features());
 
     // tile (log2 → 1 feature) + tree (one-hot → 4 features) = 5
-    EXPECT_EQ(bridge_active.num_features(), 5u);
+    EXPECT_EQ(bridge_active.num_features(), 6u);
 }
 
 TEST(ConditionalDim, InSpace_FeatureBridgeEncoding_InactiveProducesZeros) {
@@ -504,9 +525,10 @@ TEST(ConditionalDim, InSpace_FeatureBridgeEncoding_InactiveProducesZeros) {
     EXPECT_DOUBLE_EQ(features[2], 0.0);
     EXPECT_DOUBLE_EQ(features[3], 0.0);
     EXPECT_DOUBLE_EQ(features[4], 0.0);
+    EXPECT_DOUBLE_EQ(features[5], 0.0); // absent presence bit
 
-    // Total width: tile(1) + tree(4) = 5
-    EXPECT_EQ(features.size(), 5u);
+    // Total width: tile(1) + tree(4) + presence(1) = 6
+    EXPECT_EQ(features.size(), 6u);
 }
 
 // ════════════════════════════════════════════════════════════════════════
