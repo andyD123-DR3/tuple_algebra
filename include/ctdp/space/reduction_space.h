@@ -91,8 +91,14 @@ enum class numerical_reassociation_policy : std::uint8_t {
     // The generic descriptor cannot warrant identity-padding preserves
     // signed FP zero or the K recurrence. Domain executors can supply
     // qualified strict vector paths outside this generic search.
-    return policy != numerical_reassociation_policy::strict_expression &&
-           p.all_have_identity;
+    switch (policy) {
+    case numerical_reassociation_policy::strict_expression: return false;
+    case numerical_reassociation_policy::declared_exact:
+        return p.all_have_identity && p.all_exact_associative;
+    case numerical_reassociation_policy::mathematical:
+        return p.all_have_identity;
+    }
+    return false;
 }
 
 // ═══════════════════════════════════════════════════════════════════════
