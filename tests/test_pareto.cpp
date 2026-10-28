@@ -218,7 +218,10 @@ TEST(ParetoSearch, EndToEndDescriptorSpace) {
     auto cost = [](auto const& pt) -> cost_vector<2> {
         auto tile = std::get<0>(pt);
         auto strat = std::get<1>(pt);
-        double latency = 100.0 / tile;  // larger tile = lower latency
+        // Actual tradeoff: a more accurate strategy costs additional work.
+        double latency = (100.0 / tile) *
+            (strat == Strat::fast ? 1.0 :
+             strat == Strat::balanced ? 1.25 : 1.6);
         double error = (strat == Strat::fast) ? 10.0
                      : (strat == Strat::balanced) ? 5.0
                      : 1.0;  // safe = lowest error
@@ -228,9 +231,9 @@ TEST(ParetoSearch, EndToEndDescriptorSpace) {
     auto frontier = pareto_search<2, 20>(space, cost);
 
     // The frontier should contain the Pareto-optimal points.
-    // fast+large_tile has low latency but high error.
-    // safe+small_tile has high latency but low error.
-    // These are incomparable → both on frontier.
+    // At a fixed tile size, speed and accuracy are incomparable.
+    // The non-dominated candidates have the largest tile and varying
+    // strategy; each smaller tile is dominated within its own strategy.
     EXPECT_GE(frontier.size(), 2u);
     EXPECT_LE(frontier.size(), 12u);
 

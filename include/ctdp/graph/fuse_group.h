@@ -152,7 +152,8 @@ find_fusion_groups(G const& g,
         for (auto v : g.out_neighbors(uid)) {
             auto const gv = component_of[v.value];
             if (gu != gv) {
-                cb.add_edge(node_id{gu}, node_id{gv});
+                cb.add_edge(node_id{static_cast<std::uint16_t>(gu)},
+                            node_id{static_cast<std::uint16_t>(gv)});
                 cross_edges++;
             } else {
                 intra_edges++;

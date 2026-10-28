@@ -335,18 +335,33 @@ TEST(E2E, FiveLaneStats) {
     EXPECT_TRUE(found_target);
     EXPECT_EQ(count, 10u);  // 10 legal partitions of 5 lanes
 
-    // Encode one point to verify features
-    auto rv = root_desc.value_at(0);  // [0,0,0,0,0] all one group
-    ASSERT_TRUE(filter(rv));
-
-    auto child_factory = make_reduction_child_factory(props, numerical_reassociation_policy::mathematical);
+    // The all-one-group point is ILLEGAL for mixed plus/min/max lanes.
+    // Encode an actually admissible partition with one child plan per group.
+    partition_value<5> rv{};
+    bool selected = false;
+    for (std::size_t i = 0; i < root_desc.cardinality(); ++i) {
+        auto candidate = root_desc.value_at(i);
+        if (filter(candidate) && candidate.num_groups() == 2) {
+            rv = candidate;
+            selected = true;
+            break;
+        }
+    }
+    ASSERT_TRUE(selected);
+    auto child_factory = make_reduction_child_factory(
+        props, numerical_reassociation_policy::mathematical);
     std::array<std::size_t, 5> lane_buf{};
-    auto lcount = group_lanes(rv, 0, lane_buf);
-    auto lanes = std::span<const std::size_t>{lane_buf.data(), lcount};
-    auto child = child_factory(rv, 0, lanes);
-    auto child_pt = child.point_at(0);
-
-    tree_point<5, decltype(child_pt)> tp{rv, {child_pt}};
+    auto first_count = group_lanes(rv, 0, lane_buf);
+    auto first_child = child_factory(rv, 0,
+        std::span<const std::size_t>{lane_buf.data(), first_count});
+    using child_point = decltype(first_child.point_at(0));
+    tree_point<5, child_point> tp{rv, {}};
+    for (std::size_t g = 0; g < rv.num_groups(); ++g) {
+        auto count = group_lanes(rv, g, lane_buf);
+        auto child = child_factory(rv, g,
+            std::span<const std::size_t>{lane_buf.data(), count});
+        tp.group_plans.push_back(child.point_at(0));
+    }
     auto features = tb.encode(tp);
     EXPECT_EQ(features.size(), feature_width);
 }
