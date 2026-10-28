@@ -220,7 +220,7 @@ TEST(ReductionOptSpace, StatsReduction_FeatureWidth) {
     auto result = make_reduction_opt_space(make_stats_reduction(), numerical_reassociation_policy::mathematical);
 
     // tile_size (log2 → 1) + tree_shape (one-hot → 3) + vec_width (raw → 1) = 5
-    EXPECT_EQ(result.bridge.num_features(), 5u);
+    EXPECT_EQ(result.bridge.num_features(), 7u);
 }
 
 TEST(ReductionOptSpace, StatsReduction_AllTreeShapesAppear) {
@@ -428,8 +428,9 @@ TEST(ReductionOptSpaceE2E, FullPipeline_AllActive) {
         double tree_sum = features[1] + features[2] + features[3];
         EXPECT_DOUBLE_EQ(tree_sum, 1.0);
 
-        // Vec width (raw encoding, slot 4) is one of {1, 4, 8, 16}
-        int vec = static_cast<int>(features[4]);
+        EXPECT_DOUBLE_EQ(features[4], 1.0); // tree present
+        int vec = static_cast<int>(features[5]); // vector value
+        EXPECT_DOUBLE_EQ(features[6], 1.0); // vector present
         EXPECT_TRUE(vec == 1 || vec == 4 || vec == 8 || vec == 16)
             << "Unexpected vec_width feature: " << vec;
 
@@ -455,8 +456,8 @@ TEST(ReductionOptSpaceE2E, FullPipeline_TreeInactive) {
     // 7 tiles × 1 (inactive tree) × 1 (inactive vec — no has_identity for concat_fn) = 7
     EXPECT_EQ(space.cardinality(), 7u);
 
-    // Feature width still 5 (stable encoding)
-    EXPECT_EQ(bridge.num_features(), 5u);
+    // Two conditional dimensions carry value slots and presence bits.
+    EXPECT_EQ(bridge.num_features(), 7u);
 
     // Enumerate and verify encoding
     space.enumerate([&](auto const& pt) {
@@ -467,9 +468,9 @@ TEST(ReductionOptSpaceE2E, FullPipeline_TreeInactive) {
         EXPECT_DOUBLE_EQ(features[2], 0.0) << "Inactive tree_shape should encode as 0";
         EXPECT_DOUBLE_EQ(features[3], 0.0) << "Inactive tree_shape should encode as 0";
 
-        // Vec width slot should have the default value
-        // (raw encoding of default = 1)
-        EXPECT_DOUBLE_EQ(features[4], 1.0);
+        EXPECT_DOUBLE_EQ(features[4], 0.0); // tree absent
+        EXPECT_DOUBLE_EQ(features[5], 0.0); // vec absent
+        EXPECT_DOUBLE_EQ(features[6], 0.0);
     });
 }
 

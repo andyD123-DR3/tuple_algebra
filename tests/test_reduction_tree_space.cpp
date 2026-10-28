@@ -309,8 +309,8 @@ TEST(E2E, FiveLaneStats) {
 
     EXPECT_GT(ts.cardinality(), 0u);
 
-    // Feature width: 5*4/2=10 pairwise + 5*5=25 child → 35
-    EXPECT_EQ(tb.num_features(), 35u);
+    // Feature schema v2: 10 pairwise root + 5 * 7 child features.
+    EXPECT_EQ(tb.num_features(), 45u);
 
     // Verify {0,1,2}+{3,4} partition exists in enumeration
     bool found_target = false;
