@@ -87,8 +87,8 @@ static_assert([]{
         reversed_constraints.dependencies,reversed_space,limit);
 }());
 
-constexpr auto nan=std::numeric_limits<double>::quiet_NaN();
-constexpr ctdp::cost_vector<2> bad{{nan,0.0}};
+constexpr auto quiet_nan_value=std::numeric_limits<double>::quiet_NaN();
+constexpr ctdp::cost_vector<2> bad{{quiet_nan_value,0.0}};
 constexpr ctdp::cost_vector<2> good{{1.0,1.0}};
 static_assert(!bad.is_finite());
 static_assert(!bad.dominates(good));
@@ -97,12 +97,12 @@ static_assert(!good.dominates(bad));
 constexpr auto descriptor=s::descriptor_space(
     "nan_cost_regression",s::make_int_set("choice",{0,1,2}));
 constexpr auto nan_cost=[](auto const& point) constexpr {
-    return std::get<0>(point)==0 ? nan : static_cast<double>(3-std::get<0>(point));
+    return std::get<0>(point)==0 ? quiet_nan_value : static_cast<double>(3-std::get<0>(point));
 };
 constexpr auto scored=s::exhaustive_search_with_cost(descriptor,nan_cost);
 static_assert(scored.best_cost == 1.0 && std::get<0>(scored.best)==2);
 constexpr auto multi_cost=[](auto const& pt) constexpr {
-    if(std::get<0>(pt)==0) return ctdp::cost_vector<2>{{nan,0}};
+    if(std::get<0>(pt)==0) return ctdp::cost_vector<2>{{quiet_nan_value,0}};
     return ctdp::cost_vector<2>{{static_cast<double>(std::get<0>(pt)),4.0}};
 };
 constexpr auto pareto=ctdp::pareto_search<2,3>(descriptor,multi_cost);
@@ -124,7 +124,7 @@ TEST(RedteamSoundness, SegmentedChecksActualResult) {
     x.infeasible_count=1;
     EXPECT_FALSE(g::validate_segmented(x,reversed_constraints.dependencies));
     x=segment_solution;
-    x.total_cost=nan;
+    x.total_cost=quiet_nan_value;
     EXPECT_FALSE(g::validate_segmented(x,reversed_constraints.dependencies));
 }
 TEST(RedteamSoundness, NaNIsNotAValidPlanCost) {
