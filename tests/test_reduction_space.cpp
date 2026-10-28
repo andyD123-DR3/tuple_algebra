@@ -199,7 +199,7 @@ TEST(ReductionProperties, ConstantTransform) {
 // ════════════════════════════════════════════════════════════════════════
 
 TEST(ReductionOptSpace, StatsReduction_BothDimsActive) {
-    auto result = make_reduction_opt_space(make_stats_reduction());
+    auto result = make_reduction_opt_space(make_stats_reduction(), numerical_reassociation_policy::mathematical);
 
     // tile_size: 7 values (64..4096)
     // tree_shape: 3 values (active — all associative)
@@ -209,7 +209,7 @@ TEST(ReductionOptSpace, StatsReduction_BothDimsActive) {
 }
 
 TEST(ReductionOptSpace, StatsReduction_EnumerationCountMatchesCardinality) {
-    auto result = make_reduction_opt_space(make_stats_reduction());
+    auto result = make_reduction_opt_space(make_stats_reduction(), numerical_reassociation_policy::mathematical);
 
     std::size_t count = 0;
     result.space.enumerate([&](auto const&) { ++count; });
@@ -217,14 +217,14 @@ TEST(ReductionOptSpace, StatsReduction_EnumerationCountMatchesCardinality) {
 }
 
 TEST(ReductionOptSpace, StatsReduction_FeatureWidth) {
-    auto result = make_reduction_opt_space(make_stats_reduction());
+    auto result = make_reduction_opt_space(make_stats_reduction(), numerical_reassociation_policy::mathematical);
 
     // tile_size (log2 → 1) + tree_shape (one-hot → 3) + vec_width (raw → 1) = 5
     EXPECT_EQ(result.bridge.num_features(), 5u);
 }
 
 TEST(ReductionOptSpace, StatsReduction_AllTreeShapesAppear) {
-    auto result = make_reduction_opt_space(make_stats_reduction());
+    auto result = make_reduction_opt_space(make_stats_reduction(), numerical_reassociation_policy::mathematical);
 
     std::array<int, 3> tree_counts{};
     result.space.enumerate([&](auto const& pt) {
@@ -239,7 +239,7 @@ TEST(ReductionOptSpace, StatsReduction_AllTreeShapesAppear) {
 }
 
 TEST(ReductionOptSpace, StatsReduction_AllVecWidthsAppear) {
-    auto result = make_reduction_opt_space(make_stats_reduction());
+    auto result = make_reduction_opt_space(make_stats_reduction(), numerical_reassociation_policy::mathematical);
 
     std::vector<int> vec_values;
     result.space.enumerate([&](auto const& pt) {
@@ -251,6 +251,26 @@ TEST(ReductionOptSpace, StatsReduction_AllVecWidthsAppear) {
         EXPECT_NE(std::find(vec_values.begin(), vec_values.end(), expected),
                   vec_values.end()) << "Missing vec_width=" << expected;
     }
+}
+
+
+TEST(ReductionOptSpace, DefaultStrictRejectsFloatingReassociation) {
+    auto red = make_reduction(reduction_lane{identity_t{}, plus_fn{}, 0.0});
+    const auto props = reduction_properties(red);
+    EXPECT_TRUE(props.all_associative);       // mathematical property
+    EXPECT_FALSE(props.all_exact_associative); // not bitwise FP property
+    auto strict = make_reduction_opt_space(red);
+    EXPECT_EQ(strict.space.cardinality(), 7u);
+    strict.space.enumerate([](auto const& point) {
+        EXPECT_EQ(std::get<1>(point), tree_shape::flat);
+        EXPECT_EQ(std::get<2>(point), 1);
+    });
+    auto exact = make_reduction_opt_space(red,
+        numerical_reassociation_policy::declared_exact);
+    EXPECT_EQ(exact.space.cardinality(), 7u);
+    auto mathematical = make_reduction_opt_space(red,
+        numerical_reassociation_policy::mathematical);
+    EXPECT_EQ(mathematical.space.cardinality(), 84u);
 }
 
 // ════════════════════════════════════════════════════════════════════════
@@ -276,7 +296,7 @@ TEST(ReductionOptSpace, AssocNoIdentity_VecWidthInactive) {
     EXPECT_TRUE(props.all_associative);
     EXPECT_FALSE(props.all_have_identity);
 
-    auto result = make_reduction_opt_space(red);
+    auto result = make_reduction_opt_space(red, numerical_reassociation_policy::mathematical);
 
     // tile: 7 × tree_shape: 3 (active) × vec_width: 1 (inactive) = 21
     EXPECT_EQ(result.space.cardinality(), 7u * 3u * 1u);
@@ -340,7 +360,8 @@ TEST(ReductionOptSpace, CustomDescriptors_OverrideTileRange) {
     auto result = make_reduction_opt_space(red,
         power_2("tile_size", 128, 1024),   // custom: 4 levels
         default_tree_shape_dim(),           // keep default
-        default_vec_width_dim()             // keep default
+        default_vec_width_dim(),            // keep default
+        numerical_reassociation_policy::mathematical
     );
 
     // 4 tiles × 3 tree shapes (active) × 4 vec widths (active) = 48
@@ -355,7 +376,8 @@ TEST(ReductionOptSpace, CustomDescriptors_CustomVecWidths) {
     auto result = make_reduction_opt_space(red,
         default_tile_dim(),
         default_tree_shape_dim(),
-        make_int_set("vec_width", {1, 2, 4, 8, 16, 32})  // 6 values
+        make_int_set("vec_width", {1, 2, 4, 8, 16, 32}), // 6 values
+        numerical_reassociation_policy::mathematical
     );
 
     // 7 tiles × 3 tree shapes × 6 vec widths = 126
@@ -382,7 +404,7 @@ TEST(ReductionOptSpaceE2E, FullPipeline_AllActive) {
     EXPECT_TRUE(props.all_have_identity);
 
     // Step 3: Generate search space
-    auto result = make_reduction_opt_space(red);
+    auto result = make_reduction_opt_space(red, numerical_reassociation_policy::mathematical);
     auto& space = result.space;
     auto& bridge = result.bridge;
 
@@ -467,7 +489,7 @@ TEST(ReductionOptSpaceE2E, FullPipeline_ReductionStillComputes) {
     EXPECT_DOUBLE_EQ(std::get<2>(result), 1.0);   // min
 
     // Now generate the optimisation space for this same reduction
-    auto opt = make_reduction_opt_space(red);
+    auto opt = make_reduction_opt_space(red, numerical_reassociation_policy::mathematical);
     EXPECT_EQ(opt.space.cardinality(), 84u);  // all dims active
 }
 
