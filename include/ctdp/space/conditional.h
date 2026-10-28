@@ -4,12 +4,11 @@
 //   - When active:  behaves exactly like the wrapped descriptor
 //   - When inactive: cardinality = 1, single default value, no search freedom
 //
-// Feature encoding stability:
-//   Feature width is ALWAYS the same regardless of active/inactive state.
-//   When active, features encode per the wrapped descriptor's rules.
-//   When inactive, all feature slots are 0.0.
-//   This guarantees that ML models trained on one space configuration
-//   can still consume feature vectors from another without layout changes.
+// Feature encoding, schema v2:
+//   Feature width is the wrapped width + a presence bit, invariant under
+//   active/inactive state. Active writes [value features...,1]; absent
+//   writes all zeros. Present false/0 is NOT equivalent to absence.
+//   Pre-v2 model coefficients and cached feature vectors must be re-fitted.
 //
 // The predicate is evaluated at construction time, not at search time.
 // This is for conditions known before search begins: algebraic properties

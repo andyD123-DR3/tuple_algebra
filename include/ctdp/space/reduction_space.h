@@ -7,9 +7,11 @@
 // with conditionally-present dimensions gated by algebraic properties:
 //
 //   tile_size        — always present (power_2, controls work granularity)
-//   tree_shape       — present only when all_associative (reduction tree topology)
-//   vec_width        — present only when all_have_identity (SIMD lane width)
-//   lane_order_perm  — present only when all_commutative (future: permutation)
+//   tree_shape       — disabled in strict-expression mode; other modes
+//                      require declared numerical admissibility
+//   vec_width        — disabled in strict-expression mode; opt-in modes
+//                      also require identity support
+//   lane_order_perm  — future: requires a separate observation contract
 //
 // Usage:
 //   auto stats = make_reduction(
@@ -17,7 +19,9 @@
 //       reduction_lane{identity_t{}, min_fn{},  INT_MAX}
 //   );
 //   auto [space, bridge] = make_reduction_opt_space(stats);
-//   // space has 3 dims: tile_size + tree_shape (active) + vec_width (active)
+//   // strict default: tile_size active; tree/vec are inactive.
+ //   // use numerical_reassociation_policy::mathematical explicitly
+ //   // only when different FP rounding observations are acceptable.
 //
 // Part of the CT-DP space constructor algebra.
 // Copyright (c) 2026 Andrew Drakeford. All rights reserved.
