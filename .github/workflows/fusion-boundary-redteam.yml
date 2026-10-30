@@ -1,0 +1,105 @@
+name: CT-DP Fusion Boundary Red-Team
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'include/ctdp/solver/algorithms/fusion_*'
+      - 'tests/solver/test_fusion_boundary_probe.cpp'
+      - 'tests/CMakeLists.txt'
+      - 'experiments/fusion_boundary/**'
+      - 'docs/design/fusion_boundary_redteam_20261030.md'
+      - '.github/workflows/fusion-boundary-redteam.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'include/ctdp/solver/algorithms/fusion_*'
+      - 'tests/solver/test_fusion_boundary_probe.cpp'
+      - 'experiments/fusion_boundary/**'
+      - '.github/workflows/fusion-boundary-redteam.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  exact-reference:
+    name: Exact reference (${{ matrix.id }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - id: gcc13
+            os: ubuntu-24.04
+            compiler: g++-13
+          - id: clang18
+            os: ubuntu-24.04
+            compiler: clang++-18
+          - id: msvc
+            os: windows-latest
+            compiler: msvc
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Linux compilers
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y g++-13 clang-18
+      - name: Configure standalone research-only solver
+        shell: bash
+        run: |
+          if [[ "$RUNNER_OS" == "Windows" ]]; then
+            cmake -S experiments/fusion_boundary -B build-fusion-boundary
+          else
+            cmake -S experiments/fusion_boundary -B build-fusion-boundary \
+              -DCMAKE_CXX_COMPILER=${{ matrix.compiler }} \
+              -DCMAKE_BUILD_TYPE=Release
+          fi
+      - name: Build exhaustive oracle and corpus emitter
+        run: cmake --build build-fusion-boundary --config Release --parallel 2
+      - name: Execute exhaustive and adversarial tests
+        run: ctest --test-dir build-fusion-boundary -C Release --output-on-failure
+      - name: Export canonical counterexamples
+        shell: bash
+        run: |
+          if [[ "$RUNNER_OS" == "Windows" ]]; then
+            ./build-fusion-boundary/Release/ctdp_fusion_boundary_corpus.exe > corpus.jsonl
+          else
+            ./build-fusion-boundary/ctdp_fusion_boundary_corpus > corpus.jsonl
+          fi
+          test "$(wc -l < corpus.jsonl)" -eq 10
+          grep -Fq '"kind":"fork","rank":1,"nodes":3,"weight":9' corpus.jsonl
+          grep -Fq '"kind":"layout_boundary","rank":1,"nodes":2,"weight":7' corpus.jsonl
+          cat corpus.jsonl
+      - uses: actions/upload-artifact@v4
+        with:
+          name: fusion-boundary-${{ matrix.id }}
+          path: corpus.jsonl
+          if-no-files-found: error
+
+  reproducible-corpus:
+    name: Identical GCC / Clang / MSVC counterexample corpus
+    needs: [exact-reference]
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: fusion-boundary-gcc13
+          path: witnesses/gcc
+      - uses: actions/download-artifact@v4
+        with:
+          name: fusion-boundary-clang18
+          path: witnesses/clang
+      - uses: actions/download-artifact@v4
+        with:
+          name: fusion-boundary-msvc
+          path: witnesses/msvc
+      - name: Reject any platform-specific model or output ordering
+        run: |
+          set -euo pipefail
+          cmp witnesses/gcc/corpus.jsonl witnesses/clang/corpus.jsonl
+          cmp witnesses/gcc/corpus.jsonl witnesses/msvc/corpus.jsonl
+          sha256sum witnesses/gcc/corpus.jsonl
