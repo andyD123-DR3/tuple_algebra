@@ -4,10 +4,19 @@
 #include <ctdp/solver/algorithms/fusion_boundary_witness.h>
 #include <cstddef>
 #include <cstdio>
+#if defined(_WIN32)
+#include <fcntl.h>
+#include <io.h>
+#endif
 
 namespace fp=ctdp::solver::fusion_probe;
 
 int main() {
+#if defined(_WIN32)
+    // MSVC text stdout otherwise translates LF to CRLF when redirected.
+    // CI compares the exact corpus bytes, not newline-normalised text.
+    if(_setmode(_fileno(stdout),_O_BINARY)==-1)return 3;
+#endif
     constexpr unsigned grammar_version=1;
     const auto forks=fp::find_fork_counterexamples<8>();
     if(forks.count!=8)return 1;
