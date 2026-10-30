@@ -166,6 +166,12 @@ ctdp_add_test(test_reduction_tree_space test_reduction_tree_space.cpp)
 ctdp_add_test(test_pareto test_pareto.cpp)
 ctdp_add_test(test_redteam_soundness test_redteam_soundness.cpp)
 
+# Research red-team reference: independent exhaustive oracles and generated
+# minimal branching/layout counterexamples (Release assertions never disabled).
+add_executable(ctdp_fusion_boundary_selftest solver/test_fusion_boundary_probe.cpp)
+target_link_libraries(ctdp_fusion_boundary_selftest PRIVATE ctdp_solver)
+add_test(NAME ctdp_fusion_boundary_selftest COMMAND ctdp_fusion_boundary_selftest)
+
 # ══ Space layer: ordinal ordinate type + fix<I> alias (Sprint 1) ═══════════
 ctdp_add_test(test_ordinal_fix test_ordinal_fix.cpp)
 
@@ -244,7 +250,7 @@ add_custom_target(check
             test_tree_space
             test_reduction_tree_space
             test_pareto
-            test_redteam_soundness
+            test_redteam_soundness ctdp_fusion_boundary_selftest
             ctdp_graph_red_team
             ctdp_graph_engine_integration
             test_ordinal_fix
