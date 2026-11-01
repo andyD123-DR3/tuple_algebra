@@ -60,6 +60,16 @@ static void test_2d() {
     reject([&]{(void)g::view2::row_major({
         std::numeric_limits<std::size_t>::max(),3});},
            "2D geometry: extent overflow admitted");
+    reject([&]{
+        auto transposed=g::view2::column_major(shape);
+        transposed.scatter(std::span<const std::uint32_t>(storage),
+                           std::span<std::uint32_t>(storage));
+    },"2D geometry: in-place transpose admitted");
+    reject([&]{
+        auto transposed=g::view2::column_major(shape);
+        transposed.gather(std::span<const std::uint32_t>(storage),
+                          std::span<std::uint32_t>(storage));
+    },"2D geometry: in-place inverse transpose admitted");
     reject([&]{(void)g::view2::column_major(shape).address({4,0});},
            "2D geometry: out-of-domain coordinate admitted");
     reject([&]{g::view2::column_major(shape).scatter(
@@ -100,6 +110,18 @@ static void test_multiradix() {
         (void)g::typed_factorized_space<3>::make(
             {2,4,7},g::permutation_value<3>{{0,0,2}});
     },"CT-DP typed permutation adapter admitted duplicate axis");
+    {
+        auto permuted=g::factorized_space::make({2,4,7},{2,1,0});
+        std::vector<std::uint32_t> shared_storage(56);
+        reject([&]{
+            permuted.scatter(std::span<const std::uint32_t>(shared_storage),
+                             std::span<std::uint32_t>(shared_storage));
+        },"Cartesian geometry: in-place scatter admitted");
+        reject([&]{
+            permuted.gather(std::span<const std::uint32_t>(shared_storage),
+                            std::span<std::uint32_t>(shared_storage));
+        },"Cartesian geometry: in-place gather admitted");
+    }
     const auto identity=g::factorized_space::make({2,4,7},{0,1,2});
     for(std::size_t i=0;i<identity.elements;++i)
         check(identity.offset(i)==i,"Cartesian geometry: identity permutation wrong");
