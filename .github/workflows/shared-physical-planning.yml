@@ -1,0 +1,126 @@
+name: Shared CT-DP physical planning qualification
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'include/ctdp/space/index_geometry.h'
+      - 'include/ctdp/solver/plans/physical_recursive.h'
+      - 'include/ctdp/solver/algorithms/compositional_pareto.h'
+      - 'experiments/shared_physical_planning/**'
+      - 'tests/space/test_physical_index_geometry.cpp'
+      - 'tests/solver/test_physical_recursive.cpp'
+      - 'tests/solver/test_compositional_pareto.cpp'
+      - 'tests/CMakeLists.txt'
+      - '.github/workflows/shared-physical-planning.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+
+jobs:
+  native:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-24.04
+            compiler: g++-13
+            label: gcc
+          - os: ubuntu-24.04
+            compiler: clang++-18
+            label: clang
+          - os: ubuntu-24.04-arm
+            compiler: g++
+            label: arm
+          - os: windows-latest
+            compiler: cl
+            label: msvc
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure independent C++20 core qualification
+        shell: bash
+        run: |
+          if [[ "$RUNNER_OS" == "Windows" ]]; then
+            cmake -S experiments/shared_physical_planning -B physical-build \
+              -DCMAKE_BUILD_TYPE=Release
+          else
+            cmake -S experiments/shared_physical_planning -B physical-build \
+              -DCMAKE_CXX_COMPILER=${{ matrix.compiler }} \
+              -DCMAKE_BUILD_TYPE=Release
+          fi
+      - name: Build native physical index/recursive/Pareto drivers
+        shell: bash
+        run: cmake --build physical-build --config Release --parallel 2
+      - name: Execute exact model/geometry and red-team negative tests
+        shell: bash
+        run: ctest --test-dir physical-build -C Release --output-on-failure
+      - name: Emit deterministic cross-compiler research evidence
+        shell: bash
+        run: |
+          if [[ "$RUNNER_OS" == "Windows" ]]; then
+            dir=physical-build/Release
+            suffix=.exe
+          else
+            dir=physical-build
+            suffix=
+          fi
+          "$dir/ctdp_index_geometry$suffix" | tee index.log
+          "$dir/ctdp_physical_recursive$suffix" | tee recursion.log
+          "$dir/ctdp_compositional_pareto$suffix" | tee pareto.log
+          grep -q '^CT-DP physical index geometry: PASS' index.log
+          grep -q '^CT-DP shared physical recursion: PASS' recursion.log
+          grep -q '^CT-DP compositional physical Pareto: PASS' pareto.log
+          grep 'PASS$' index.log > witness.txt
+          grep 'PASS$' recursion.log >> witness.txt
+          grep 'PASS$' pareto.log >> witness.txt
+          test "$(wc -l < witness.txt)" -eq 3
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ctdp-physical-${{ matrix.label }}
+          path: witness.txt
+          if-no-files-found: error
+
+  sanitizers:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build with ASan/UBSan
+        run: |
+          cmake -S experiments/shared_physical_planning -B physical-san \
+            -DCMAKE_BUILD_TYPE=Debug \
+            -DCMAKE_CXX_FLAGS="-fsanitize=address,undefined -fno-omit-frame-pointer"
+          cmake --build physical-san --parallel 2
+      - name: Run exact and negative tests with sanitizers
+        env:
+          ASAN_OPTIONS: detect_leaks=1:halt_on_error=1
+          UBSAN_OPTIONS: halt_on_error=1:print_stacktrace=1
+        run: ctest --test-dir physical-san --output-on-failure
+
+  witnesses:
+    runs-on: ubuntu-24.04
+    needs: [native, sanitizers]
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: ctdp-physical-gcc
+          path: witness/gcc
+      - uses: actions/download-artifact@v4
+        with:
+          name: ctdp-physical-clang
+          path: witness/clang
+      - uses: actions/download-artifact@v4
+        with:
+          name: ctdp-physical-arm
+          path: witness/arm
+      - uses: actions/download-artifact@v4
+        with:
+          name: ctdp-physical-msvc
+          path: witness/msvc
+      - name: Reject divergent physical model and admission evidence
+        run: |
+          cmp witness/gcc/witness.txt witness/clang/witness.txt
+          cmp witness/gcc/witness.txt witness/arm/witness.txt
+          cmp witness/gcc/witness.txt witness/msvc/witness.txt
