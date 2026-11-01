@@ -11,9 +11,24 @@
 #include <stdexcept>
 #include <vector>
 #include <array>
+#include <functional>
 #include <ctdp/space/permutation.h>
 
 namespace ctdp::space {
+
+// Scatter/gather are non-in-place operations. A transpose or permuted
+// factor index map may overwrite unread source elements, so even partial
+// aliasing is refused; callers use explicit scratch and retain full
+// numerical-observation qualification in their physical lowerers.
+namespace physical_geometry_detail {
+template<class T>
+[[nodiscard]] inline bool disjoint(std::span<const T> a,
+                                   std::span<T> b) noexcept {
+    return a.empty() || b.empty() ||
+        std::less_equal<const T*>{}(a.data()+a.size(),b.data()) ||
+        std::less_equal<const T*>{}(b.data()+b.size(),a.data());
+}
+} // namespace physical_geometry_detail
 
 struct shape2 {
     std::size_t outer{},inner{};
@@ -67,14 +82,16 @@ struct view2 {
     }
     template<class T>
     void scatter(std::span<const T> logical,std::span<T> storage) const {
-        if(logical.size()!=shape.elements() || storage.size()<capacity)
+        if(logical.size()!=shape.elements() || storage.size()<capacity ||
+           !physical_geometry_detail::disjoint(logical,storage))
             throw std::invalid_argument("FFT geometry: scatter shape");
         for(std::size_t i=0;i<logical.size();++i)
             storage[address_linear(i)]=logical[i];
     }
     template<class T>
     void gather(std::span<const T> storage,std::span<T> logical) const {
-        if(logical.size()!=shape.elements() || storage.size()<capacity)
+        if(logical.size()!=shape.elements() || storage.size()<capacity ||
+           !physical_geometry_detail::disjoint(storage,logical))
             throw std::invalid_argument("FFT geometry: gather shape");
         for(std::size_t i=0;i<logical.size();++i)
             logical[i]=storage[address_linear(i)];
@@ -146,14 +163,16 @@ struct factorized_space {
     }
     template<class T>
     void scatter(std::span<const T> logical,std::span<T> physical) const {
-        if(logical.size()!=elements || physical.size()!=elements)
+        if(logical.size()!=elements || physical.size()!=elements ||
+           !physical_geometry_detail::disjoint(logical,physical))
             throw std::invalid_argument("FFT geometry: factor scatter shape");
         for(std::size_t i=0;i<elements;++i)
             physical[offset(i)]=logical[i];
     }
     template<class T>
     void gather(std::span<const T> physical,std::span<T> logical) const {
-        if(logical.size()!=elements || physical.size()!=elements)
+        if(logical.size()!=elements || physical.size()!=elements ||
+           !physical_geometry_detail::disjoint(physical,logical))
             throw std::invalid_argument("FFT geometry: factor gather shape");
         for(std::size_t i=0;i<elements;++i)
             logical[i]=physical[offset(i)];
