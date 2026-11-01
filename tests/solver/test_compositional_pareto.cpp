@@ -145,10 +145,11 @@ static void bounded_and_adversarial() {
     };
     auto r=p::compositional_pareto<int,choice,4>(
         99,{2,100,10},forced,costs,order,priority);
+    std::set<std::vector<std::size_t>> extrema;
+    for(auto const& item:r.frontier)extrema.insert(item.factors);
     require(r.approximate && r.budget_pruned==2 &&
             r.frontier.size()==2 &&
-            r.frontier[0].factors==std::vector<std::size_t>{1} &&
-            r.frontier[1].factors==std::vector<std::size_t>{2},
+            extrema==std::set<std::vector<std::size_t>>{{1},{2}},
             "CT-DP physical DP: explicit objective extrema were not kept");
     const auto repeat=p::compositional_pareto<int,choice,4>(
         99,{2,100,10},forced,costs,order,priority);
