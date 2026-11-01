@@ -346,3 +346,19 @@ endforeach()
 # )
 # -- SpMV framework demo tests -----------------------------------------------
 add_subdirectory(spmv)
+
+
+# Shared algorithm-expression physical planning (standalone Release assertions).
+# These intentionally do not use GTest or hardware timing, and also build
+# under experiments/shared_physical_planning for fast cross-compiler admission.
+add_executable(ctdp_index_geometry space/test_physical_index_geometry.cpp)
+target_link_libraries(ctdp_index_geometry PRIVATE ctdp_space)
+add_test(NAME ctdp_index_geometry COMMAND ctdp_index_geometry)
+
+add_executable(ctdp_physical_recursive solver/test_physical_recursive.cpp)
+target_link_libraries(ctdp_physical_recursive PRIVATE ctdp_solver)
+add_test(NAME ctdp_physical_recursive COMMAND ctdp_physical_recursive)
+
+add_executable(ctdp_compositional_pareto solver/test_compositional_pareto.cpp)
+target_link_libraries(ctdp_compositional_pareto PRIVATE ctdp_solver)
+add_test(NAME ctdp_compositional_pareto COMMAND ctdp_compositional_pareto)
