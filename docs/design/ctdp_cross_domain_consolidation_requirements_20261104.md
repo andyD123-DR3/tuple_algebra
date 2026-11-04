@@ -114,3 +114,26 @@ D. Migrate matrix, NTT and gamma clients one at a time with cross-domain regress
 E. Only then consider small, opt-in ML training and reverse-AD clients. Defer new research grammar and new backend APIs.
 
 The implementation is NOT approved merely by the existence of this requirements note.
+
+## Concurrent mainline reconciliation (2026-11-04)
+
+CT-DP PR #45 (merge SHA 3fa3bb5b5a607689b2ab6a4dc4d67891c21fa405)
+merged the former optimisation-session prototype into CT-DP main while this
+requirements review was underway. DN PR #727 (merge SHA
+25c0a98434c7d81c7bd8ac10e33233b70ab5ac6c) also merged its
+ctdp_session_bridge. Their existence is now a **baseline compatibility fact**,
+not evidence that the old session solves R01-R13.
+
+We will retain the merged `ctdp::solver::session` as the existing scoped,
+post-solve numerical-evidence and winner-ranking stage while leaving the DN
+bridge as the authority on numerical verification. The new
+`ctdp::solver::integration` protocol is a *different, narrower upstream*
+stage: typed problem/space binding, native optimiser invocation and native
+search-report retention. It deliberately introduces no second measurement,
+numerical-evidence or selection representation. Both stages may compose, but
+neither is compulsory for standalone constexpr CT-DP algorithms.
+
+No wholesale rewrite or rollback of the concurrently merged code is implied.
+Do not treat the two stages as competing end-to-end session interfaces.
+Future adoption of a complete common orchestration layer should proceed only
+with actual matrix/NTT/gamma integration and the gates above.
