@@ -362,3 +362,8 @@ add_test(NAME ctdp_physical_recursive COMMAND ctdp_physical_recursive)
 add_executable(ctdp_compositional_pareto solver/test_compositional_pareto.cpp)
 target_link_libraries(ctdp_compositional_pareto PRIVATE ctdp_solver)
 add_test(NAME ctdp_compositional_pareto COMMAND ctdp_compositional_pareto)
+
+# Requirements-first cross-domain integration protocol (no GTest needed).
+add_executable(ctdp_cross_domain_protocol solver/test_cross_domain_protocol.cpp)
+target_link_libraries(ctdp_cross_domain_protocol PRIVATE ctdp_solver ctdp_space)
+add_test(NAME ctdp_cross_domain_protocol COMMAND ctdp_cross_domain_protocol)
