@@ -146,7 +146,7 @@ static void domain_isolation() {
     });
     const auto r=ci::explore(ci::problem(problem_shape,domain_space,contract),
         s,{"matrix.domain",ci::model_status::unverified});
-    static_assert(std::is_same_v<decltype(r.native),const int>,
+    static_assert(std::is_same_v<decltype(r.native),int>,
                   "native solver result type changed");
     require(r.native==131,"typed problem forwarding changed");
 }
