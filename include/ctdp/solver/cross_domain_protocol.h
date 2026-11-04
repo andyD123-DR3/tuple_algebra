@@ -12,6 +12,7 @@
 // See docs/design/ctdp_cross_domain_consolidation_requirements_20261104.md.
 #include <concepts>
 #include <functional>
+#include <stdexcept>
 #include <string_view>
 #include <type_traits>
 #include <utility>
@@ -65,10 +66,18 @@ template<class Problem, class Solver>
         (!std::is_void_v<std::invoke_result_t<Solver,Problem const&>>)
 [[nodiscard]] constexpr auto explore(Problem const& p, Solver&& solver,
                                      search_description description) {
+    if(description.family.empty())
+        throw std::invalid_argument("CT-DP integration: missing solver identity");
     using native_type=std::remove_cvref_t<
         std::invoke_result_t<Solver,Problem const&>>;
-    return exploration<native_type>{
-        std::invoke(std::forward<Solver>(solver),p),description};
+    native_type native=std::invoke(std::forward<Solver>(solver),p);
+    if constexpr (requires { native.approximate; }) {
+        if(native.approximate &&
+           description.status==model_status::complete_for_declared_space)
+            throw std::invalid_argument(
+                "CT-DP integration: bounded frontier cannot claim complete search");
+    }
+    return exploration<native_type>{std::move(native),description};
 }
 
 // A small adapter for existing space-aware solver functions. It preserves
