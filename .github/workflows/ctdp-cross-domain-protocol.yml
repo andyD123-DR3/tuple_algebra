@@ -1,0 +1,49 @@
+name: CT-DP cross-domain protocol C++20 admission
+
+on:
+  pull_request:
+    paths:
+      - 'include/ctdp/solver/cross_domain_protocol.h'
+      - 'tests/solver/test_cross_domain_protocol.cpp'
+      - 'tests/CMakeLists.txt'
+      - '.github/workflows/ctdp-cross-domain-protocol.yml'
+      - 'docs/design/ctdp_cross_domain_consolidation_requirements_20261104.md'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  unix:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-24.04
+            compiler: g++
+          - os: ubuntu-24.04
+            compiler: clang++
+          - os: macos-15
+            compiler: clang++
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Compile and run without GTest or external packages
+        env:
+          CXX: ${{ matrix.compiler }}
+        run: |
+          $CXX -std=c++20 -O2 -Wall -Wextra -Wpedantic -Iinclude \
+            tests/solver/test_cross_domain_protocol.cpp -o ctdp_cross_domain_protocol
+          ./ctdp_cross_domain_protocol
+
+  windows:
+    runs-on: windows-2022
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ilammy/msvc-dev-cmd@v1
+      - name: Compile and run natively under MSVC
+        shell: cmd
+        run: |
+          cl /nologo /std:c++20 /O2 /EHsc /W4 /Iinclude tests\solver\test_cross_domain_protocol.cpp /Fe:ctdp_cross_domain_protocol.exe
+          if errorlevel 1 exit /b 1
+          ctdp_cross_domain_protocol.exe
