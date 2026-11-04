@@ -1,0 +1,57 @@
+name: CT-DP common optimisation session
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'include/ctdp/solver/optimisation_session.h'
+      - 'experiments/common_optimisation_session/**'
+      - '.github/workflows/common-optimisation-session.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'include/ctdp/solver/optimisation_session.h'
+      - 'experiments/common_optimisation_session/**'
+      - '.github/workflows/common-optimisation-session.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  cross-solver:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - id: gcc13
+            os: ubuntu-24.04
+            cxx: g++-13
+          - id: clang18
+            os: ubuntu-24.04
+            cxx: clang++-18
+          - id: msvc
+            os: windows-latest
+            cxx: cl
+          - id: arm64
+            os: ubuntu-24.04-arm
+            cxx: g++
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Linux C++ compilers
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq g++-13 clang-18
+      - name: Configure
+        shell: bash
+        run: |
+          if [[ "$RUNNER_OS" == "Windows" ]]; then
+            cmake -S experiments/common_optimisation_session -B build-session
+          else
+            cmake -S experiments/common_optimisation_session -B build-session \
+              -DCMAKE_CXX_COMPILER=${{ matrix.cxx }} -DCMAKE_BUILD_TYPE=Release
+          fi
+      - name: Build
+        run: cmake --build build-session --config Release --parallel 2
+      - name: Execute native solver and evidence gates
+        run: ctest --test-dir build-session -C Release --output-on-failure
