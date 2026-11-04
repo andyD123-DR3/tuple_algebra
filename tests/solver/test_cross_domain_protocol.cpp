@@ -132,6 +132,13 @@ static void bounded_pareto_status() {
             "bounded native frontier/truncation flags lost");
     require(out.search.status==ci::model_status::bounded_approximate,
             "bounded status not preserved");
+    bool false_complete_rejected=false;
+    try {
+        (void)ci::explore(ci::problem(root,root,c),solver,
+            {"pareto_bounded",ci::model_status::complete_for_declared_space});
+    } catch(std::invalid_argument const&) {false_complete_rejected=true;}
+    require(false_complete_rejected,
+            "truncated frontier masqueraded as a complete model search");
 }
 static void domain_isolation() {
     // Each domain may use exactly the same optimiser protocol while preserving
