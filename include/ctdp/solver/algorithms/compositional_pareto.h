@@ -95,7 +95,10 @@ template<class Key,class Label,std::size_t D,
                 const auto a=priority(lhs),b=priority(rhs);
                 return a<b || (a==b && stable_less(lhs,rhs));
             });
-        points frontier;
+        // All dominance and stable-order callbacks must observe intact
+        // labels. Moving a retained vector-owning label here can change its
+        // cost/order and incorrectly dominate later, incomparable candidates.
+        std::vector<std::size_t> retained_indices;
         for(std::size_t i=0;i<possible.size();++i) {
             const auto ci=costs(possible[i]);
             bool inferior=false;
@@ -109,8 +112,11 @@ template<class Key,class Label,std::size_t D,
                 }
             }
             if(inferior)++report.dominated;
-            else frontier.push_back(std::move(possible[i]));
+            else retained_indices.push_back(i);
         }
+        points frontier;
+        frontier.reserve(retained_indices.size());
+        for(auto i:retained_indices)frontier.push_back(std::move(possible[i]));
 
         if(frontier.size()>limits.maximum_frontier) {
             std::vector<bool> retained(frontier.size());
